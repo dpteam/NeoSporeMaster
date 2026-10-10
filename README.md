@@ -27,8 +27,8 @@
 - **Текстуры (`.raster` ⇄ DDS)** — конвертация растровых текстур Spore в стандартный DDS и
   обратно (байт-точно), включая блочные форматы (DXT/ATI) и мипмапы.
 - **RenderWare 4 (`.rw4`)** — разбор контейнера (заголовок, манифест, таблица секций, типы),
-  чтение мешей и **декодирование геометрии** (позиции + индексы) с экспортом в **OBJ** (плюс
-  **`.mtl`** и текстуры в **DDS**); чтение
+  чтение мешей и **декодирование геометрии** (позиции + индексы) с экспортом в **OBJ** и **Ogre XML**
+  (плюс **`.mtl`**/`.material` и текстуры в **DDS**); чтение
   **скелетов** (иерархия костей), **скинов** (матрицы, bind-позы), **ключевых анимаций**
   (каналы, кадры, таблица «id → анимация»), **материалов** (декомпиляция `CompiledState`:
   шейдер, цвета, render/stage/sampler states, текстуры), **морфов/блендшейпов** и метаданных
@@ -69,7 +69,7 @@
   игровых архивах).
 
 Не реализовано (в планах, см. `MEMORY.md`): перекомпиляция материалов и блендшейпов RenderWare4,
-экспорт RW4 в Ogre XML, полный список конвертеров.
+запись `.anim`, полный список конвертеров.
 ---
 
 ## Структура репозитория
@@ -200,9 +200,10 @@ dotnet run --project src/SporeMaster.Cli -- locale <файл.locale>
 dotnet run --project src/SporeMaster.Cli -- texture <файл.raster> <файл.dds>
 dotnet run --project src/SporeMaster.Cli -- texture <файл.dds> <файл.raster>
 
-# Разобрать структуру ресурса RenderWare 4 (и выгрузить меши в OBJ / текстуры в DDS)
+# Разобрать структуру ресурса RenderWare 4 (и выгрузить меши в OBJ или Ogre XML, текстуры в DDS)
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4>
-dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export <файл.obj>   # + .mtl и текстуры
+dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export <файл.obj>            # + .mtl и текстуры
+dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export-ogre <файл.mesh.xml>  # + .material
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export-textures <папка>
 
 # Конвертировать растровый ресурс (bitmap ⇄ PNG, определяется автоматически)

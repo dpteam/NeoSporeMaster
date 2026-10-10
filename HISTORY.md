@@ -2,6 +2,21 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.61.0] — экспорт RW4 в Ogre XML (2026-10-11)
+
+### Добавлено
+- **`Rw4OgreExporter`** (Core) — геометрия RW4 в формат **Ogre XML** (`.mesh.xml`): `<submesh>` на
+  меш, `<faces>`, `<geometry>` (position/normal/texcoord), `<submeshname>`; плюс **`.material`**-скрипт
+  и текстуры в DDS.
+- CLI **`rw4 --export-ogre <файл.mesh.xml>`** (общая подготовка материалов/текстур вынесена в
+  `PrepareRw4Export`, используется и для OBJ).
+- Тесты: синтетика + реальный ресурс (XML парсится, есть `<face>`) — всего 134 теста.
+- Документация: `docs/RW4_FORMAT.md` (раздел Ogre XML).
+
+### Проверено
+- Модель `ce_sense_ear_top_01-symmetric.rw4` → `model.mesh.xml` (612 треугольников) + `model.material`
+  + `model_tex0.dds`.
+
 ## [3.60.0] — смоук-тест игры (проверка репака в игре) (2026-10-11)
 
 ### Добавлено

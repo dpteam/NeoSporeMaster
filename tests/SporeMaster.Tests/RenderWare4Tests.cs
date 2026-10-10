@@ -795,6 +795,57 @@ public static class RenderWare4Tests
         throw new AssertionException("No RW4 geometry was found to export.");
     }
 
+    [SporeTest("Ogre XML export is well-formed")]
+    public static void OgreExport()
+    {
+        // Synthetic check of the writer and the material script.
+        var mesh = new Rw4MeshGeometry
+        {
+            Positions = new float[] { 0, 0, 0, 1, 0, 0, 0, 1, 0 },
+            Normals = new float[] { 0, 0, 1, 0, 0, 1, 0, 0, 1 },
+            TexCoords = new float[] { 0, 0, 1, 0, 0, 1 },
+            Indices = new int[] { 0, 1, 2 },
+            MeshSectionIndex = 0,
+        };
+
+        string xml = Rw4OgreExporter.ExportMesh("test", new[] { mesh }, _ => "mat0");
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
+        System.Xml.Linq.XNamespace ns = doc.Root!.Name.Namespace;
+        Assert.Equal("mesh", doc.Root.Name.LocalName);
+        Assert.Equal("3", doc.Descendants("geometry").First().Attribute("vertexcount")!.Value);
+        Assert.Equal("1", doc.Descendants("faces").First().Attribute("count")!.Value);
+        Assert.Equal("mat0", doc.Descendants("submesh").First().Attribute("material")!.Value);
+
+        string material = Rw4OgreExporter.ExportMaterial(new[] { ("mat0", "tex0.dds") });
+        Assert.Contains(material, "material mat0");
+        Assert.Contains(material, "texture tex0.dds");
+
+        // Real resource: the exported document parses and has submeshes with faces.
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries.Take(400))
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                IReadOnlyList<Rw4MeshGeometry> geometry = rw4.ReadGeometry();
+                if (geometry.Count == 0)
+                {
+                    continue;
+                }
+
+                var realDoc = System.Xml.Linq.XDocument.Parse(Rw4OgreExporter.ExportMesh("m", geometry));
+                Assert.True(realDoc.Descendants("face").Any(), "exported mesh should have faces");
+                return;
+            }
+        }
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

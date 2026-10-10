@@ -261,6 +261,13 @@ DDS читается обратно с теми же размерами/форм
 **Проверено:** на модели `ce_sense_ear_top_01-symmetric.rw4` выгружается 1 меш (344 вершины,
 612 треугольников), 1 материал и 1 текстура; OBJ ссылается на `model.mtl`, MTL — на `map_Kd`.
 
+### Ogre XML
+
+`rw4 <файл> --export-ogre <файл.mesh.xml>` выгружает геометрию в формат Ogre (`.mesh.xml`): по
+одному `<submesh>` на меш (`<faces>`, `<geometry>` с position/normal/texcoord, `<submeshname>`),
+плюс `.material` со ссылкой на текстуру и текстуры в DDS. Подходит для импорта в Blender (Ogre
+Import), Ogre-редакторы и т.п.
+
 ## 13. Морфы и блендшейпы (MorphHandle / BlendShape / BlendShapeBuffer)
 
 - **`MorphHandle`** (`0xFF0000`): `int32 handleID; int32 field_4; double startPos[3];

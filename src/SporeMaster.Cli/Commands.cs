@@ -727,7 +727,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 1)
         {
-            return UsageError(output, "rw4 <file.rw4> [--export file.obj] [--export-textures DIR]");
+            return UsageError(output, "rw4 <file.rw4> [--export file.obj] [--export-ogre file.mesh.xml] [--export-textures DIR]");
         }
 
         string input = cli.Positional[0];
@@ -924,6 +924,7 @@ public static class Commands
 
         // --export <file.obj>: dump decoded geometry (with a material library when possible).
         string? exportPath = cli.Get("export");
+        string? ogrePath = cli.Get("export-ogre");
         string? textureDirOption = cli.Get("export-textures");
         if (exportPath is not null)
         {
@@ -934,98 +935,44 @@ public static class Commands
             }
             else
             {
-                // Link meshes -> materials -> textures, and export textures next to the OBJ.
                 string objDir = Path.GetDirectoryName(Path.GetFullPath(exportPath)) ?? ".";
                 string exportTexturesDir = textureDirOption ?? Path.Combine(objDir, Path.GetFileNameWithoutExtension(exportPath) + "_textures");
                 string objBase = Path.GetFileNameWithoutExtension(exportPath);
 
-                var meshToMaterial = new Dictionary<int, int>();
-                foreach (Core.RenderWare4.Rw4MaterialLink link in rw4.ReadMaterialLinks())
-                {
-                    if (link.MaterialSectionIndices.Count > 0)
-                    {
-                        meshToMaterial[link.MeshSectionIndex] = link.MaterialSectionIndices[0];
-                    }
-                }
-
-                IReadOnlyList<Core.RenderWare4.Rw4Material> exportMaterials = rw4.ReadMaterials();
-                IReadOnlyList<Core.RenderWare4.Rw4Raster> exportRasters = rw4.ReadRasters();
-
-                // Export each referenced texture to DDS and remember its file name.
-                Directory.CreateDirectory(exportTexturesDir);
-                var texturesWritten = new Dictionary<int, string>();
-                for (int i = 0; i < exportRasters.Count; i++)
-                {
-                    byte[]? pixels = rw4.GetRasterData(exportRasters[i]);
-                    if (pixels is null || pixels.Length == 0)
-                    {
-                        continue;
-                    }
-
-                    string fileName = $"{objBase}_tex{i}.dds";
-                    try
-                    {
-                        using FileStream ddsOut = File.Create(Path.Combine(exportTexturesDir, fileName));
-                        exportRasters[i].ToDds(pixels).Write(ddsOut);
-                        texturesWritten[i] = fileName;
-                    }
-                    catch (Exception ex)
-                    {
-                        output.Warn($"Texture {i} could not be exported: {ex.Message}");
-                    }
-                }
-
-                // Build the material list: one material per compiled state, referencing its first texture.
-                var materialList = new List<(string Name, string? DiffuseTexture)>();
-                var materialNameBySection = new Dictionary<int, string>();
-                for (int i = 0; i < exportMaterials.Count; i++)
-                {
-                    Core.RenderWare4.Rw4Material material = exportMaterials[i];
-                    string name = $"material_{i}";
-                    materialNameBySection[material.SectionIndex] = name;
-
-                    string? diffuse = null;
-                    if (material.TextureSlots.Count > 0)
-                    {
-                        int rasterSection = material.TextureSlots[0].RasterSectionIndex;
-                        int rasterIndex = -1;
-                        for (int r = 0; r < exportRasters.Count; r++)
-                        {
-                            if (exportRasters[r].SectionIndex == rasterSection)
-                            {
-                                rasterIndex = r;
-                                break;
-                            }
-                        }
-
-                        if (rasterIndex >= 0 && texturesWritten.TryGetValue(rasterIndex, out string? file))
-                        {
-                            diffuse = Path.GetRelativePath(objDir, Path.Combine(exportTexturesDir, file)).Replace('\\', '/');
-                        }
-                    }
-
-                    materialList.Add((name, diffuse));
-                }
-
-                // Name meshes' materials by their linked compiled state (or a default).
-                Func<Core.RenderWare4.Rw4MeshGeometry, string?> pickMaterial = mesh =>
-                    meshToMaterial.TryGetValue(mesh.MeshSectionIndex, out int state)
-                        && materialNameBySection.TryGetValue(state, out string? name)
-                        ? name
-                        : null;
-
+                Rw4ExportMaterials prepared = PrepareRw4Export(rw4, objDir, objBase, exportTexturesDir, output);
                 string mtlName = objBase + ".mtl";
-                Core.RenderWare4.Rw4ObjExporter.Export(geometry, exportPath, mtlName, pickMaterial, materialList);
+                Core.RenderWare4.Rw4ObjExporter.Export(geometry, exportPath, mtlName, prepared.PickMaterial, prepared.Materials);
 
                 int totalTriangles = geometry.Sum(g => g.TriangleCount);
                 int totalVertices = geometry.Sum(g => g.VertexCount);
-                output.Success($"Exported {geometry.Count} mesh(es) ({totalVertices} vertices, {totalTriangles} triangles), {materialList.Count} material(s) and {texturesWritten.Count} texture(s) to {exportPath}");
+                output.Success($"Exported {geometry.Count} mesh(es) ({totalVertices} vertices, {totalTriangles} triangles), {prepared.Materials.Count} material(s) and {prepared.TextureCount} texture(s) to {exportPath}");
             }
         }
 
-        // --export-textures <dir>: dump embedded textures as DDS (standalone; --export handles its own).
+        // --export-ogre <file.mesh.xml>: dump geometry in the Ogre XML interchange format.
+        if (ogrePath is not null)
+        {
+            IReadOnlyList<Core.RenderWare4.Rw4MeshGeometry> geometry = rw4.ReadGeometry();
+            if (geometry.Count == 0)
+            {
+                output.Warn("No decodable mesh geometry was found.");
+            }
+            else
+            {
+                string ogreDir = Path.GetDirectoryName(Path.GetFullPath(ogrePath)) ?? ".";
+                string ogreTexturesDir = textureDirOption ?? Path.Combine(ogreDir, Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(ogrePath)) + "_textures");
+                string ogreBase = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(ogrePath));
+
+                Rw4ExportMaterials prepared = PrepareRw4Export(rw4, ogreDir, ogreBase, ogreTexturesDir, output);
+                Core.RenderWare4.Rw4OgreExporter.Export(ogrePath, geometry, geometry, prepared.PickMaterial, prepared.Materials);
+
+                output.Success($"Exported {geometry.Count} submesh(es) ({geometry.Sum(g => g.TriangleCount)} triangles) in Ogre XML to {ogrePath} ({prepared.Materials.Count} material(s)).");
+            }
+        }
+
+        // --export-textures <dir>: dump embedded textures as DDS (standalone; --export/--export-ogre handle their own).
         string? textureDir = cli.Get("export-textures");
-        if (!string.IsNullOrEmpty(textureDir) && cli.Get("export") is null)
+        if (!string.IsNullOrEmpty(textureDir) && cli.Get("export") is null && cli.Get("export-ogre") is null)
         {
             IReadOnlyList<Core.RenderWare4.Rw4Raster> exportRasters = rw4.ReadRasters();
             Directory.CreateDirectory(textureDir);
@@ -1071,6 +1018,98 @@ public static class Commands
         }
 
         return 0;
+    }
+
+    /// <summary>Prepared material/texture data for an RW4 export (OBJ or Ogre).</summary>
+    private sealed record Rw4ExportMaterials(
+        List<(string Name, string? DiffuseTexture)> Materials,
+        Func<Core.RenderWare4.Rw4MeshGeometry, string?> PickMaterial,
+        int TextureCount);
+
+    /// <summary>
+    /// Exports an RW4 resource's textures to DDS and builds a material list, linking each mesh to the
+    /// name of its compiled state's material (meshes -> MeshCompiledStateLink -> CompiledState -> raster).
+    /// </summary>
+    private static Rw4ExportMaterials PrepareRw4Export(
+        Core.RenderWare4.RenderWare4File rw4,
+        string outputDir,
+        string filePrefix,
+        string texturesDir,
+        Output output)
+    {
+        var meshToMaterialSection = new Dictionary<int, int>();
+        foreach (Core.RenderWare4.Rw4MaterialLink link in rw4.ReadMaterialLinks())
+        {
+            if (link.MaterialSectionIndices.Count > 0)
+            {
+                meshToMaterialSection[link.MeshSectionIndex] = link.MaterialSectionIndices[0];
+            }
+        }
+
+        IReadOnlyList<Core.RenderWare4.Rw4Material> materials = rw4.ReadMaterials();
+        IReadOnlyList<Core.RenderWare4.Rw4Raster> rasters = rw4.ReadRasters();
+
+        Directory.CreateDirectory(texturesDir);
+        var texturesWritten = new Dictionary<int, string>();
+        for (int i = 0; i < rasters.Count; i++)
+        {
+            byte[]? pixels = rw4.GetRasterData(rasters[i]);
+            if (pixels is null || pixels.Length == 0)
+            {
+                continue;
+            }
+
+            string fileName = $"{filePrefix}_tex{i}.dds";
+            try
+            {
+                using FileStream ddsOut = File.Create(Path.Combine(texturesDir, fileName));
+                rasters[i].ToDds(pixels).Write(ddsOut);
+                texturesWritten[i] = fileName;
+            }
+            catch (Exception ex)
+            {
+                output.Warn($"Texture {i} could not be exported: {ex.Message}");
+            }
+        }
+
+        var materialList = new List<(string Name, string? DiffuseTexture)>();
+        var materialNameBySection = new Dictionary<int, string>();
+        for (int i = 0; i < materials.Count; i++)
+        {
+            Core.RenderWare4.Rw4Material material = materials[i];
+            string name = $"material_{i}";
+            materialNameBySection[material.SectionIndex] = name;
+
+            string? diffuse = null;
+            if (material.TextureSlots.Count > 0)
+            {
+                int rasterSection = material.TextureSlots[0].RasterSectionIndex;
+                int rasterIndex = -1;
+                for (int r = 0; r < rasters.Count; r++)
+                {
+                    if (rasters[r].SectionIndex == rasterSection)
+                    {
+                        rasterIndex = r;
+                        break;
+                    }
+                }
+
+                if (rasterIndex >= 0 && texturesWritten.TryGetValue(rasterIndex, out string? file))
+                {
+                    diffuse = Path.GetRelativePath(outputDir, Path.Combine(texturesDir, file)).Replace('\\', '/');
+                }
+            }
+
+            materialList.Add((name, diffuse));
+        }
+
+        Func<Core.RenderWare4.Rw4MeshGeometry, string?> pickMaterial = mesh =>
+            meshToMaterialSection.TryGetValue(mesh.MeshSectionIndex, out int state)
+                && materialNameBySection.TryGetValue(state, out string? name)
+                ? name
+                : null;
+
+        return new Rw4ExportMaterials(materialList, pickMaterial, texturesWritten.Count);
     }
 
     /// <summary>Converts a bitmap or a texture: <c>bitmap &lt;in&gt; &lt;out&gt;</c> (auto-detected).</summary>

@@ -100,7 +100,8 @@ little-endian; флаги и stride сохраняются для байт-то�
   (`MeshCompiledStateLink`), `Rw4TextureSlotMaterial`, `Rw4RenderGroup`, `Rw4ShaderData`.
 - `Rw4BlendShape` — морфы: `Rw4MorphHandle`, `Rw4BlendShape`, `Rw4BlendShapeBuffer`.
 - `Direct3DStates` — таблицы состояний Direct3D (имена и форматирование значений).
-- `Rw4ObjExporter` — экспорт геометрии в OBJ.
+- `Rw4ObjExporter` — экспорт геометрии в OBJ (+`.mtl`).
+- `Rw4OgreExporter` — экспорт геометрии в Ogre XML (`.mesh.xml` + `.material`).
   Формат описан в `docs/RW4_FORMAT.md`.
 
 ### `Imaging/*` и `Bitmaps/*`
