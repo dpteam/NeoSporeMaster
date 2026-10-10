@@ -9,6 +9,7 @@
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open Package..." Click="OnOpenPackage" InputGestureText="Ctrl+O" />
+                <MenuItem Header="Back to _previous package" Click="OnOpenPreviousPackage" />
                 <MenuItem Header="_Close" Click="OnClosePackage" />
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExit" />
@@ -164,6 +165,7 @@
                 <ListView.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Extract..." Click="OnExtractSelected" />
+                        <MenuItem Header="Open as package" Click="OnOpenResourceAsPackage" />
                         <MenuItem Header="Extract Folder..." Click="OnExtractFolder" />
                         <Separator />
                         <MenuItem Header="Copy Resource Key" Click="OnCopyKey" />

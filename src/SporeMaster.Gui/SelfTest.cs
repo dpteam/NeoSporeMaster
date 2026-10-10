@@ -99,6 +99,25 @@ internal static class SelfTest
                 window.ClearSelectionForTest();
                 report.AppendLine($"Select all: {selectedCount} item(s); aggregate details has 'selected': {aggregateDetails.Contains("selected", StringComparison.OrdinalIgnoreCase)}");
 
+                // Package history: opening a nested package and going back.
+                string originalPath = window.CurrentPackagePathForTest()!;
+                string copy = Path.Combine(Path.GetTempPath(), "SporeMaster-selftest-copy.package");
+                File.Copy(originalPath, copy, overwrite: true);
+                window.OpenPackageForTest(copy);
+                int depthAfterNested = window.PackageStackDepthForTest();
+                window.OpenPreviousPackageForTest();
+                bool returned = string.Equals(window.CurrentPackagePathForTest(), originalPath, StringComparison.OrdinalIgnoreCase);
+                try
+                {
+                    File.Delete(copy);
+                }
+                catch
+                {
+                    // best effort
+                }
+
+                report.AppendLine($"Package history: stack after nested={depthAfterNested}, returned to parent={returned}");
+
                 // Exercise filtering.
                 window.SelectFolderForTest(0);
                 int before = window.VisibleRowsForTest().Count;

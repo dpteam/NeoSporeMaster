@@ -85,7 +85,7 @@ refs/                     справочные материалы и реаль�
 
 ## 5. Снимок состояния (обновлять по мере продвижения)
 
-- Версия — около **3.53.0**; тесты — **128/128**; дерево git чистое.
+- Версия — около **3.55.0**; тесты — **128/128**; дерево git чистое.
 - Готово в Core: DBPF 2.0/3.0 (в т.ч. бета) read/write; RefPack (байт-в-байт); `.prop`+`.prop.xml`;
   `.prop_t`; `.locale`+авто-локали; `.raster`⇄DDS; bitmap⇄PNG; RW4 (контейнер, меши, геометрия
   pos/uv/normal + OBJ, скелеты, скины, ключевые анимации, **материалы** `CompiledState`, морфы/
@@ -114,7 +114,9 @@ refs/                     справочные материалы и реаль�
 - Реальные данные лежат в `refs/_PackageFilesBetaVer` (бета) и `refs/_PackageFilesFinalVer` (релиз);
   крупные папки (`refs/SporeGames`, `refs/SporeUnpackedData`, `_PackageFiles*`) — в `.gitignore`.
 - **Lossless raw-перепаковка подтверждена:** `unpack --raw → pack --compress → diff` идентично на
-  `BP2_Data` 184/184, `CSA_Graphics` 5822/5822, **`Spore_Game` 11676/11676, `CSA_Main` 8431/8431**.
+  `BP2_Data` 184/184, `CSA_Graphics` 5822/5822, **`Spore_Game` 11676/11676, `CSA_Main` 8431/8431**,
+  а также на **реальной Retail-игре** (`refs/SporeGames/SporeRetail/Data`): `Spore_Game` 11529/11529,
+  `Spore_Pack_03` 266/266.
 - `refs/SporeUnpackedData/**/KeyMap.txt` — карта «ключ → реальный путь» (авторитетные имена);
   `*.trigger`/`.txt` (тип `0x024A0E52`) — **обычный текст** (это `Config/*.txt`).
 - `refs/SporeGames/SporeBeta190208/SporeApp.pdb` — MSF 7.00 с 429k символов; инструмент `pdb`.
@@ -139,6 +141,9 @@ refs/                     справочные материалы и реаль�
 5. **Деманглинг C++-имён** из PDB (чтобы читать `?…@@`), плюс дальнейшее исследование строк EXE.
 6. **Открытый вопрос**: делать ли «проекты» (как в SporeMaster/SporeModder FX) или обойтись —
    см. MEMORY.md §4, идея заказчика №9. Решить при проработке сборки модов.
+7. **Просмотр 3D-моделей** — портировать viewer из SporeModder FX (RW4: меши/скелет/материалы/текстуры).
+8. **`SPUI`** — layout'ы интерфейса (позже, вместе с cell/UI-форматами).
+9. **Смоук-тест игры** — запуск Retail-игры с репаком (папки в `refs/SporeGames`, критерий — нет дампов).
 
 ## 8. Полезные ориентиры в `refs/`
 

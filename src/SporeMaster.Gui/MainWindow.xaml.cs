@@ -37,6 +37,9 @@ public partial class MainWindow : Window
     private bool _syncingChecks;
     private bool _detailsPaneVisible = true;
 
+    /// <summary>Paths of packages opened before the current one (so nested packages can be left again).</summary>
+    private readonly List<string> _packageStack = new();
+
     private const string AllResourcesLabel = "(all resources)";
 
     public MainWindow()
@@ -62,6 +65,8 @@ public partial class MainWindow : Window
         }
     });
 
+    private void OnOpenPreviousPackage(object sender, RoutedEventArgs e) => OpenPreviousPackage();
+
     private void TryOpenFromCommandLine()
     {
         string[] args = Environment.GetCommandLineArgs();
@@ -74,10 +79,36 @@ public partial class MainWindow : Window
 
     private void OpenPackage(string path)
     {
+        // Remember the current package so a nested package can be left again (File -> Back, or Up at the root).
+        if (_session is not null && !string.Equals(_session.FilePath, path, StringComparison.OrdinalIgnoreCase))
+        {
+            _packageStack.Add(_session.FilePath);
+        }
+
+        LoadPackage(path);
+    }
+
+    /// <summary>Opens the previously opened package (leaving a nested one).</summary>
+    private void OpenPreviousPackage() => Guarded(() =>
+    {
+        if (_packageStack.Count == 0)
+        {
+            return;
+        }
+
+        string previous = _packageStack[^1];
+        _packageStack.RemoveAt(_packageStack.Count - 1);
+        LoadPackage(previous);
+    });
+
+    private void LoadPackage(string path)
+    {
         try
         {
+            // Open the new package first; only then dispose the old one (so a failure keeps the old one).
+            PackageSession session = PackageSession.Open(path);
             _session?.Dispose();
-            _session = PackageSession.Open(path);
+            _session = session;
             _items = _session.BuildItems().ToList();
             RebuildTree();
             Title = $"SporeMaster 3 — {Path.GetFileName(path)}";
@@ -192,6 +223,13 @@ public partial class MainWindow : Window
 
     private void OnClosePackage(object sender, RoutedEventArgs e) => Guarded(() =>
     {
+        // If this package was opened from inside another, "Close" returns to the parent.
+        if (_packageStack.Count > 0)
+        {
+            OpenPreviousPackage();
+            return;
+        }
+
         _session?.Dispose();
         _session = null;
         _items = new List<ResourceItem>();
@@ -210,6 +248,23 @@ public partial class MainWindow : Window
         Title = "SporeMaster 3";
         StatusText.Text = "Open a .package file to begin.";
         CountText.Text = string.Empty;
+    });
+
+    /// <summary>Extracts a nested <c>.package</c> resource to a temp file and opens it.</summary>
+    private void OnOpenResourceAsPackage(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_session is null || ResourceList.SelectedItem is not ResourceItem row)
+        {
+            return;
+        }
+
+        byte[] data = _session.Read(row.Entry);
+        string temp = Path.Combine(Path.GetTempPath(), "SporeMaster-nested", Path.GetFileName(row.ShortName));
+        Directory.CreateDirectory(Path.GetDirectoryName(temp)!);
+        File.WriteAllBytes(temp, data);
+
+        // OpenPackage records the current package, so Up/Close/Back can return to it.
+        OpenPackage(temp);
     });
 
     private void OnExit(object sender, RoutedEventArgs e) => Guarded(Close);
@@ -281,6 +336,11 @@ public partial class MainWindow : Window
         if (_current is { IsRoot: false } && _root is not null)
         {
             SelectNode(_root);
+        }
+        else if (_current is { IsRoot: true } && _packageStack.Count > 0)
+        {
+            // At the top of a nested package: go back to the parent package.
+            OpenPreviousPackage();
         }
     });
 
@@ -1176,6 +1236,12 @@ public partial class MainWindow : Window
     internal int FolderCount => _root?.Children.Count ?? 0;
 
     internal void OpenPackageForTest(string path) => OpenPackage(path);
+
+    internal string? CurrentPackagePathForTest() => _session?.FilePath;
+
+    internal int PackageStackDepthForTest() => _packageStack.Count;
+
+    internal void OpenPreviousPackageForTest() => OpenPreviousPackage();
 
     internal IReadOnlyList<ResourceItem> RowsForTest() => _items;
 
