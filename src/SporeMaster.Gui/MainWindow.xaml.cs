@@ -9,6 +9,11 @@ using CoreBitmapImage = SporeMaster.Core.Bitmaps.BitmapImage;
 namespace SporeMaster.Gui;
 
 /// <summary>The main application window: a resource explorer for Spore packages.</summary>
+/// <remarks>
+/// Every event handler is defensive: it catches its own exceptions (including the ones raised
+/// while decoding images in WPF) and reports them through the status bar / a message box instead
+/// of crashing. A global handler in <see cref="App"/> is the last line of defence.
+/// </remarks>
 public partial class MainWindow : Window
 {
     private PackageSession? _session;
@@ -17,12 +22,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Loaded += (_, _) => TryOpenFromCommandLine();
+        Loaded += (_, _) => Guarded(TryOpenFromCommandLine);
     }
 
     // ---- opening ----
 
-    private void OnOpenPackage(object sender, RoutedEventArgs e)
+    private void OnOpenPackage(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         var dialog = new OpenFileDialog
         {
@@ -34,7 +39,7 @@ public partial class MainWindow : Window
         {
             OpenPackage(dialog.FileName);
         }
-    }
+    });
 
     private void TryOpenFromCommandLine()
     {
@@ -59,15 +64,15 @@ public partial class MainWindow : Window
         }
         catch (NotAPackageException ex)
         {
-            MessageBox.Show(this, ex.Message, "Not a package", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowError("Not a package", ex.Message);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Failed to open package", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowError("Failed to open package", ex);
         }
     }
 
-    private void OnClosePackage(object sender, RoutedEventArgs e)
+    private void OnClosePackage(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         _session?.Dispose();
         _session = null;
@@ -79,13 +84,13 @@ public partial class MainWindow : Window
         Title = "SporeMaster 3";
         StatusText.Text = "Open a .package file to begin.";
         CountText.Text = string.Empty;
-    }
+    });
 
-    private void OnExit(object sender, RoutedEventArgs e) => Close();
+    private void OnExit(object sender, RoutedEventArgs e) => Guarded(Close);
 
     // ---- filtering ----
 
-    private void OnFilterChanged(object sender, RoutedEventArgs e) => ApplyFilter();
+    private void OnFilterChanged(object sender, RoutedEventArgs e) => Guarded(ApplyFilter);
 
     private void ApplyFilter()
     {
@@ -97,14 +102,24 @@ public partial class MainWindow : Window
 
     // ---- preview ----
 
-    private void OnSelectionChanged(object sender, RoutedEventArgs e)
+    private void OnSelectionChanged(object sender, RoutedEventArgs e) => Guarded(() =>
     {
-        if (_session is null || ResourceList.SelectedItem is not ResourceItem row)
+        if (ResourceList.SelectedItem is ResourceItem row)
         {
+            ShowPreview(row);
+        }
+    });
+
+    /// <summary>Renders the preview for a resource, never throwing.</summary>
+    internal void ShowPreview(ResourceItem row)
+    {
+        PreviewHeader.Text = $"{row.Path}   [{row.Key}]";
+
+        if (_session is null)
+        {
+            ShowText(ResourcePreview.Empty().Text ?? string.Empty);
             return;
         }
-
-        PreviewHeader.Text = $"{row.Path}   [{row.Key}]";
 
         byte[] data;
         try
@@ -119,22 +134,42 @@ public partial class MainWindow : Window
 
         ResourcePreview preview = PreviewEngine.Build(row, data, _session.Names);
 
-        if (preview.IsImage)
+        if (preview.IsImage && TryDecodeImage(preview.PngBytes!, out BitmapSource? bitmap))
         {
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.StreamSource = new MemoryStream(preview.PngBytes!);
-            bitmap.EndInit();
-            bitmap.Freeze();
-
             PreviewImage.Source = bitmap;
             PreviewImageScroller.Visibility = Visibility.Visible;
             PreviewText.Visibility = Visibility.Collapsed;
         }
+        else if (preview.IsImage)
+        {
+            ShowText("(image could not be decoded; showing a hex preview)\n\n" +
+                Convert.ToHexString(data.AsSpan(0, Math.Min(data.Length, 512))));
+        }
         else
         {
             ShowText(preview.Text ?? string.Empty);
+        }
+    }
+
+    /// <summary>Decodes image bytes into a WPF bitmap, returning false instead of throwing.</summary>
+    private static bool TryDecodeImage(byte[] bytes, out BitmapSource? bitmap)
+    {
+        bitmap = null;
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = new MemoryStream(bytes);
+            image.EndInit();
+            image.Freeze();
+            bitmap = image;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            App.LogCrash("image decode", ex);
+            return false;
         }
     }
 
@@ -147,7 +182,7 @@ public partial class MainWindow : Window
 
     // ---- extraction ----
 
-    private void OnExtractSelected(object sender, RoutedEventArgs e)
+    private void OnExtractSelected(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         if (_session is null || ResourceList.SelectedItem is not ResourceItem row)
         {
@@ -167,19 +202,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        try
-        {
-            byte[] data = _session.Read(row.Entry);
-            WriteConverted(row, data, dialog.FileName);
-            StatusText.Text = $"Extracted {row.Path} ({data.Length} bytes).";
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Extraction failed", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
+        byte[] data = _session.Read(row.Entry);
+        WriteConverted(row, data, dialog.FileName);
+        StatusText.Text = $"Extracted {row.Path} ({data.Length} bytes).";
+    });
 
-    private void OnExtractAll(object sender, RoutedEventArgs e)
+    private void OnExtractAll(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         if (_session is null)
         {
@@ -222,7 +250,7 @@ public partial class MainWindow : Window
         StatusText.Text = $"Extracted {written} resource(s) to {outputDir}" + (failed > 0 ? $" ({failed} failed)" : string.Empty);
         MessageBox.Show(this, $"Extracted {written} resource(s)." + (failed > 0 ? $"\n{failed} failed (see status bar)." : string.Empty),
             "Extract all", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
+    });
 
     /// <summary>Writes a resource, converting properties/textures/bitmaps to friendly formats.</summary>
     private void WriteConverted(ResourceItem row, byte[] data, string targetPath)
@@ -261,7 +289,7 @@ public partial class MainWindow : Window
         : ResourceTypeIds.IsTexture(row.TypeId) ? ".dds"
         : ".png";
 
-    private void OnLoadNames(object sender, RoutedEventArgs e)
+    private void OnLoadNames(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         if (_session is null)
         {
@@ -280,26 +308,66 @@ public partial class MainWindow : Window
             return;
         }
 
-        try
-        {
-            _session.LoadNames(dialog.FileName);
-            _rows = _session.BuildItems().ToList();
-            ApplyFilter();
-            StatusText.Text = $"Loaded names from {Path.GetFileName(dialog.FileName)}.";
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Failed to load names", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
+        _session.LoadNames(dialog.FileName);
+        _rows = _session.BuildItems().ToList();
+        ApplyFilter();
+        StatusText.Text = $"Loaded names from {Path.GetFileName(dialog.FileName)}.";
+    });
 
-    private void OnCopyKey(object sender, RoutedEventArgs e)
+    private void OnCopyKey(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         if (ResourceList.SelectedItem is ResourceItem row)
         {
             Clipboard.SetText(row.Key);
             StatusText.Text = $"Copied {row.Key}";
         }
+    });
+
+    private void OnAbout(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        MessageBox.Show(
+            this,
+            "SporeMaster 3\n\nA .NET 9 toolkit for exploring and editing Spore .package (DBPF) files.\n" +
+            "Supports DBPF/DBBF, properties, locales, textures, bitmaps, RenderWare 4 and hash guessing.",
+            "About SporeMaster 3",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    });
+
+    // ---- fault tolerance helpers ----
+
+    /// <summary>Runs an action, reporting any exception instead of letting it crash the app.</summary>
+    private void Guarded(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            ShowError("Unexpected error", ex);
+        }
+    }
+
+    private void ShowError(string title, string message)
+    {
+        App.LogCrash(title, new Exception(message));
+        try
+        {
+            StatusText.Text = $"{title}: {message}";
+        }
+        catch
+        {
+            // ignore
+        }
+
+        MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
+    private void ShowError(string title, Exception ex)
+    {
+        App.LogCrash(title, ex);
+        ShowError(title, ex.Message);
     }
 
     // ---- test hooks (used by --selftest; no UI shown) ----
@@ -319,18 +387,28 @@ public partial class MainWindow : Window
             return ResourcePreview.Empty();
         }
 
-        byte[] data = _session.Read(row.Entry);
-        return PreviewEngine.Build(row, data, _session.Names);
+        try
+        {
+            byte[] data = _session.Read(row.Entry);
+            return PreviewEngine.Build(row, data, _session.Names);
+        }
+        catch (Exception ex)
+        {
+            return ResourcePreview.AsText($"Preview failed: {ex.Message}", "error");
+        }
     }
 
-    private void OnAbout(object sender, RoutedEventArgs e)
+    /// <summary>Runs the full preview path (including image decoding) for a row, as the UI would.</summary>
+    internal string? SelectionForTest(ResourceItem row)
     {
-        MessageBox.Show(
-            this,
-            "SporeMaster 3\n\nA .NET 9 toolkit for exploring and editing Spore .package (DBPF) files.\n" +
-            "Supports DBPF/DBBF, properties, locales, textures, bitmaps, RenderWare 4 and hash guessing.",
-            "About SporeMaster 3",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        try
+        {
+            ShowPreview(row);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
+        }
     }
 }

@@ -6,8 +6,8 @@ namespace SporeMaster.Gui;
 
 /// <summary>
 /// A UI-less smoke test: it builds the real window (which loads the XAML) and, when a package is
-/// given, exercises opening, filtering and previewing through the actual window code paths.
-/// The result is written to a report file and returned as a process exit code.
+/// given, exercises opening, filtering and the full preview path (including image decoding) through
+/// the actual window code. The result is written to a report file and returned as an exit code.
 /// </summary>
 internal static class SelfTest
 {
@@ -31,18 +31,29 @@ internal static class SelfTest
                 report.AppendLine($"Opened: {packagePath}");
                 report.AppendLine($"Resources: {window.ResourceCount}, rows: {window.RowCount}");
 
+                // Force a real layout pass so the GridView actually creates its cells (this is
+                // where WPF resolves binding cultures and where config problems surface).
+                window.Show();
+                window.UpdateLayout();
+                report.AppendLine("Layout pass: OK");
+                window.Close();
+
                 IReadOnlyList<ResourceItem> rows = window.RowsForTest();
                 int previewed = 0;
                 var kinds = new SortedSet<string>(StringComparer.Ordinal);
-                string? firstError = null;
+                var failures = new List<string>();
 
-                foreach (ResourceItem row in rows.Take(200))
+                // Exercise every row's full preview path (the same code the UI runs on selection,
+                // including WPF image decoding) to surface anything that would crash the window.
+                foreach (ResourceItem row in rows)
                 {
                     ResourcePreview preview = window.PreviewForTest(row);
                     kinds.Add(preview.Kind);
-                    if (preview.Kind == "error" && firstError is null)
+
+                    string? selectionError = window.SelectionForTest(row);
+                    if (selectionError is not null)
                     {
-                        firstError = $"{row.Path}: {preview.Text}";
+                        failures.Add($"{row.Path}: {selectionError}");
                     }
 
                     previewed++;
@@ -50,9 +61,10 @@ internal static class SelfTest
 
                 report.AppendLine($"Previewed: {previewed}");
                 report.AppendLine($"Preview kinds seen: {string.Join(", ", kinds)}");
-                if (firstError is not null)
+                report.AppendLine($"Selection failures: {failures.Count}");
+                foreach (string failure in failures.Take(10))
                 {
-                    report.AppendLine($"First error: {firstError}");
+                    report.AppendLine($"  - {failure}");
                 }
             }
             else
@@ -64,7 +76,7 @@ internal static class SelfTest
         }
         catch (Exception ex)
         {
-            report.AppendLine($"RESULT: FAIL");
+            report.AppendLine("RESULT: FAIL");
             report.AppendLine(ex.ToString());
             exitCode = 1;
         }

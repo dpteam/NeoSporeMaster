@@ -2,6 +2,26 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.18.0] — исправление вылетов GUI + динамическая отказоустойчивость (2026-10-11)
+
+### Исправлено (критично)
+- **Вылеты GUI при любом обновлении списка** (открытие архива, клик по File/Tools/Help).
+  Причина: `InvariantGlobalization=true` (наследуется из `Directory.Build.props`) — WPF при
+  отрисовке `GridView` падает на `XmlLanguage.GetSpecificCulture()`
+  («Cannot find non-neutral culture related to 'en-us'»). Решение: `InvariantGlobalization=false`
+  в `SporeMaster.Gui.csproj`.
+- Открытие `BP2_Data.package` (и любых архивов) больше не приводит к вылету.
+
+### Добавлено (динамическая отказоустойчивость)
+- Глобальные обработчики в `App` (`DispatcherUnhandledException` + `AppDomain.UnhandledException`):
+  лог в `%TEMP%\sporemaster-gui-crash.log`, приложение продолжает работу.
+- Все обработчики GUI обёрнуты в `Guarded(...)`; декодирование изображений — в `try/catch` с
+  hex-фолбэком.
+- Самотест (`--selftest`) теперь делает реальный проход раскладки (`Show`/`UpdateLayout`) и
+  прогоняет превью **всех** ресурсов — именно это выявляет ошибки конфигурации/отрисовки.
+- Документация правил: `AGENT.md` (§1), `docs/ARCHITECTURE.md` (раздел «Обработка ошибок»),
+  `README.md`, `MEMORY.md` (§1.9, §1.10).
+
 ## [3.17.0] — RW4: нормали и UV в экспорте (2026-10-11)
 
 ### Добавлено

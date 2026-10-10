@@ -10,6 +10,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>SporeMaster3.ico</ApplicationIcon>
+    <!--
+      WPF resolves data-binding cultures through System.Globalization; with
+      InvariantGlobalization=true (the repo default) XmlLanguage.GetSpecificCulture()
+      throws for "en-us", crashing any GridView rendering. The GUI therefore needs ICU.
+    -->
+    <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>

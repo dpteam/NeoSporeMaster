@@ -52,6 +52,20 @@
 позволяет проверять превью/сессии headless. У GUI есть режим `--selftest` (строит окно и
 прогоняет сценарий без показа UI) — им и был найден баг с endianness bitmap-заголовка.
 
+### 1.9. WPF несовместим с InvariantGlobalization
+Репозиторий собирается с `InvariantGlobalization=true` (воспроизводимость чисел). Но WPF
+разрешает культуры привязок через `System.Globalization`, и при инвариантной глобализации
+`XmlLanguage.GetSpecificCulture()` падает для `en-us` при отрисовке `GridView` — окно падало
+при любом обновлении списка (открытие архива, клик по меню). Решение: `InvariantGlobalization=false`
+только в `SporeMaster.Gui.csproj`. Это **не** логическая ошибка кода — только конфигурация.
+
+### 1.10. Динамическая отказоустойчивость (везде)
+- Ядро: `DiagnosticSink`, не исключения.
+- CLI: `try/catch` вокруг действий, код выхода.
+- GUI: `Guarded(...)` вокруг каждого обработчика + глобальный `DispatcherUnhandledException`
+  (лог в `%TEMP%\sporemaster-gui-crash.log`). Превью и декодирование изображений — в `try/catch`
+  с текстовым/hex-фолбэком.
+
 ---
 
 ## 2. Что сделано (карта)
