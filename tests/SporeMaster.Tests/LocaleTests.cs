@@ -8,6 +8,34 @@ namespace SporeMaster.Tests;
 
 public static class LocaleTests
 {
+    [SporeTest("locale CSV export/import round-trips entries")]
+    public static void CsvRoundTrip()
+    {
+        var table = new LocaleTable();
+        table.Add(0x00000001, "Hello, world");
+        table.Add(0x00000002, "Quote \"x\" test");
+        table.Add(0x00000003, "Plain");
+
+        string csv = LocaleCsv.Export(table);
+        Assert.Contains(csv, "id,text");
+        Assert.Contains(csv, "\"Hello, world\"");      // comma triggers quoting
+        Assert.Contains(csv, "\"Quote \"\"x\"\" test\""); // quotes are doubled
+
+        LocaleTable back = LocaleCsv.Import(csv);
+        Assert.Equal(3, back.Count);
+        Assert.Equal("Hello, world", back.GetText(0x00000001));
+        Assert.Equal("Quote \"x\" test", back.GetText(0x00000002));
+        Assert.Equal("Plain", back.GetText(0x00000003));
+
+        // TSV variant.
+        var tsv = new LocaleTable();
+        tsv.Add(0x0000000A, "a\tb");
+        string tsvText = LocaleCsv.Export(tsv, '\t');
+        LocaleTable backTsv = LocaleCsv.Import(tsvText, '\t');
+        Assert.Equal("a\tb", backTsv.GetText(0x0000000A));
+        Assert.Equal('\t', LocaleCsv.DetectSeparator(tsvText));
+    }
+
     [SporeTest("locale table round-trips text exactly")]
     public static void RoundTripText()
     {

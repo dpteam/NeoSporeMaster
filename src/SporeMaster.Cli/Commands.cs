@@ -655,7 +655,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 1)
         {
-            return UsageError(output, "locale <file.locale>");
+            return UsageError(output, "locale <file.locale> [out.csv|--csv] | locale <in.csv> <out.locale>");
         }
 
         string input = cli.Positional[0];
@@ -665,26 +665,54 @@ public static class Commands
             return 1;
         }
 
-        LocaleTable table;
         try
         {
-            using FileStream stream = File.OpenRead(input);
-            table = LocaleTable.Read(stream);
+            // CSV -> locale (import): locale <in.csv> <out.locale>
+            if (input.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+                || input.EndsWith(".tsv", StringComparison.OrdinalIgnoreCase))
+            {
+                if (cli.Positional.Count < 2)
+                {
+                    return UsageError(output, "locale <in.csv> <out.locale>");
+                }
+
+                string csvText = File.ReadAllText(input);
+                LocaleTable imported = LocaleCsv.Import(csvText, LocaleCsv.DetectSeparator(csvText));
+                File.WriteAllText(cli.Positional[1], imported.Serialize(), new System.Text.UTF8Encoding(false));
+                output.Success($"Imported {imported.Count} entr(ies) -> {cli.Positional[1]}");
+                return 0;
+            }
+
+            LocaleTable table;
+            using (FileStream stream = File.OpenRead(input))
+            {
+                table = LocaleTable.Read(stream);
+            }
+
+            // locale -> CSV (export): locale <in.locale> <out.csv>
+            if (cli.Positional.Count >= 2)
+            {
+                string outPath = cli.Positional[1];
+                char separator = outPath.EndsWith(".tsv", StringComparison.OrdinalIgnoreCase) ? '\t' : ',';
+                File.WriteAllText(outPath, LocaleCsv.Export(table, separator), new System.Text.UTF8Encoding(false));
+                output.Success($"Exported {table.Count} entr(ies) -> {outPath}");
+                return 0;
+            }
+
+            var rows = table.Entries
+                .Select(e => new[] { Fnv.ToHex(e.InstanceId), Truncate(e.Text, 72) })
+                .ToList();
+
+            output.Table(new[] { "Instance", "Text" }, rows);
+            output.Line();
+            output.Line($"{table.Count} entr(ies) in '{input}'.");
+            return 0;
         }
         catch (Exception ex)
         {
-            output.Error($"Failed to parse locale table: {ex.Message}");
+            output.Error($"Locale failed: {ex.Message}");
             return 1;
         }
-
-        var rows = table.Entries
-            .Select(e => new[] { Fnv.ToHex(e.InstanceId), Truncate(e.Text, 72) })
-            .ToList();
-
-        output.Table(new[] { "Instance", "Text" }, rows);
-        output.Line();
-        output.Line($"{table.Count} entr(ies) in '{input}'.");
-        return 0;
     }
 
     private static string Truncate(string value, int max) =>
