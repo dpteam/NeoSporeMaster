@@ -865,6 +865,8 @@ public partial class MainWindow : Window
     // ---- 3D model preview ----
 
     private PerspectiveCamera? _modelCamera;
+    private PreviewModel? _currentModel;
+    private bool _showSkeleton;
     private Point3D _modelCenter;
     private double _modelRadius = 1;
     private double _modelAzimuth = 0.6;
@@ -876,17 +878,19 @@ public partial class MainWindow : Window
     /// <summary>Builds a WPF 3D scene from the preview model and shows it in the preview pane.</summary>
     private void ShowModel(PreviewModel model)
     {
+        _currentModel = model;
         var group = new Model3DGroup();
 
         // Pre-decode the model-wide texture; individual meshes may override it with their own.
         ImageBrush? modelBrush = null;
         if (model.TexturePng is not null && TryDecodeImage(model.TexturePng, out BitmapSource? modelImage) && modelImage is not null)
         {
-            modelBrush = new ImageBrush(modelImage) { Stretch = Stretch.Fill };
+            modelBrush = new ImageBrush(modelImage) { Stretch = Stretch.Fill, Opacity = _showSkeleton ? 0.3 : 1.0 };
         }
 
         var greyMaterial = new MaterialGroup();
-        greyMaterial.Children.Add(new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(0xC8, 0xC8, 0xC8))));
+        var greyBrush = new SolidColorBrush(Color.FromRgb(0xC8, 0xC8, 0xC8)) { Opacity = _showSkeleton ? 0.3 : 1.0 };
+        greyMaterial.Children.Add(new DiffuseMaterial(greyBrush));
         greyMaterial.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)), 20));
 
         foreach (PreviewMesh mesh in model.Meshes)
@@ -928,6 +932,7 @@ public partial class MainWindow : Window
                     geometry.TextureCoordinates.Add(new Point(mesh.TexCoords[i], 1 - mesh.TexCoords[i + 1]));
                 }
 
+                brush.Opacity = _showSkeleton ? 0.3 : 1.0;
                 var textured = new MaterialGroup();
                 textured.Children.Add(new DiffuseMaterial(brush));
                 textured.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)), 20));
@@ -950,9 +955,14 @@ public partial class MainWindow : Window
         _modelRadius = Math.Max(0.001, Math.Max(dx, Math.Max(dy, dz)) * 0.5);
         _modelDistance = _modelRadius * 3;
 
-        group.Children.Add(new AmbientLight(Color.FromRgb(0x60, 0x60, 0x60)));
-        group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-1, -1.5, -1)));
-        group.Children.Add(new DirectionalLight(Color.FromRgb(0x90, 0x90, 0x90), new Vector3D(1, 0.5, 1)));
+                group.Children.Add(new AmbientLight(Color.FromRgb(0x60, 0x60, 0x60)));
+                group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-1, -1.5, -1)));
+                group.Children.Add(new DirectionalLight(Color.FromRgb(0x90, 0x90, 0x90), new Vector3D(1, 0.5, 1)));
+
+                if (_showSkeleton && model.SkeletonJoints.Count > 0)
+                {
+                    group.Children.Add(BuildSkeleton(model, _modelRadius));
+                }
 
         _modelCamera = new PerspectiveCamera { FieldOfView = 45 };
         PreviewViewport.Children.Clear();
@@ -1021,6 +1031,132 @@ public partial class MainWindow : Window
         _modelDistance = Math.Clamp(_modelDistance * (e.Delta > 0 ? 0.9 : 1.1), _modelRadius * 0.2, _modelRadius * 20);
         UpdateModelCamera();
     });
+
+    // ---- skeleton overlay ----
+
+    private static MeshGeometry3D? _boxMesh;
+
+    private void OnToggleSkeleton(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        _showSkeleton = ShowSkeletonMenuItem.IsChecked;
+        if (_currentModel is not null)
+        {
+            ShowModel(_currentModel);
+        }
+    });
+
+    /// <summary>Builds cube markers at each bone and thin boxes along the bones.</summary>
+    private static Model3DGroup BuildSkeleton(PreviewModel model, double radius)
+    {
+        var group = new Model3DGroup();
+        var jointMaterial = new MaterialGroup();
+        jointMaterial.Children.Add(new EmissiveMaterial(new SolidColorBrush(Color.FromRgb(0xFF, 0xC0, 0x30))));
+        jointMaterial.Children.Add(new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(0xFF, 0xC0, 0x30))));
+        var boneMaterial = new MaterialGroup();
+        boneMaterial.Children.Add(new EmissiveMaterial(new SolidColorBrush(Color.FromRgb(0x30, 0xB0, 0xFF))));
+        boneMaterial.Children.Add(new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(0x30, 0xB0, 0xFF))));
+        double jointSize = Math.Max(0.001, radius * 0.1);
+        double thickness = Math.Max(0.0005, radius * 0.02);
+
+        for (int i = 0; i < model.SkeletonJoints.Count; i++)
+        {
+            float[] p = model.SkeletonJoints[i];
+            var transform = new Matrix3D();
+            transform.Scale(new Vector3D(jointSize, jointSize, jointSize));
+            transform.Translate(new Vector3D(p[0], p[1], p[2]));
+            group.Children.Add(new GeometryModel3D
+            {
+                Geometry = BoxMesh,
+                Transform = new MatrixTransform3D(transform),
+                Material = jointMaterial,
+                BackMaterial = jointMaterial,
+            });
+        }
+
+        foreach ((int child, int parent) in model.SkeletonBones)
+        {
+            if (parent < 0 || child >= model.SkeletonJoints.Count || parent >= model.SkeletonJoints.Count)
+            {
+                continue;
+            }
+
+            float[] a = model.SkeletonJoints[parent];
+            float[] b = model.SkeletonJoints[child];
+            var va = new Vector3D(a[0], a[1], a[2]);
+            var vb = new Vector3D(b[0], b[1], b[2]);
+            Vector3D dir = vb - va;
+            double length = dir.Length;
+            if (length < 1e-6)
+            {
+                continue;
+            }
+
+            dir.Normalize();
+
+            var transform = new Matrix3D();
+            transform.Scale(new Vector3D(thickness, length, thickness));
+            transform.Rotate(QuaternionFromY(dir));
+            var mid = (va + vb) / 2;
+            transform.Translate(mid);
+
+            group.Children.Add(new GeometryModel3D
+            {
+                Geometry = BoxMesh,
+                Transform = new MatrixTransform3D(transform),
+                Material = boneMaterial,
+                BackMaterial = boneMaterial,
+            });
+        }
+
+        return group;
+    }
+
+    /// <summary>Rotation that maps +Y to the given direction.</summary>
+    private static Quaternion QuaternionFromY(Vector3D direction)
+    {
+        var y = new Vector3D(0, 1, 0);
+        double dot = Vector3D.DotProduct(y, direction);
+        if (dot > 0.999999)
+        {
+            return Quaternion.Identity;
+        }
+
+        if (dot < -0.999999)
+        {
+            return new Quaternion(new Vector3D(1, 0, 0), 180);
+        }
+
+        Vector3D axis = Vector3D.CrossProduct(y, direction);
+        axis.Normalize();
+        double angle = Math.Acos(Math.Clamp(dot, -1, 1)) * 180 / Math.PI;
+        return new Quaternion(axis, angle);
+    }
+
+    private static MeshGeometry3D BoxMesh => _boxMesh ??= CreateBox();
+
+    private static MeshGeometry3D CreateBox()
+    {
+        var mesh = new MeshGeometry3D();
+        foreach (double[] corner in new[]
+                 {
+                     new[] { -0.5, -0.5, -0.5 }, new[] { 0.5, -0.5, -0.5 }, new[] { 0.5, 0.5, -0.5 }, new[] { -0.5, 0.5, -0.5 },
+                     new[] { -0.5, -0.5, 0.5 }, new[] { 0.5, -0.5, 0.5 }, new[] { 0.5, 0.5, 0.5 }, new[] { -0.5, 0.5, 0.5 },
+                 })
+        {
+            mesh.Positions.Add(new Point3D(corner[0], corner[1], corner[2]));
+        }
+
+        foreach (int face in new[]
+                 {
+                     0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4,
+                     1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7,
+                 })
+        {
+            mesh.TriangleIndices.Add(face);
+        }
+
+        return mesh;
+    }
 
     private static bool TryDecodeImage(byte[] bytes, out BitmapSource? bitmap)
     {
@@ -1687,6 +1823,22 @@ public partial class MainWindow : Window
     }
 
     internal bool DetailsPaneVisibleForTest() => DetailsPane.Visibility == Visibility.Visible;
+
+    internal void SetSkeletonForTest(bool show)
+    {
+        ShowSkeletonMenuItem.IsChecked = show;
+        _showSkeleton = show;
+        if (_currentModel is not null)
+        {
+            ShowModel(_currentModel);
+        }
+    }
+
+    internal int SkeletonJointCountForTest(ResourceItem row)
+    {
+        ResourcePreview preview = PreviewForTest(row);
+        return preview.Model?.SkeletonJoints.Count ?? 0;
+    }
 
     internal (bool Details, bool LargeIcons) ViewMenuStateForTest() => (DetailsMenuItem.IsChecked, LargeIconsMenuItem.IsChecked);
 

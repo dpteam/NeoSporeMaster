@@ -242,6 +242,7 @@ public static class PreviewEngine
             if (model.Meshes.Count > 0)
             {
                 AttachTextures(rw4, model);
+                AttachSkeleton(rw4, model);
                 return model;
             }
 
@@ -251,6 +252,69 @@ public static class PreviewEngine
         {
             return null;
         }
+    }
+
+    /// <summary>Attaches rest-pose bone positions and parent links from the first skin, when present.</summary>
+    private static void AttachSkeleton(RenderWare4File rw4, PreviewModel model)
+    {
+        try
+        {
+            foreach (Rw4SkinLinkage skin in rw4.ReadSkins())
+            {
+                Rw4Skeleton? skeleton = skin.Skeleton;
+                Rw4SkinMatrixBuffer? matrices = skin.MatrixBuffer;
+                if (skeleton is null || skeleton.Bones.Count == 0)
+                {
+                    continue;
+                }
+
+                int count = skeleton.Bones.Count;
+
+                // Bone origins are in the bind-pose matrices; when those look local (all near the
+                // origin) the hierarchy is composed so the skeleton is positioned sensibly.
+                var local = new float[count][];
+                for (int i = 0; i < count; i++)
+                {
+                    local[i] = matrices is not null && i < matrices.Matrices.Count
+                        ? matrices.Matrices[i].Values
+                        : new float[12];
+                }
+
+                var world = new float[count][];
+                for (int i = 0; i < count; i++)
+                {
+                    int parent = skeleton.Bones[i].ParentIndex;
+                    world[i] = parent >= 0 && parent < count ? Multiply(local[i], world[parent]) : (float[])local[i].Clone();
+                    model.SkeletonJoints.Add(new[] { world[i][3], world[i][7], world[i][11] });
+                    model.SkeletonBones.Add((i, parent));
+                }
+
+                return;
+            }
+        }
+        catch
+        {
+            // A broken skeleton must not break the model preview.
+        }
+    }
+
+    /// <summary>Multiplies two 3x4 (row-major) matrices: result = a * b.</summary>
+    private static float[] Multiply(float[] a, float[] b)
+    {
+        var r = new float[12];
+        for (int row = 0; row < 3; row++)
+        {
+            for (int col = 0; col < 4; col++)
+            {
+                // Rotation part * b + translation of a (for col == 3 use a's translation).
+                r[(row * 4) + col] = (a[(row * 4) + 0] * b[(0 * 4) + col])
+                    + (a[(row * 4) + 1] * b[(1 * 4) + col])
+                    + (a[(row * 4) + 2] * b[(2 * 4) + col])
+                    + (col == 3 ? a[(row * 4) + 3] : 0);
+            }
+        }
+
+        return r;
     }
 
     /// <summary>

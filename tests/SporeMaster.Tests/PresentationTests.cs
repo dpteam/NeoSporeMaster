@@ -244,6 +244,38 @@ public static class PresentationTests
         throw new AssertionException("No textured RW4 model preview was found.");
     }
 
+    [SporeTest("a model with a skin exposes skeleton joints")]
+    public static void PreviewSkeleton()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries.Take(400))
+            {
+                if (entry.Key.TypeId != 0x2F4E681B)
+                {
+                    continue;
+                }
+
+                var item = new ResourceItem(entry, names);
+                ResourcePreview preview = PreviewEngine.Build(item, package.ReadEntry(entry), names);
+                if (preview.IsModel && preview.Model!.SkeletonJoints.Count > 0)
+                {
+                    Assert.Equal(preview.Model.SkeletonJoints.Count, preview.Model.SkeletonBones.Count);
+                    foreach ((int child, int parent) in preview.Model.SkeletonBones)
+                    {
+                        Assert.True(parent < preview.Model.SkeletonJoints.Count, "parent index in range");
+                        Assert.True(child >= 0 && child < preview.Model.SkeletonJoints.Count, "child index in range");
+                    }
+
+                    return;
+                }
+            }
+        }
+    }
+
     [SporeTest("explorer model groups resources into folders")]
     public static void ExplorerFolders()
     {

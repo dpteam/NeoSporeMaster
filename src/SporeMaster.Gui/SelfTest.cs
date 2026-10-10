@@ -52,22 +52,34 @@ internal static class SelfTest
 
                 report.AppendLine($"Folder navigation: {foldersToVisit} folder(s) selected");
 
-                // 3D model preview: find a textured model, show it and capture the pane to a PNG.
+                // 3D model preview: find a textured model (and one with a skeleton), show it and capture.
                 ResourceItem? modelRow = null;
-                foreach (ResourceItem candidate in window.RowsForTest().Where(r => r.TypeId == 0x2F4E681B).Take(200))
+                ResourceItem? skeletonRow = null;
+                foreach (ResourceItem candidate in window.RowsForTest().Where(r => r.TypeId == 0x2F4E681B).Take(400))
                 {
                     Core.Presentation.ResourcePreview candidatePreview = window.PreviewForTest(candidate);
-                    if (candidatePreview.IsModel && candidatePreview.Model!.TexturePng is not null)
+                    if (!candidatePreview.IsModel)
                     {
-                        modelRow = candidate;
-                        break;
+                        continue;
                     }
 
-                    if (modelRow is null && candidatePreview.IsModel)
+                    if (modelRow is null && candidatePreview.Model!.TexturePng is not null)
                     {
                         modelRow = candidate;
                     }
+
+                    if (skeletonRow is null && candidatePreview.Model!.SkeletonJoints.Count > 0)
+                    {
+                        skeletonRow = candidate;
+                    }
+
+                    if (modelRow is not null && skeletonRow is not null)
+                    {
+                        break;
+                    }
                 }
+
+                modelRow ??= skeletonRow;
 
                 if (modelRow is not null)
                 {
@@ -75,6 +87,16 @@ internal static class SelfTest
                     string? shot = window.CapturePreviewPngForTest(modelRow, shotPath);
                     Core.Presentation.ResourcePreview mp = window.PreviewForTest(modelRow);
                     report.AppendLine($"3D preview: {modelRow.ShortName}, textured={mp.Model?.TexturePng is not null}, screenshot={(shot is null ? "not captured" : "ok")}");
+                }
+
+                if (skeletonRow is not null)
+                {
+                    int joints = window.SkeletonJointCountForTest(skeletonRow);
+                    window.SetSkeletonForTest(true);
+                    string skelPath = Path.Combine(Path.GetTempPath(), "sporemaster-3d-skeleton.png");
+                    window.CapturePreviewPngForTest(skeletonRow, skelPath);
+                    window.SetSkeletonForTest(false);
+                    report.AppendLine($"Skeleton overlay: {skeletonRow.ShortName}, {joints} joint(s)");
                 }
 
                 // Checked folders (multi-select) with standard tri-state root behaviour.

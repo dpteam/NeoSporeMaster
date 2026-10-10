@@ -112,6 +112,7 @@ gui.menu.refresh = _Refresh
 gui.menu.details = _Details
 gui.menu.largeIcons = Large _Icons
 gui.menu.detailsPane = Details _pane
+gui.menu.showSkeleton = Show _skeleton
 gui.menu.language = _Language
 gui.menu.tools = _Tools
 gui.menu.extractSelected = _Extract Selected...

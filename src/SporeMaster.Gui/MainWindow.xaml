@@ -28,6 +28,7 @@
                 <MenuItem x:Name="DetailsMenuItem" Header="{loc:Loc gui.menu.details}" Click="OnViewDetails" IsCheckable="True" IsChecked="True" />
                 <MenuItem x:Name="LargeIconsMenuItem" Header="{loc:Loc gui.menu.largeIcons}" Click="OnViewLargeIcons" IsCheckable="True" />
                 <MenuItem x:Name="DetailsPaneMenuItem" Header="{loc:Loc gui.menu.detailsPane}" Click="OnToggleDetailsPane" IsCheckable="True" IsChecked="True" />
+                <MenuItem x:Name="ShowSkeletonMenuItem" Header="{loc:Loc gui.menu.showSkeleton}" Click="OnToggleSkeleton" IsCheckable="True" />
                 <Separator />
                 <MenuItem Header="{loc:Loc gui.menu.language}">
                     <MenuItem x:Name="LanguageEnMenuItem" Header="English" IsCheckable="True" IsChecked="True" Click="OnLanguageEn" />

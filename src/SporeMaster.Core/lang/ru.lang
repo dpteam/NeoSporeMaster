@@ -111,6 +111,7 @@ gui.menu.refresh = _Обновить
 gui.menu.details = _Таблица
 gui.menu.largeIcons = _Крупные значки
 gui.menu.detailsPane = Панель _сведений
+gui.menu.showSkeleton = Показать _скелет
 gui.menu.language = _Язык
 gui.menu.tools = _Сервис
 gui.menu.extractSelected = _Извлечь выбранное...

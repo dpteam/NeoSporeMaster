@@ -41,6 +41,12 @@ public sealed class PreviewModel
     /// <summary>Encoded PNG of the model's diffuse texture, when one could be decoded.</summary>
     public byte[]? TexturePng { get; set; }
 
+    /// <summary>Bone positions (rest pose) for a skeleton overlay, when the model has one.</summary>
+    public List<float[]> SkeletonJoints { get; } = new();
+
+    /// <summary>Skeleton links as (child, parent) bone index pairs (parent -1 = root).</summary>
+    public List<(int Child, int Parent)> SkeletonBones { get; } = new();
+
     public int TotalVertices => Meshes.Sum(m => m.VertexCount);
 
     public int TotalTriangles => Meshes.Sum(m => m.TriangleCount);
