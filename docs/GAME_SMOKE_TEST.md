@@ -32,6 +32,9 @@
 # Полный тест (запустит игру)
 powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1
 
+# Автономно (без нажатия Enter): запустить, подождать N секунд, проверить и закрыть
+powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 -Auto -WaitSeconds 60
+
 # Только репак + восстановление (без запуска игры)
 powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 -NoLaunch
 
@@ -40,14 +43,18 @@ powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 `
     -GameFolder refs\SporeGames\SporeCSA_RetailEngine -Package CSA_Main.package -Exe SporeCreatureCreator.exe
 ```
 
-Параметры: `-GameFolder`, `-Package`, `-Exe`, `-NoLaunch`, `-Big`, `-NoCompress`.
+Параметры: `-GameFolder`, `-Package`, `-Exe`, `-NoLaunch`, `-Auto`, `-WaitSeconds N`, `-Big`, `-NoCompress`.
 
 ## 3. Что уже проверено
 
 - **Lossless-репак** (без игры) подтверждён на многих архивах: `BP2_Data` 184/184, бета `CellGame`
   442/442, `CSA_Graphics` 5822/5822, `Spore_Game` 11676/11676, `CSA_Main` 8431/8431 и **на реальной
   Retail-игре** (`SporeRetail/Data/Spore_Game` 11529/11529, `Spore_Pack_03` 266/266).
-- **Смоук-тест в игре** (шаг 4–6) выполняется вручную: запустить скрипт без `-NoLaunch`.
+- **Смоук-тест в игре** (автономный прогон): `SporeRetail/Data/Spore_Game.package` →
+  репак (11529/11529) → запуск `SporeApp.exe -w` → **игра завершилась сама с кодом 0**, **новых
+  `*.mdmp`/`*exception*.txt` не появилось** → **PASS**, оригинал восстановлен.
+  *Оговорка:* игра (Steam-версия) завершилась «сама»; для строгой проверки «дошла до меню» лучше
+  запускать при работающем Steam/лаунчере и в ручном режиме (без `-Auto`).
 
 ## 4. Заметки
 

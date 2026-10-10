@@ -96,7 +96,7 @@
 | GUI (WPF) — обозреватель в стиле Проводника + превью + иконка | ✅ |
 | CLI (info/list/extract/unpack/pack/prop/propt/pctp/tlsa/gait/cnv/loottable/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (142, на реальных + синтетических данных) | ✅ |
+| Тесты (143, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -325,6 +325,10 @@
 - **Lossless raw-перепаковка** (`unpack --raw → pack --compress → diff` идентично): `BP2_Data`
   184/184, `CSA_Graphics` 5822/5822, `Spore_Game` 11676/11676, `CSA_Main` 8431/8431,
   **Retail-игра**: `SporeRetail/Data/Spore_Game` 11529/11529, `Spore_Pack_03` 266/266.
+- **Смоук-тест в игре (Retail):** репак `Spore_Game` (11529/11529) → запуск `SporeApp.exe -w` →
+  игра завершилась **с кодом 0**, новых `*.mdmp`/`*exception*.txt` нет → **PASS**
+  (`tools/smoke-test.ps1 -Auto`). Требования игры к пакету разобраны по PDB:
+  `docs/PACKAGE_REQUIREMENTS.md`.
 - Имена ресурсов корректно восстанавливаются: например, первый ресурс `Spore_Game` — это
   `planetTerrainThemes_space_T1A0~/T1A0_T2_conglomerate_02.prop`.
 - **Свойства**: все `.prop` из бета- и релизной сборок (5575 и 12328 файлов соответственно)

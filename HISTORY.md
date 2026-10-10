@@ -2,6 +2,26 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.72.0] — смоук-тест Retail-игры (прогон) + требования игры по PDB (2026-10-11)
+
+### Проверено (смоук-тест в игре)
+- `tools/smoke-test.ps1 -Auto`: `SporeRetail/Data/Spore_Game.package` → lossless-репак (11529/11529)
+  → запуск `SporeApp.exe -w` → игра завершилась **с кодом 0**, **новых `*.mdmp`/`*exception*.txt`
+  нет** → **PASS**, оригинал восстановлен.
+- Скрипт получил режим **`-Auto -WaitSeconds N`** (автономно, без нажатия Enter).
+
+### Добавлено (требования игры по PDB)
+- Документ **`docs/PACKAGE_REQUIREMENTS.md`**: по символам `EA::ResourceMan` разобрано, как игра
+  читает/пишет пакеты — `CreateIndex`, `CreateRecord`/`DeleteRecord`, `CompressData`/
+  `ShouldRecordBeCompressed`/`SetCompressionThreshold`, `AllocateSpace`/`FreeSpace`/**`PFHoleTable`**,
+  `VerifyHeaderRecordIntegrity`, `SetUserVersion`, `SetFileStartingOffset`, толерантность к
+  повреждениям (`SetForceOpenOnCorruptFile`).
+- Тест `PdbPackageApiTests`: проверка наличия ключевых символов (всего 143 теста).
+
+### Вывод
+- Порядок/«дырки» — **не контракт** (движок сам управляет свободным местом); важно, что игра
+  читает наш заголовок/индекс/записи (подтверждено roundtrip+смоук) и не пишет дампы.
+
 ## [3.71.0] — `list`/`search`: маски, regex, поиск по содержимому/байтам (2026-10-11)
 
 ### Добавлено

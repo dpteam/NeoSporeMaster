@@ -14,6 +14,7 @@
 #   powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1
 #   powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 -GameFolder refs\SporeGames\SporeRetail -Package Spore_Game.package
 #   powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 -NoLaunch   # repack + restore only
+#   powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 -Auto -WaitSeconds 60   # unattended
 #
 param(
     [string]$GameFolder = "refs\SporeGames\SporeRetail",
@@ -21,7 +22,9 @@ param(
     [string]$Exe = "SporeApp.exe",
     [switch]$NoLaunch,
     [switch]$Big,
-    [switch]$NoCompress
+    [switch]$NoCompress,
+    [switch]$Auto,
+    [int]$WaitSeconds = 60
 )
 
 $ErrorActionPreference = "Stop"
@@ -101,14 +104,29 @@ try {
         $gameExe = Join-Path $gameDir $Exe
         $proc = Start-Process -FilePath $gameExe -WorkingDirectory $gameDir -ArgumentList "-w" -PassThru
 
-        Write-Host ""
-        Write-Host "Press Enter here once you have seen the game start (or after it crashed)..." -ForegroundColor Yellow
-        [void][System.Console]::ReadLine()
+        if ($Auto) {
+            Write-Step "Auto mode: waiting $WaitSeconds s for the game to start and settle."
+            Start-Sleep -Seconds $WaitSeconds
+            if ($proc.HasExited) {
+                Write-Host "Game process exited on its own (exit code $($proc.ExitCode))." -ForegroundColor Yellow
+            }
+            else {
+                Write-Ok "Game is still running after $WaitSeconds s (no immediate crash)."
+            }
+        }
+        else {
+            Write-Host ""
+            Write-Host "Press Enter here once you have seen the game start (or after it crashed)..." -ForegroundColor Yellow
+            [void][System.Console]::ReadLine()
+
+            if (-not $proc.HasExited) {
+                Write-Step "Closing the game..."
+                try { $proc.CloseMainWindow() | Out-Null; Start-Sleep -Seconds 3 } catch { }
+            }
+        }
 
         if (-not $proc.HasExited) {
-            Write-Step "Closing the game..."
-            try { $proc.CloseMainWindow() | Out-Null; Start-Sleep -Seconds 3 } catch { }
-            if (-not $proc.HasExited) { try { $proc.Kill() } catch { } }
+            try { $proc.Kill() } catch { }
         }
     }
 
