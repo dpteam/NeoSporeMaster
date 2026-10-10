@@ -95,6 +95,16 @@
 
 Приоритет — по частоте/пользе; каждый **сначала проверять на реальных файлах** (правило проекта).
 
+**Cell-форматы** (пакет `cell` SporeModder FX; сделан только `loottable`, `look_table`): ещё есть
+`CellFile` (мастер, 26 КБ), `CellGlobals`, `CellPopulate`, `CellStructure`, `CellWorld`,
+`CellRandomCreature`, `CellLookAlgorithm`, `CellBackgroundMap`, `CellEffectMap`, `CellPowers`.
+
+**Важное наблюдение (проверено на данных):** реальный `.structure` (бета `CellGame.package`,
+`struct_eggkid.structure`, 80 байт) **НЕ совпадает** с `CellStructureFile` SporeModder: по формату
+SporeModder поле `offset` (6-е int) обязано быть `28`, а в реальном файле оно `0`, и есть данные
+дальше (похоже на указательный/иной layout). Вывод: `.structure` (как и предупреждал заказчик) —
+**сначала разобрать по реальным файлам**, не переносить референс вслепую.
+
 ## 6. Репак/игра
 
 - [ ] `roundtrip` на всех тестовых архивах + Retail.
