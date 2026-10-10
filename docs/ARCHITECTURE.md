@@ -105,6 +105,8 @@ little-endian; флаги и stride сохраняются для байт-то�
 - `HashGuesser` / `GuessDictionary` — восстановление имён по хешам с обращением FNV и словарями
   фрагментов. `NameRecovery` — пакетное восстановление всех неизвестных хешей архива и запись
   `names.txt`. Формат и алгоритм описаны в `docs/HASH_GUESSING.md`.
+- `KeyMap` — разбор карт ключей игры (`KeyMap.txt`/`PreBakedKeys.txt`) в авторитетный реестр имён
+  (hash → name) для групп, инстансов и типов.
 - `EmbeddedResources` — чтение встроенных `reg_*.txt`.
 
 ### `Localization/Localizer`

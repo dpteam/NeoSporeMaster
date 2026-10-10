@@ -52,3 +52,7 @@ scratch/
 # Tests that use them are skipped automatically when the folders are absent.
 refs/_PackageFilesBetaVer/
 refs/_PackageFilesFinalVer/
+
+# Full game installs and large unpacked reference data (many GB; keep on disk only).
+refs/SporeGames/
+refs/SporeUnpackedData/

@@ -1311,6 +1311,50 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Extracts a names registry from a game key map: <c>keymap &lt;KeyMap.txt&gt; &lt;names.txt&gt;</c>.</summary>
+    public static int KeyMapCommand(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "keymap <KeyMap.txt> <names.txt> [--types <types.txt>]");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            Core.Names.KeyMap map = Core.Names.KeyMap.ParseFile(input);
+            File.WriteAllText(outputPath, map.BuildFileNameRegistry());
+
+            output.Success($"Parsed {map.Entries.Count} key map entr(ies).");
+            output.Line($"  group names:    {map.GroupNames.Count}");
+            output.Line($"  instance names: {map.InstanceNames.Count}");
+            output.Line($"  type names:     {map.TypeNames.Count}");
+            output.Line($"  verified instance names: {map.VerifiedInstanceNames} (unverified: {map.UnverifiedEntries})");
+            output.Line($"  wrote file-name registry: {outputPath}");
+
+            string? typesPath = cli.Get("types");
+            if (typesPath is not null)
+            {
+                File.WriteAllText(typesPath, map.BuildTypeRegistry());
+                output.Line($"  wrote type registry:      {typesPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Key map conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     public static int Verify(CommandLine cli, Output output)
     {
         if (!TryOpen(cli, output, out DatabasePackedFile? package))

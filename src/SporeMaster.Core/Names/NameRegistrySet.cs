@@ -125,6 +125,9 @@ public sealed class NameRegistrySet
     /// <summary>Registers a name for a file/group/instance hash (used for recovered names).</summary>
     public void AddFileName(uint hash, string name) => _files.Add(name, hash);
 
+    /// <summary>Registers a name for a type hash (used for key-map derived names).</summary>
+    public void AddTypeName(uint hash, string name) => _types.Add(name, hash);
+
     /// <summary>Merges additional names (e.g. a recovered <c>names.txt</c>) into the registry.</summary>
     public void LoadProjectNames(string path)
     {

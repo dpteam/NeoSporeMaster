@@ -2,6 +2,29 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.21.0] — KeyMap: авторитетные имена из игры (2026-10-11)
+
+### Добавлено
+- **`KeyMap`** (`SporeMaster.Core/Names/KeyMap.cs`): разбор карт ключей игры
+  (`KeyMap.txt`: `{0xTYPE 0xGROUP 0xINSTANCE} "Folder\File.ext"`, а также `PreBakedKeys.txt`) в
+  реестр имён (hash → name) для групп, инстансов и типов, с проверкой `FNV(name)==hash`.
+  - `ApplyTo(NameRegistrySet)` — наложение на реестр;
+  - `BuildFileNameRegistry()` / `BuildTypeRegistry()` — сериализация в формате `reg_*.txt`.
+- CLI: команда `keymap <KeyMap.txt> <names.txt> [--types <types.txt>]`.
+- Тесты: разбор, проверка совпадения хешей, сериализация, а также разбор **реального**
+  `KeyMap.txt` (всего 93 теста).
+
+### Проверено
+- `KeyMap.txt` из `refs/SporeUnpackedData/SporeBeta2008`: **64 340** записей,
+  **50 129** имён инстансов (из них **58 902** записей с совпавшим FNV), 434 группы, 63 типа.
+
+### Записано в идеи (MEMORY.md)
+- Папки `refs/SporeUnpackedData` (бета-распаковка, Hero) и `refs/SporeGames` (4 сборки игры для
+  финальных тестов репаковки); `KeyMap.txt`/`PreBakedKeys.txt` как источник имён и валидация
+  guesser'а; экспериментальная полная распаковка в `Data`; CSA = Creature Standalone;
+  запуск тестовых сборок (UNC вместо сетевого `T:`, SecuROM-нюансы, дампы как критерий).
+- `.gitignore`: `refs/SporeGames/` (8.1 ГБ) и `refs/SporeUnpackedData/` (56 МБ) исключены.
+
 ## [3.20.0] — GUI в стиле Проводника (Explorer-like) (2026-10-11)
 
 ### Добавлено

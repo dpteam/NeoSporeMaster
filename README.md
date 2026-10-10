@@ -32,6 +32,8 @@
 - **Восстановление имён по хешам** — «hash guesser» с обращением FNV и словарями фрагментов
   (`data/guess_left.txt`, `data/guess_right.txt`); пакетный режим восстанавливает все
   неизвестные хеши архива и сохраняет их в `names.txt` для повторного использования.
+- **KeyMap** — конвертация карт ключей игры (`KeyMap.txt` → `names.txt`) в авторитетный реестр имён
+  (точнее фрагментного guesser'а).
 - **Поиск по тексту** — полнотекстовый поиск по распакованным файлам (регистронезависимый),
   с номерами строк и сниппетами.
 - **Экспорт списка ресурсов** в CSV/JSON; **очистка авто-локалей** при распаковке.
@@ -170,6 +172,9 @@ dotnet run --project src/SporeMaster.Cli -- guess 0x73BF81A5
 
 # Восстановить все неизвестные имена в архиве и сохранить их
 dotnet run --project src/SporeMaster.Cli -- guess --package <архив.package> --save names.txt
+
+# Извлечь авторитетные имена из карты ключей игры
+dotnet run --project src/SporeMaster.Cli -- keymap <KeyMap.txt> names.txt --types types.txt
 
 # Экспортировать список ресурсов и найти текст
 dotnet run --project src/SporeMaster.Cli -- list <архив.package> --format csv --out resources.csv
