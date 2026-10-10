@@ -96,6 +96,17 @@ public static class PreviewEngine
             if (ResourceTypeIds.IsRenderWare4(type))
             {
                 using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+
+                // RW4 texture resources: decode the embedded raster and show it as an image.
+                if (rw4.RawType == (uint)Rw4ContainerType.Texture)
+                {
+                    byte[]? png = TryDecodeRw4Texture(rw4);
+                    if (png is not null)
+                    {
+                        return ResourcePreview.AsImage(png);
+                    }
+                }
+
                 var builder = new StringBuilder();
                 builder.Append("RenderWare 4 resource\n");
                 builder.Append($"  Container: {Rw4SectionTypes.DescribeContainer(rw4.RawType)}\n");
@@ -425,6 +436,28 @@ public static class PreviewEngine
 
         byte[]? rgba = raster.DecodeRgba(pixels);
         return rgba is null ? null : PngCodec.Encode(new RgbaImage(raster.Width, raster.Height, rgba));
+    }
+
+    /// <summary>Decodes the first usable raster section of an RW4 texture resource to PNG, or null.</summary>
+    private static byte[]? TryDecodeRw4Texture(RenderWare4File rw4)
+    {
+        try
+        {
+            foreach (Rw4Raster raster in rw4.ReadRasters())
+            {
+                byte[]? png = DecodeRasterToPng(rw4, raster);
+                if (png is not null)
+                {
+                    return png;
+                }
+            }
+        }
+        catch
+        {
+            // fall through to the text summary
+        }
+
+        return null;
     }
 
     private static void AppendRw4Summary(RenderWare4File rw4, StringBuilder builder)

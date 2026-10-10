@@ -276,6 +276,34 @@ public static class PresentationTests
         }
     }
 
+    [SporeTest("preview shows an RW4 texture resource as an image")]
+    public static void PreviewRw4Texture()
+    {
+        string? packagePath = TestData.BetaPackages.Concat(TestData.FinalPackages)
+            .FirstOrDefault(p => p.EndsWith("CSA_Graphics.package"));
+        if (packagePath is null)
+        {
+            throw new AssertionException("CSA_Graphics.package is not available.");
+        }
+
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+
+        DbpfEntry? target = package.Entries.FirstOrDefault(e =>
+            e.Key.TypeId == 0x2F4E681B && e.Key.GroupId == 0x406A2100 && e.Key.InstanceId == 0x7551126D);
+        if (target is null)
+        {
+            throw new AssertionException("The expected RW4 texture resource is missing.");
+        }
+
+        var item = new ResourceItem(target, names);
+        ResourcePreview preview = PreviewEngine.Build(item, package.ReadEntry(target), names);
+
+        Assert.Equal("image", preview.Kind);
+        Assert.NotNull(preview.PngBytes);
+        Assert.Equal(0x89, preview.PngBytes![0]);
+    }
+
     [SporeTest("explorer model groups resources into folders")]
     public static void ExplorerFolders()
     {
