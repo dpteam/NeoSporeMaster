@@ -141,6 +141,19 @@ public static class AnimTests
         Assert.True(keyframes > 0, "components were found but no keyframes decoded");
     }
 
+    [SporeTest("animation text dump is human-readable")]
+    public static void TextDump()
+    {
+        byte[] data = BuildMinimalAnimation();
+        SpAnimation anim = SpAnimation.Read(new MemoryStream(data));
+        string text = SpAnimationTextWriter.Write(anim);
+
+        Assert.Contains(text, "version 21");
+        Assert.Contains(text, "id 0x11223344");
+        Assert.Contains(text, "channel \"root\"");
+        Assert.Contains(text, "event \"myEvent\"");
+    }
+
     /// <summary>Builds a minimal animation: header + one channel table + one channel + one event.</summary>
     private static byte[] BuildMinimalAnimation()
     {

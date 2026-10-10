@@ -2222,7 +2222,7 @@ public static class Commands
     {
         if (cli.Positional.Count == 0)
         {
-            return UsageError(output, "anim <file.anim> [--channels] [--limit N]");
+            return UsageError(output, "anim <file.anim> [output.anim_t] [--channels] [--limit N]");
         }
 
         string path = cli.Positional[0];
@@ -2235,6 +2235,15 @@ public static class Commands
         try
         {
             SpAnimation anim = SpAnimation.Open(path);
+
+            // anim <in.anim> <out.anim_t>: dump the animation to readable text.
+            if (cli.Positional.Count >= 2)
+            {
+                SpAnimationTextWriter.WriteFile(anim, cli.Positional[1]);
+                output.Success($"Wrote text dump ({anim.Channels.Count} channel(s), {anim.Events.Count} event(s)): {cli.Positional[1]}");
+                return 0;
+            }
+
             output.Heading($"Animation: {Path.GetFileName(path)}");
             output.Line($"  Version:   {anim.Version}");
             output.Line($"  File size: {anim.FileSize}");
