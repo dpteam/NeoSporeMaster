@@ -73,6 +73,7 @@ public static class Program
             "keymap" => Commands.KeyMapCommand(cli, output),
             "rw4" => Commands.Rw4(cli, output),
             "verify" => Commands.Verify(cli, output),
+            "diff" => Commands.Diff(cli, output),
             "hash" => Commands.Hash(cli, output),
             "types" => Commands.Types(cli, output),
             _ => UnknownCommand(cli.Command, output),
@@ -116,6 +117,7 @@ public static class Program
         output.Line($"  {loc["cmd.keymap.usage"],-58} {loc["cmd.keymap.summary"]}");
         output.Line($"  {loc["cmd.rw4.usage"],-58} {loc["cmd.rw4.summary"]}");
         output.Line($"  {loc["cmd.verify.usage"],-58} {loc["cmd.verify.summary"]}");
+        output.Line($"  {loc["cmd.diff.usage"],-58} {loc["cmd.diff.summary"]}");
         output.Line($"  {loc["cmd.hash.usage"],-58} {loc["cmd.hash.summary"]}");
         output.Line($"  {loc["cmd.types.usage"],-58} {loc["cmd.types.summary"]}");
         output.Line();

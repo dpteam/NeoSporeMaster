@@ -6,6 +6,7 @@ using SporeMaster.Core.Cell;
 using SporeMaster.Core.Cnv;
 using SporeMaster.Core.Compression;
 using SporeMaster.Core.Dbpf;
+using SporeMaster.Core.Diff;
 using SporeMaster.Core.Gait;
 using SporeMaster.Core.Hashing;
 using SporeMaster.Core.Imaging;
@@ -1624,6 +1625,101 @@ public static class Commands
         }
 
         return problems == 0 ? 0 : 1;
+    }
+
+    /// <summary>
+    /// Compares two archives: <c>diff &lt;a.package&gt; &lt;b.package&gt; [--no-content]</c>.
+    /// </summary>
+    public static int Diff(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "diff <a.package> <b.package> [--no-content] [--limit N]");
+        }
+
+        if (!TryOpenArg(cli.Positional[0], output, out DatabasePackedFile? a) ||
+            !TryOpenArg(cli.Positional[1], output, out DatabasePackedFile? b))
+        {
+            a?.Dispose();
+            return 1;
+        }
+
+        NameRegistrySet names = OpenNames(cli);
+        bool compareContent = !cli.Has("no-content");
+        int limit = cli.GetInt("limit") ?? 50;
+
+        using (a)
+        using (b)
+        {
+            ArchiveDiffResult result;
+            try
+            {
+                result = ArchiveDiff.Compare(a!, b!, compareContent);
+            }
+            catch (Exception ex)
+            {
+                output.Error($"Comparison failed: {ex.Message}");
+                return 1;
+            }
+
+            output.Line($"A: {cli.Positional[0]} ({result.CountA} resource(s))");
+            output.Line($"B: {cli.Positional[1]} ({result.CountB} resource(s))");
+            output.Line(compareContent ? "(comparing content)" : "(comparing keys only)");
+            output.Line();
+            output.Line($"  added:   {result.Added.Count}   (only in B)");
+            output.Line($"  removed: {result.Removed.Count}   (only in A)");
+            output.Line($"  changed: {result.Changed.Count}   (both, different content)");
+            output.Line($"  same:    {result.Identical}");
+
+            PrintDiffSection(output, names, "Added (only in B)", result.Added, limit);
+            PrintDiffSection(output, names, "Removed (only in A)", result.Removed, limit);
+            PrintDiffSection(output, names, "Changed", result.Changed, limit);
+
+            output.Line();
+            if (result.IsIdentical)
+            {
+                output.Success("Archives are identical (by key and content).");
+            }
+            else
+            {
+                output.Warn(
+                    $"Archives differ: {result.Added.Count + result.Removed.Count + result.Changed.Count} difference(s).");
+            }
+        }
+
+        return 0;
+    }
+
+    private static void PrintDiffSection(
+        Output output,
+        NameRegistrySet names,
+        string title,
+        List<DiffEntry> entries,
+        int limit)
+    {
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        output.Line();
+        output.Heading($"{title} ({entries.Count})");
+        foreach (DiffEntry entry in entries.Take(limit))
+        {
+            string path = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+            string sizes = entry.Kind switch
+            {
+                DiffKind.Changed => $"{entry.SizeA} -> {entry.SizeB}",
+                DiffKind.Added => $"+{entry.SizeB}",
+                _ => $"-{entry.SizeA}",
+            };
+            output.Line($"  [{sizes,-16}] {path}  ({entry.Key})");
+        }
+
+        if (entries.Count > limit)
+        {
+            output.Line($"  … {entries.Count - limit} more");
+        }
     }
 
     public static int Hash(CommandLine cli, Output output)
