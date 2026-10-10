@@ -64,6 +64,7 @@ public static class Program
             "guess" => Commands.Guess(cli, output),
             "search" => Commands.Search(cli, output),
             "pctp" => Commands.Pctp(cli, output),
+            "tlsa" => Commands.Tlsa(cli, output),
             "rw4" => Commands.Rw4(cli, output),
             "verify" => Commands.Verify(cli, output),
             "hash" => Commands.Hash(cli, output),
@@ -100,6 +101,7 @@ public static class Program
         output.Line($"  {loc["cmd.guess.usage"],-58} {loc["cmd.guess.summary"]}");
         output.Line($"  {loc["cmd.search.usage"],-58} {loc["cmd.search.summary"]}");
         output.Line($"  {loc["cmd.pctp.usage"],-58} {loc["cmd.pctp.summary"]}");
+        output.Line($"  {loc["cmd.tlsa.usage"],-58} {loc["cmd.tlsa.summary"]}");
         output.Line($"  {loc["cmd.rw4.usage"],-58} {loc["cmd.rw4.summary"]}");
         output.Line($"  {loc["cmd.verify.usage"],-58} {loc["cmd.verify.summary"]}");
         output.Line($"  {loc["cmd.hash.usage"],-58} {loc["cmd.hash.summary"]}");

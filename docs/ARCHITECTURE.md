@@ -118,6 +118,10 @@ little-endian; флаги и stride сохраняются для байт-то�
 - `PctpUnit` — файл part-capabilities (`.pctp`): бинарное чтение/запись и текст ArgScript
   (`.pctp_t`). Формат описан в `docs/PCTP_FORMAT.md`.
 
+### `Tlsa/*`
+- `TlsaUnit` — таблицы анимационных групп (`.tlsa`): бинарное чтение/запись (байт-точно) и
+  текст ArgScript (`.tlsa_t`). Формат описан в `docs/TLSA_FORMAT.md`.
+
 ### `Presentation/*`
 UI-независимый слой, переиспользуемый GUI и CLI:
 - `PackageSession` — открытый архив + реестр имён; список ресурсов, чтение, диагностика;

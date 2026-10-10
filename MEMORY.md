@@ -71,10 +71,11 @@
 | Восстановление имён по хешам (hash guesser + names.txt) | ✅ |
 | Полнотекстовый поиск, экспорт CSV/JSON, очистка авто-локалей | ✅ |
 | Конвертер `.pctp` (part capabilities) ⇄ текст | ✅ |
+| Конвертер `.tlsa` (анимационные группы) ⇄ текст | ✅ |
 | GUI (WPF) — обозреватель архивов с превью | ✅ |
-| CLI (info/list/extract/unpack/pack/prop/propt/pctp/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
+| CLI (info/list/extract/unpack/pack/prop/propt/pctp/tlsa/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (74, на реальных + синтетических данных) | ✅ |
+| Тесты (77, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -85,8 +86,8 @@
 
 1. **Материалы, скелеты и анимации RW4** — `CompiledState` (компилятор состояний Direct3D),
    скелеты/скины, анимации; нормали и UV-координаты в геометрии; экспорт в Ogre XML.
-2. **Скрипты/конвертеры** из `refs/SporeModder-FX-master`: сделаны `.pctp`; далее `cnv`, `tlsa`,
-   `scn`, `gait` и другие.
+2. **Скрипты/конвертеры** из `refs/SporeModder-FX-master`: сделаны `.pctp` и `.tlsa`; далее
+   `cnv`, `scn`, `gait` и другие.
 3. **`.prop_t`: совместимая форма transform** — опции `-offset/-scale/-rotateXYZ` вместо «сырой».
 4. **GUI — дальнейшее развитие**: редактирование свойств, дерево папок, извлечение с диалогами
    прогресса, поиск по распакованной папке, темы оформления.

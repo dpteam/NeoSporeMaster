@@ -35,7 +35,8 @@
 - **Поиск по тексту** — полнотекстовый поиск по распакованным файлам (регистронезависимый),
   с номерами строк и сниппетами.
 - **Экспорт списка ресурсов** в CSV/JSON; **очистка авто-локалей** при распаковке.
-- **Конвертеры** (начало): part-capabilities (`.pctp` ⇄ `.pctp_t`).
+- **Конвертеры** (начало): part-capabilities (`.pctp` ⇄ `.pctp_t`) и анимационные группы
+  (`.tlsa` ⇄ `.tlsa_t`).
 - **Хеши именования** — FNV-1 (как в SporeMaster 2 и SporeModder FX).
 - **Реестры имён** `reg_type`, `reg_file`, `reg_property`, `reg_simulator` — встроены в сборку.
 - **Устойчивость к ошибкам**: битые и обрезанные архивы не роняют программу, а дают диагностику.
@@ -166,6 +167,9 @@ dotnet run --project src/SporeMaster.Cli -- search <папка> "anim_dilation" 
 
 # Конвертировать часть (part capabilities)
 dotnet run --project src/SporeMaster.Cli -- pctp <файл.pctp> <файл.pctp_t>
+
+# Конвертировать таблицы анимационных групп (TLSA)
+dotnet run --project src/SporeMaster.Cli -- tlsa <файл.tlsa> <файл.tlsa_t>
 
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales
