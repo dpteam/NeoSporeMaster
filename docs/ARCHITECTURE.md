@@ -98,7 +98,8 @@ little-endian; флаги и stride сохраняются для байт-то�
 - `NameRegistrySet` — набор реестров (типы, файлы/группы, свойства, атрибуты симулятора),
   аналог `HashManager` из SporeModder FX; умеет строить относительные пути `group/name.ext`.
 - `HashGuesser` / `GuessDictionary` — восстановление имён по хешам с обращением FNV и словарями
-  фрагментов. Формат и алгоритм описаны в `docs/HASH_GUESSING.md`.
+  фрагментов. `NameRecovery` — пакетное восстановление всех неизвестных хешей архива и запись
+  `names.txt`. Формат и алгоритм описаны в `docs/HASH_GUESSING.md`.
 - `EmbeddedResources` — чтение встроенных `reg_*.txt`.
 
 ### `Localization/Localizer`

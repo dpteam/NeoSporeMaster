@@ -70,14 +70,27 @@ dotnet run --project src/SporeMaster.Cli -- guess 0x... --prefix my --suffix car
 # Итеративный режим (имя из нескольких фрагментов)
 dotnet run --project src/SporeMaster.Cli -- guess 0x... --iterative
 
-# Угадать имена для всех «безымянных» хешей в архиве
-dotnet run --project src/SporeMaster.Cli -- guess --package <архив.package> --limit 200
+# Угадать имена для всех «безымянных» хешей в архиве и сохранить их в names.txt
+dotnet run --project src/SporeMaster.Cli -- guess --package <архив.package> --limit 200 --save names.txt
+
+# Использовать сохранённые имена при просмотре/распаковке
+dotnet run --project src/SporeMaster.Cli -- list <архив.package> --names names.txt
+dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --names names.txt
 ```
+
+`--package` собирает все неизвестные хеши архива (`--groups` включает и группы), угадывает имена
+и по `--save` пишет их в `names.txt`. Тот же файл можно подключить к `list`/`unpack` через
+`--names`, чтобы использовать восстановленные имена (формат совпадает с `reg_file.txt`).
 
 ## 6. Пример
 
 Хеш `0x73BF81A5` восстанавливается как `creatur_massiverock1_pile` (первый результат; далее
 идут возможные коллизии).
+
+Сквозной сценарий: имя `creatur_massiverock1_pile` (собранное из фрагментов словаря) не
+зарегистрировано, поэтому при упаковке оно превращается в хеш `0x73BF81A5`. Команда
+`guess --package ... --save names.txt` восстанавливает имя, а `list ... --names names.txt`
+снова показывает человекочитаемый путь.
 
 ## 7. Ссылки
 

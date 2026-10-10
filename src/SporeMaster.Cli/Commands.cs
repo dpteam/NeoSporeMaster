@@ -57,7 +57,7 @@ public static class Commands
             return 1;
         }
 
-        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        NameRegistrySet names = OpenNames(cli);
         int? typeFilter = ParseHashFilter(cli.Get("type"), names.GetTypeHash, output);
         int? groupFilter = ParseHashFilter(cli.Get("group"), names.GetFileHash, output);
         string? nameFilter = cli.Get("name");
@@ -147,7 +147,7 @@ public static class Commands
                 return 1;
             }
 
-            NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+            NameRegistrySet names = OpenNames(cli);
             string? explicitOut = cli.Get("out");
             string outPath = explicitOut ?? SanitizePath(names.GetRelativePath(key.TypeId, key.GroupId, key.InstanceId));
 
@@ -180,7 +180,7 @@ public static class Commands
 
         string outputDir = Path.GetFullPath(cli.Positional[1]);
         bool raw = cli.Has("raw");
-        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        NameRegistrySet names = OpenNames(cli);
         Directory.CreateDirectory(outputDir);
 
         int written = 0;
@@ -758,35 +758,38 @@ public static class Commands
                 return 1;
             }
 
-            NameRegistrySet names = NameRegistrySet.LoadEmbedded();
-            var unknown = new HashSet<uint>();
+            NameRegistrySet names = OpenNames(cli);
+            int limit = cli.GetInt("limit") ?? 200;
+            bool groups = cli.Has("groups");
+
+            NameRecoveryResult result;
             using (package)
             {
-                foreach (DbpfEntry entry in package!.Entries)
-                {
-                    if (names.GetFileName(entry.Key.InstanceId).StartsWith('#'))
-                    {
-                        unknown.Add(entry.Key.InstanceId);
-                    }
-                }
+                result = NameRecovery.Recover(
+                    package!, guesser, names,
+                    includeGroups: groups,
+                    maxHashes: limit,
+                    progress: (done, total) => output.Line($"  guessing {done}/{total}..."));
             }
 
-            output.Line($"Package has {unknown.Count} unnamed instance hash(es).");
-
-            int found = 0;
-            foreach (uint hash in unknown.Take(cli.GetInt("limit") ?? 200))
+            foreach ((uint hash, string name) in result.Recovered.OrderBy(p => p.Key))
             {
-                var results = iterative
-                    ? guesser.GuessIterative(hash, prefix, suffix, contains, rounds: 3, maxResults: max)
-                    : guesser.Guess(hash, prefix, suffix, contains, maxResults: max);
-                if (results.Count > 0)
-                {
-                    found++;
-                    output.Line($"{Fnv.ToHex(hash)} => {string.Join(", ", results.Take(3))}{(results.Count > 3 ? $" (+{results.Count - 3} more)" : string.Empty)}");
-                }
+                output.Line($"{Fnv.ToHex(hash)} => {name}");
             }
 
-            output.Success($"Recovered names for {found} of the inspected hashes.");
+            if (cli.Has("apply"))
+            {
+                NameRecovery.Apply(result, names);
+            }
+
+            string? save = cli.Get("save");
+            if (save is not null)
+            {
+                NameRecovery.Save(result, save);
+                output.Success($"Saved {result.RecoveredCount} name(s) to {save}");
+            }
+
+            output.Success($"Recovered {result.RecoveredCount} of {Math.Min(result.UnnamedCount, limit)} inspected hash(es) ({result.UnnamedCount} unnamed total).");
             return 0;
         }
 
@@ -909,6 +912,19 @@ public static class Commands
     }
 
     // ---- helpers ----
+
+    /// <summary>Loads the embedded registries plus an optional project <c>names.txt</c> (<c>--names</c>).</summary>
+    private static NameRegistrySet OpenNames(CommandLine cli)
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        string? projectNames = cli.Get("names");
+        if (!string.IsNullOrEmpty(projectNames))
+        {
+            names.LoadProjectNames(projectNames);
+        }
+
+        return names;
+    }
 
     private static bool TryOpen(CommandLine cli, Output output, out DatabasePackedFile? package)
     {

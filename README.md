@@ -29,7 +29,8 @@
   чтение мешей и **декодирование геометрии** (позиции + индексы) с экспортом в **OBJ**.- **Bitmap (`.bitImage`/`8bitImage`/`32bitImage`/`48bitImage` ⇄ PNG)** — конвертация «сырых»
   растровых ресурсов Spore в PNG и обратно. PNG-кодек написан нами (только BCL+zlib).
 - **Восстановление имён по хешам** — «hash guesser» с обращением FNV и словарями фрагментов
-  (`data/guess_left.txt`, `data/guess_right.txt`).
+  (`data/guess_left.txt`, `data/guess_right.txt`); пакетный режим восстанавливает все
+  неизвестные хеши архива и сохраняет их в `names.txt` для повторного использования.
 - **Хеши именования** — FNV-1 (как в SporeMaster 2 и SporeModder FX).
 - **Реестры имён** `reg_type`, `reg_file`, `reg_property`, `reg_simulator` — встроены в сборку.
 - **Устойчивость к ошибкам**: битые и обрезанные архивы не роняют программу, а дают диагностику.
@@ -145,6 +146,9 @@ dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage.png> <ф
 
 # Восстановить имя по хешу
 dotnet run --project src/SporeMaster.Cli -- guess 0x73BF81A5
+
+# Восстановить все неизвестные имена в архиве и сохранить их
+dotnet run --project src/SporeMaster.Cli -- guess --package <архив.package> --save names.txt
 
 # Проверить целостность (прочитать и распаковать все ресурсы)
 dotnet run --project src/SporeMaster.Cli -- verify <архив.package>

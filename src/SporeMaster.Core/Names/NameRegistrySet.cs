@@ -119,6 +119,23 @@ public sealed class NameRegistrySet
         return Fnv.Hash(name);
     }
 
+    /// <summary>True when a name is registered for this file/group/instance hash.</summary>
+    public bool IsFileNameKnown(uint hash) => _files.GetName(hash) is not null;
+
+    /// <summary>Registers a name for a file/group/instance hash (used for recovered names).</summary>
+    public void AddFileName(uint hash, string name) => _files.Add(name, hash);
+
+    /// <summary>Merges additional names (e.g. a recovered <c>names.txt</c>) into the registry.</summary>
+    public void LoadProjectNames(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        _files.Read(File.ReadAllLines(path));
+    }
+
     public uint GetTypeHash(string name)
     {
         if (name.StartsWith('#') || name.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
