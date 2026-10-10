@@ -73,10 +73,11 @@
 | Конвертер `.pctp` (part capabilities) ⇄ текст | ✅ |
 | Конвертер `.tlsa` (анимационные группы) ⇄ текст | ✅ |
 | Конвертер `.gait` (параметры походки) ⇄ текст | ✅ |
+| Чтение/запись `.cnv` (беседы, байт-точно) + дамп | ✅ |
 | GUI (WPF) — обозреватель архивов с превью | ✅ |
-| CLI (info/list/extract/unpack/pack/prop/propt/pctp/tlsa/gait/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
+| CLI (info/list/extract/unpack/pack/prop/propt/pctp/tlsa/gait/cnv/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (79, на реальных + синтетических данных) | ✅ |
+| Тесты (81, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -87,8 +88,8 @@
 
 1. **Материалы, скелеты и анимации RW4** — `CompiledState` (компилятор состояний Direct3D),
    скелеты/скины, анимации; нормали и UV-координаты в геометрии; экспорт в Ogre XML.
-2. **Скрипты/конвертеры** из `refs/SporeModder-FX-master`: сделаны `.pctp`, `.tlsa`, `.gait`;
-   далее `cnv`, `scn` и другие.
+2. **Скрипты/конвертеры** из `refs/SporeModder-FX-master`: сделаны `.pctp`, `.tlsa`, `.gait`
+   (полные) и `.cnv` (байт-точно + дамп; импорт текста — TODO); далее `scn`, `spui`, `effects`.
 3. **`.prop_t`: совместимая форма transform** — опции `-offset/-scale/-rotateXYZ` вместо «сырой».
 4. **GUI — дальнейшее развитие**: редактирование свойств, дерево папок, извлечение с диалогами
    прогресса, поиск по распакованной папке, темы оформления.

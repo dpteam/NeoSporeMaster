@@ -35,8 +35,8 @@
 - **Поиск по тексту** — полнотекстовый поиск по распакованным файлам (регистронезависимый),
   с номерами строк и сниппетами.
 - **Экспорт списка ресурсов** в CSV/JSON; **очистка авто-локалей** при распаковке.
-- **Конвертеры** (начало): part-capabilities (`.pctp` ⇄ `.pctp_t`), анимационные группы
-  (`.tlsa` ⇄ `.tlsa_t`) и походка (`.gait` ⇄ `.gait_t`).
+- **Конвертеры**: part-capabilities (`.pctp` ⇄ `.pctp_t`), анимационные группы (`.tlsa` ⇄
+  `.tlsa_t`), походка (`.gait` ⇄ `.gait_t`) и беседы (`.cnv` → `.cnv_t`, дамп).
 - **Хеши именования** — FNV-1 (как в SporeMaster 2 и SporeModder FX).
 - **Реестры имён** `reg_type`, `reg_file`, `reg_property`, `reg_simulator` — встроены в сборку.
 - **Устойчивость к ошибкам**: битые и обрезанные архивы не роняют программу, а дают диагностику.
@@ -173,6 +173,9 @@ dotnet run --project src/SporeMaster.Cli -- tlsa <файл.tlsa> <файл.tlsa_
 
 # Конвертировать параметры походки (GAIT)
 dotnet run --project src/SporeMaster.Cli -- gait <файл.gait> <файл.gait_t>
+
+# Сделать читаемый дамп беседы (CNV)
+dotnet run --project src/SporeMaster.Cli -- cnv <файл.cnv> <файл.cnv_t>
 
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using SporeMaster.Core.Bitmaps;
 using SporeMaster.Core.ArgScript;
+using SporeMaster.Core.Cnv;
 using SporeMaster.Core.Compression;
 using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Gait;
@@ -1179,6 +1180,45 @@ public static class Commands
         catch (Exception ex)
         {
             output.Error($"GAIT conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /// <summary>Dumps a conversation file: <c>cnv &lt;input.cnv&gt; &lt;output.cnv_t&gt;</c>.</summary>
+    public static int Cnv(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "cnv <input.cnv> <output.cnv_t>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        if (input.EndsWith(".cnv_t", StringComparison.OrdinalIgnoreCase))
+        {
+            output.Error("CNV text import is not implemented yet; only binary -> text dump is supported.");
+            return 1;
+        }
+
+        NameRegistrySet names = OpenNames(cli);
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            CnvUnit unit = CnvUnit.Read(input0);
+            File.WriteAllText(outputPath, unit.ToScript(names));
+            output.Success($"Wrote CNV text dump ({unit.Dialogs.Count} dialog(s), {unit.Animations.Count} animation(s), {unit.EventLogs.Count} event log(s)): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"CNV conversion failed: {ex.Message}");
             return 1;
         }
 
