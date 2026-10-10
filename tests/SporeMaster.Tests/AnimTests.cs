@@ -78,6 +78,14 @@ public static class AnimTests
                         foreach (SpAnimationComponent component in channel.Components)
                         {
                             components++;
+                            int expectedInterpolators = component.Type switch
+                            {
+                                SpAnimationComponentType.Position => 4,
+                                SpAnimationComponentType.Rotation => 1,
+                                SpAnimationComponentType.Rigblock => 2,
+                                _ => 0,
+                            };
+
                             foreach (SpAnimationKeyframe keyframe in component.Keyframes)
                             {
                                 foreach (float value in keyframe.Values)
@@ -85,6 +93,18 @@ public static class AnimTests
                                     Assert.True(
                                         !float.IsNaN(value) && !float.IsInfinity(value),
                                         "keyframe value must be finite");
+                                }
+
+                                if (component.Type != SpAnimationComponentType.Info)
+                                {
+                                    Assert.Equal(expectedInterpolators, keyframe.Interpolators.Count);
+                                    foreach (SpAnimationInterpolator interpolator in keyframe.Interpolators)
+                                    {
+                                        Assert.True(interpolator.NextMode <= 3 && interpolator.PreviousMode <= 3, "interp mode");
+                                        Assert.True(
+                                            !float.IsNaN(interpolator.NextFactor) && !float.IsInfinity(interpolator.NextFactor),
+                                            "interp factor must be finite");
+                                    }
                                 }
 
                                 keyframes++;

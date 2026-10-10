@@ -2096,8 +2096,9 @@ public static class Commands
                 output.Table(new[] { "#", "Name", "Keys", "Comps", "Component types", "Bind" }, rows);
 
                 int decoded = anim.Channels.Sum(c => c.Components.Sum(comp => comp.Keyframes.Count));
+                int interpolators = anim.Channels.Sum(c => c.Components.Sum(comp => comp.Keyframes.Sum(k => k.Interpolators.Count)));
                 output.Line();
-                output.Line($"Decoded keyframes: {decoded}");
+                output.Line($"Decoded keyframes: {decoded}, interpolators: {interpolators}");
             }
 
             foreach (var diagnostic in anim.Diagnostics.Items)

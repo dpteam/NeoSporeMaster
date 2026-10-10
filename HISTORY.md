@@ -2,6 +2,19 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.46.0] — `.anim`: интерполяторы ключевых кадров (2026-10-11)
+
+### Добавлено
+- **Интерполяторы `.anim`**: запись 16 байт (`nextFactor`, `previousFactor`, `nextMode`,
+  `previousMode`); число на кадр — position 4, rigblock 2, rotation 1 (scale-интерполятор).
+  `SpAnimationKeyframe.Interpolators`, `SpAnimationInterpolator`.
+- CLI `anim --channels`: показывает «Decoded keyframes …, interpolators …».
+- Тесты: проверка числа интерполяторов и корректности режимов/факторов на реальных анимациях.
+- `docs/ANIM_FORMAT.md` дополнен разделом об интерполяторах.
+
+### Проверено
+- `csa_sit_stop.animation`: 594 ключевых кадра, **1122** интерполятора.
+
 ## [3.45.0] — `.anim`: ключевые кадры компонент (2026-10-11)
 
 ### Добавлено

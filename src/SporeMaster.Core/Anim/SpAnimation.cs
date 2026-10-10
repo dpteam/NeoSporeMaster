@@ -53,6 +53,27 @@ public sealed class SpAnimationKeyframe
 
     /// <summary>Frame time (only meaningful for <see cref="SpAnimationComponentType.Info"/>).</summary>
     public int Time { get; set; }
+
+    /// <summary>Interpolation modes/curves that shape this keyframe (empty for Info keyframes).</summary>
+    public List<SpAnimationInterpolator> Interpolators { get; } = new();
+}
+
+/// <summary>
+/// The interpolation applied to a keyframe on either side: the mode (0 = default, 2 = factor, 3 =
+/// none) and, for factor mode, the interpolation factor (a 16-byte record).
+/// </summary>
+public sealed class SpAnimationInterpolator
+{
+    public float NextFactor { get; set; }
+
+    public float PreviousFactor { get; set; }
+
+    public byte NextMode { get; set; }
+
+    public byte PreviousMode { get; set; }
+
+    /// <summary>True when both sides use the default (mode 0) interpolation.</summary>
+    public bool IsDefault => NextMode == 0 && PreviousMode == 0;
 }
 
 /// <summary>
@@ -320,13 +341,13 @@ public sealed class SpAnimation
                     for (int k = 0; k < keyframeCount; k++)
                     {
                         long position = keyframePtr + (long)component.KeyframeStride * k + keyframeOffset;
-                        if (position < 0 || position + KeyframePrefixSize(component.Type) > fileLength)
+                        if (position < 0 || position + KeyframeSize(component.Type) > fileLength)
                         {
                             break;
                         }
 
                         stream.Seek(position, SeekOrigin.Begin);
-                        component.Keyframes.Add(ReadKeyframe(stream, component.Type));
+                        component.Keyframes.Add(ReadKeyframe(stream, component.Type, position));
                     }
                 }
 
@@ -341,35 +362,67 @@ public sealed class SpAnimation
     }
 
     /// <summary>The number of leading bytes that carry a keyframe's primitive values.</summary>
-    private static int KeyframePrefixSize(SpAnimationComponentType type) => type switch
+    private static int KeyframeSize(SpAnimationComponentType type) => type switch
     {
-        SpAnimationComponentType.Position => 16,   // xyz + weight
-        SpAnimationComponentType.Rotation => 20,   // xyzw + weight
-        SpAnimationComponentType.Rigblock => 8,    // value + weight
-        SpAnimationComponentType.Info => 16,       // time + skip + event index + flags
+        SpAnimationComponentType.Position => 0x50,  // xyz + weight + 4 interpolators
+        SpAnimationComponentType.Rotation => 0x64,  // xyzw + weight + modes/skip + scale interpolator
+        SpAnimationComponentType.Rigblock => 0x28,  // value + weight + 2 interpolators
+        SpAnimationComponentType.Info => 0x10,      // time + skip + event index + flags
         _ => 0,
     };
 
-    private static SpAnimationKeyframe ReadKeyframe(Stream stream, SpAnimationComponentType type)
+    private static SpAnimationKeyframe ReadKeyframe(Stream stream, SpAnimationComponentType type, long frameStart)
     {
         switch (type)
         {
             case SpAnimationComponentType.Position:
-            case SpAnimationComponentType.Rotation:
-            case SpAnimationComponentType.Rigblock:
             {
-                float[] values = new float[type switch
-                {
-                    SpAnimationComponentType.Position => 4,
-                    SpAnimationComponentType.Rotation => 5,
-                    _ => 2,
-                }];
+                var values = new float[4];
                 for (int i = 0; i < values.Length; i++)
                 {
                     values[i] = stream.ReadF32LE();
                 }
 
-                return new SpAnimationKeyframe { Values = values };
+                var keyframe = new SpAnimationKeyframe { Values = values };
+                for (int i = 0; i < 4; i++)
+                {
+                    keyframe.Interpolators.Add(ReadInterpolator(stream));
+                }
+
+                return keyframe;
+            }
+
+            case SpAnimationComponentType.Rotation:
+            {
+                var values = new float[5];
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] = stream.ReadF32LE();
+                }
+
+                var keyframe = new SpAnimationKeyframe { Values = values };
+
+                // Rotation stores a scale interpolator at +0x54; other interpolators are not decoded.
+                stream.Seek(frameStart + 0x54, SeekOrigin.Begin);
+                keyframe.Interpolators.Add(ReadInterpolator(stream));
+                return keyframe;
+            }
+
+            case SpAnimationComponentType.Rigblock:
+            {
+                var values = new float[2];
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] = stream.ReadF32LE();
+                }
+
+                var keyframe = new SpAnimationKeyframe { Values = values };
+                for (int i = 0; i < 2; i++)
+                {
+                    keyframe.Interpolators.Add(ReadInterpolator(stream));
+                }
+
+                return keyframe;
             }
 
             case SpAnimationComponentType.Info:
@@ -383,6 +436,20 @@ public sealed class SpAnimation
                 return new SpAnimationKeyframe { Time = time };
             }
         }
+    }
+
+    private static SpAnimationInterpolator ReadInterpolator(Stream stream)
+    {
+        var interpolator = new SpAnimationInterpolator
+        {
+            NextFactor = stream.ReadF32LE(),
+            PreviousFactor = stream.ReadF32LE(),
+            NextMode = stream.ReadU8(),
+            PreviousMode = stream.ReadU8(),
+        };
+
+        stream.Seek(6, SeekOrigin.Current); // padding
+        return interpolator;
     }
 
     private static string ReadCString(Stream stream, long offset)
