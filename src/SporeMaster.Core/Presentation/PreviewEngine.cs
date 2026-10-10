@@ -124,6 +124,14 @@ public static class PreviewEngine
                     return ResourcePreview.AsModel(model, builder.ToString());
                 }
 
+                // A model with meshes but no static vertex buffers is procedural/animated (geometry is
+                // generated at runtime), so there is nothing static to display.
+                IReadOnlyList<Rw4Mesh> meshes = rw4.ReadMeshes();
+                if (meshes.Count > 0)
+                {
+                    builder.Append("\n  (No static geometry: this model is procedural/animated — it has meshes but no vertex buffers.)\n");
+                }
+
                 return ResourcePreview.AsText(builder.ToString(), "rw4");
             }
 
@@ -221,6 +229,7 @@ public static class PreviewEngine
 
                 model.Meshes.Add(new PreviewMesh
                 {
+                    MeshSectionIndex = mesh.MeshSectionIndex,
                     Positions = mesh.Positions,
                     Normals = mesh.Normals,
                     TexCoords = mesh.TexCoords,
@@ -232,7 +241,7 @@ public static class PreviewEngine
 
             if (model.Meshes.Count > 0)
             {
-                model.TexturePng = TryDecodeDiffuseTexture(rw4);
+                AttachTextures(rw4, model);
                 return model;
             }
 
@@ -244,61 +253,104 @@ public static class PreviewEngine
         }
     }
 
-    /// <summary>Decodes the model's first usable texture (DXT or uncompressed) to PNG, or null.</summary>
-    private static byte[]? TryDecodeDiffuseTexture(RenderWare4File rw4)
+    /// <summary>
+    /// Assigns each mesh its own diffuse texture (via its material's sampler-0 slot) and falls back to
+    /// a model-wide texture when a mesh has no material/texture.
+    /// </summary>
+    private static void AttachTextures(RenderWare4File rw4, PreviewModel model)
     {
         try
         {
-            // Prefer the texture referenced by a material's first slot; fall back to the first raster.
-            var ordered = new List<Rw4Raster>();
             IReadOnlyList<Rw4Raster> rasters = rw4.ReadRasters();
-            foreach (Rw4Material material in rw4.ReadMaterials())
-            {
-                if (material.TextureSlots.Count == 0)
-                {
-                    continue;
-                }
+            IReadOnlyList<Rw4Material> materials = rw4.ReadMaterials();
 
-                int section = material.TextureSlots[0].RasterSectionIndex;
-                Rw4Raster? raster = rasters.FirstOrDefault(r => r.SectionIndex == section);
-                if (raster is not null)
+            var meshToMaterial = new Dictionary<int, int>();
+            foreach (Rw4MaterialLink link in rw4.ReadMaterialLinks())
+            {
+                if (link.MaterialSectionIndices.Count > 0)
                 {
-                    ordered.Add(raster);
+                    meshToMaterial[link.MeshSectionIndex] = link.MaterialSectionIndices[0];
                 }
             }
 
+            byte[]? fallback = null;
             foreach (Rw4Raster raster in rasters)
             {
-                if (!ordered.Contains(raster))
+                byte[]? png = DecodeRasterToPng(rw4, raster);
+                if (png is not null)
                 {
-                    ordered.Add(raster);
+                    fallback = png;
+                    break;
                 }
             }
 
-            foreach (Rw4Raster raster in ordered)
+            model.TexturePng = fallback;
+
+            // Give each mesh its own material's diffuse texture when it has one.
+            foreach (PreviewMesh mesh in model.Meshes)
             {
-                byte[]? pixels = rw4.GetRasterData(raster);
-                if (pixels is null || pixels.Length == 0)
+                if (!meshToMaterial.TryGetValue(mesh.MeshSectionIndex, out int materialSection))
                 {
+                    mesh.TexturePng ??= fallback;
                     continue;
                 }
 
-                byte[]? rgba = raster.DecodeRgba(pixels);
-                if (rgba is null)
+                Rw4Material? material = materials.FirstOrDefault(m => m.SectionIndex == materialSection);
+                if (material is not null && material.TextureSlots.Count > 0)
                 {
-                    continue;
+                    int rasterSection = PickDiffuseSlot(material);
+                    Rw4Raster? raster = rasters.FirstOrDefault(r => r.SectionIndex == rasterSection);
+                    if (raster is not null)
+                    {
+                        byte[]? png = DecodeRasterToPng(rw4, raster);
+                        if (png is not null)
+                        {
+                            mesh.TexturePng = png;
+                        }
+                    }
                 }
 
-                var image = new RgbaImage(raster.Width, raster.Height, rgba);
-                return PngCodec.Encode(image);
+                mesh.TexturePng ??= fallback;
             }
         }
         catch
         {
-            // A broken texture must not break the model preview.
+            // Textures are optional; never fail the model preview because of them.
+        }
+    }
+
+    /// <summary>Picks the raster reference of the material's lowest sampler (diffuse is usually sampler 0).</summary>
+    private static int PickDiffuseSlot(Rw4Material material)
+    {
+        int best = -1;
+        int bestSampler = int.MaxValue;
+        foreach (Rw4TextureSlotMaterial slot in material.TextureSlots)
+        {
+            if (slot.RasterSectionIndex < 0)
+            {
+                continue;
+            }
+
+            if (slot.SamplerIndex < bestSampler)
+            {
+                bestSampler = slot.SamplerIndex;
+                best = slot.RasterSectionIndex;
+            }
         }
 
-        return null;
+        return best;
+    }
+
+    private static byte[]? DecodeRasterToPng(RenderWare4File rw4, Rw4Raster raster)
+    {
+        byte[]? pixels = rw4.GetRasterData(raster);
+        if (pixels is null || pixels.Length == 0)
+        {
+            return null;
+        }
+
+        byte[]? rgba = raster.DecodeRgba(pixels);
+        return rgba is null ? null : PngCodec.Encode(new RgbaImage(raster.Width, raster.Height, rgba));
     }
 
     private static void AppendRw4Summary(RenderWare4File rw4, StringBuilder builder)

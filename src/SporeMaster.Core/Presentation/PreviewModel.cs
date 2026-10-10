@@ -12,6 +12,12 @@ public sealed class PreviewMesh
     /// <summary>Optional texture coordinates as a flat <c>uv</c> array.</summary>
     public float[] TexCoords { get; init; } = Array.Empty<float>();
 
+    /// <summary>Encoded PNG of this mesh's own diffuse texture, when one could be decoded.</summary>
+    public byte[]? TexturePng { get; set; }
+
+    /// <summary>The section index of the source mesh (used to link materials).</summary>
+    public int MeshSectionIndex { get; init; } = -1;
+
     /// <summary>Triangle indices into the vertex arrays.</summary>
     public int[] Indices { get; init; } = Array.Empty<int>();
 

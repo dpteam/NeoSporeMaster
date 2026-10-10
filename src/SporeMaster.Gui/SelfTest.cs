@@ -128,10 +128,14 @@ internal static class SelfTest
                 string originalPath = window.CurrentPackagePathForTest()!;
                 string copy = Path.Combine(Path.GetTempPath(), "SporeMaster-selftest-copy.package");
                 File.Copy(originalPath, copy, overwrite: true);
-                window.OpenPackageForTest(copy);
+                window.OpenNestedPackageForTest(copy);
                 int depthAfterNested = window.PackageStackDepthForTest();
                 window.OpenPreviousPackageForTest();
                 bool returned = string.Equals(window.CurrentPackagePathForTest(), originalPath, StringComparison.OrdinalIgnoreCase);
+                // An explicit (top-level) open must clear the history, so you cannot bounce back into a stale nested package.
+                window.OpenNestedPackageForTest(copy);
+                window.OpenPackageForTest(originalPath);
+                int depthAfterTopLevel = window.PackageStackDepthForTest();
                 try
                 {
                     File.Delete(copy);
@@ -141,7 +145,7 @@ internal static class SelfTest
                     // best effort
                 }
 
-                report.AppendLine($"Package history: stack after nested={depthAfterNested}, returned to parent={returned}");
+                report.AppendLine($"Package history: stack after nested={depthAfterNested}, returned to parent={returned}, cleared on top-level open={depthAfterTopLevel == 0}");
 
                 // Exercise filtering.
                 window.SelectFolderForTest(0);

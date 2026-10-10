@@ -81,7 +81,17 @@ public partial class MainWindow : Window
 
     private void OpenPackage(string path)
     {
-        // Remember the current package so a nested package can be left again (File -> Back, or Up at the root).
+        // Explicitly opening a package (dialog/drag-drop/command line) starts a fresh top-level session.
+        _packageStack.Clear();
+        LoadPackage(path);
+    }
+
+    /// <summary>
+    /// Opens a package that lives inside the current one (e.g. a nested <c>.package</c>); the current
+    /// package is remembered so it can be left again.
+    /// </summary>
+    private void OpenNestedPackage(string path)
+    {
         if (_session is not null && !string.Equals(_session.FilePath, path, StringComparison.OrdinalIgnoreCase))
         {
             _packageStack.Add(_session.FilePath);
@@ -266,7 +276,7 @@ public partial class MainWindow : Window
         File.WriteAllBytes(temp, data);
 
         // OpenPackage records the current package, so Up/Close/Back can return to it.
-        OpenPackage(temp);
+        OpenNestedPackage(temp);
     });
 
     private void OnExit(object sender, RoutedEventArgs e) => Guarded(Close);
@@ -702,25 +712,16 @@ public partial class MainWindow : Window
     {
         var group = new Model3DGroup();
 
-        // If a diffuse texture was decoded, wrap it on the meshes that have texture coordinates.
-        ImageBrush? textureBrush = null;
-        if (model.TexturePng is not null && TryDecodeImage(model.TexturePng, out BitmapSource? textureImage) && textureImage is not null)
+        // Pre-decode the model-wide texture; individual meshes may override it with their own.
+        ImageBrush? modelBrush = null;
+        if (model.TexturePng is not null && TryDecodeImage(model.TexturePng, out BitmapSource? modelImage) && modelImage is not null)
         {
-            textureBrush = new ImageBrush(textureImage) { Stretch = Stretch.Fill };
+            modelBrush = new ImageBrush(modelImage) { Stretch = Stretch.Fill };
         }
 
         var greyMaterial = new MaterialGroup();
         greyMaterial.Children.Add(new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(0xC8, 0xC8, 0xC8))));
         greyMaterial.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)), 20));
-
-        Material texturedMaterial = greyMaterial;
-        if (textureBrush is not null)
-        {
-            var textured = new MaterialGroup();
-            textured.Children.Add(new DiffuseMaterial(textureBrush));
-            textured.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)), 20));
-            texturedMaterial = textured;
-        }
 
         foreach (PreviewMesh mesh in model.Meshes)
         {
@@ -744,8 +745,15 @@ public partial class MainWindow : Window
                 }
             }
 
+            // Prefer this mesh's own texture, then the model-wide one.
+            ImageBrush? brush = modelBrush;
+            if (mesh.TexturePng is not null && TryDecodeImage(mesh.TexturePng, out BitmapSource? meshImage) && meshImage is not null)
+            {
+                brush = new ImageBrush(meshImage) { Stretch = Stretch.Fill };
+            }
+
             Material material = greyMaterial;
-            if (textureBrush is not null && mesh.HasTexCoords)
+            if (brush is not null && mesh.HasTexCoords)
             {
                 geometry.TextureCoordinates = new PointCollection(mesh.VertexCount);
                 for (int i = 0; i + 1 < mesh.TexCoords.Length; i += 2)
@@ -754,7 +762,10 @@ public partial class MainWindow : Window
                     geometry.TextureCoordinates.Add(new Point(mesh.TexCoords[i], 1 - mesh.TexCoords[i + 1]));
                 }
 
-                material = texturedMaterial;
+                var textured = new MaterialGroup();
+                textured.Children.Add(new DiffuseMaterial(brush));
+                textured.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)), 20));
+                material = textured;
             }
 
             group.Children.Add(new GeometryModel3D
@@ -1414,6 +1425,8 @@ public partial class MainWindow : Window
     internal int FolderCount => _root?.Children.Count ?? 0;
 
     internal void OpenPackageForTest(string path) => OpenPackage(path);
+
+    internal void OpenNestedPackageForTest(string path) => OpenNestedPackage(path);
 
     internal string? CurrentPackagePathForTest() => _session?.FilePath;
 
