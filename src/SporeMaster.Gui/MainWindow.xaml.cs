@@ -103,6 +103,138 @@ public partial class MainWindow : Window
 
     private void OnOpenPreviousPackage(object sender, RoutedEventArgs e) => OpenPreviousPackage();
 
+    // ---- export all models ----
+
+    private void OnExportAllModelsObj(object sender, RoutedEventArgs e) => Guarded(() => ExportAllModels("obj"));
+
+    private void OnExportAllModelsOgre(object sender, RoutedEventArgs e) => Guarded(() => ExportAllModels("ogre"));
+
+    /// <summary>Exports every decodable RW4 model from the current package (OBJ or Ogre XML).</summary>
+    private void ExportAllModels(string format)
+    {
+        if (_session is null)
+        {
+            MessageBox.Show(this, Core.Localization.Localizer.Default["gui.msg.openFirst"], "SporeMaster 3");
+            return;
+        }
+
+        var dialog = new OpenFolderDialog { Title = Core.Localization.Localizer.Default["gui.menu.exportModels"] };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        int exported = 0;
+        int skipped = 0;
+        int failed = 0;
+
+        foreach (ResourceItem row in _items.Where(r => r.TypeId == ResourceTypeIds.Rw4))
+        {
+            try
+            {
+                byte[] data = _session.Read(row.Entry);
+                using Core.RenderWare4.RenderWare4File rw4 = Core.RenderWare4.RenderWare4File.Read(new MemoryStream(data));
+                IReadOnlyList<Core.RenderWare4.Rw4MeshGeometry> geometry = rw4.ReadGeometry();
+                if (geometry.Count == 0)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                string stem = row.Path.Replace('/', '_');
+                string modelDir = Path.Combine(dialog.FolderName, stem);
+                Directory.CreateDirectory(modelDir);
+
+                var meshToMaterial = new Dictionary<int, int>();
+                foreach (Core.RenderWare4.Rw4MaterialLink link in rw4.ReadMaterialLinks())
+                {
+                    if (link.MaterialSectionIndices.Count > 0)
+                    {
+                        meshToMaterial[link.MeshSectionIndex] = link.MaterialSectionIndices[0];
+                    }
+                }
+
+                var materials = rw4.ReadMaterials();
+                var rasters = rw4.ReadRasters();
+                string texturesDir = Path.Combine(modelDir, stem + "_textures");
+                Directory.CreateDirectory(texturesDir);
+
+                var materialList = new List<(string Name, string? DiffuseTexture)>();
+                var materialNameBySection = new Dictionary<int, string>();
+                var texturesWritten = new Dictionary<int, string>();
+                for (int i = 0; i < rasters.Count; i++)
+                {
+                    byte[]? pixels = rw4.GetRasterData(rasters[i]);
+                    if (pixels is null || pixels.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    string file = $"{stem}_tex{i}.dds";
+                    using (FileStream ddsOut = File.Create(Path.Combine(texturesDir, file)))
+                    {
+                        rasters[i].ToDds(pixels).Write(ddsOut);
+                    }
+
+                    texturesWritten[i] = file;
+                }
+
+                for (int i = 0; i < materials.Count; i++)
+                {
+                    string name = $"material_{i}";
+                    materialNameBySection[materials[i].SectionIndex] = name;
+
+                    string? diffuse = null;
+                    if (materials[i].TextureSlots.Count > 0)
+                    {
+                        int rasterSection = materials[i].TextureSlots[0].RasterSectionIndex;
+                        for (int r = 0; r < rasters.Count; r++)
+                        {
+                            if (rasters[r].SectionIndex == rasterSection && texturesWritten.TryGetValue(r, out string? file))
+                            {
+                                diffuse = Path.GetRelativePath(modelDir, Path.Combine(texturesDir, file)).Replace('\\', '/');
+                            }
+                        }
+                    }
+
+                    materialList.Add((name, diffuse));
+                }
+
+                Func<Core.RenderWare4.Rw4MeshGeometry, string?> pick = mesh =>
+                    meshToMaterial.TryGetValue(mesh.MeshSectionIndex, out int state)
+                        && materialNameBySection.TryGetValue(state, out string? name)
+                        ? name
+                        : null;
+
+                if (format == "ogre")
+                {
+                    Core.RenderWare4.Rw4OgreExporter.Export(
+                        Path.Combine(modelDir, stem + ".mesh.xml"), geometry, geometry, pick, materialList);
+                }
+                else
+                {
+                    Core.RenderWare4.Rw4ObjExporter.Export(
+                        geometry, Path.Combine(modelDir, stem + ".obj"), stem + ".mtl", pick, materialList);
+                }
+
+                exported++;
+            }
+            catch (Exception ex)
+            {
+                App.LogCrash($"export model {row.Path}", ex);
+                failed++;
+            }
+        }
+
+        StatusText.Text = $"Exported {exported} model(s) to {dialog.FolderName}" + (failed > 0 ? $" ({failed} failed)" : string.Empty);
+        MessageBox.Show(
+            this,
+            Core.Localization.Localizer.Default.Get("gui.msg.modelsExported", exported, skipped),
+            Core.Localization.Localizer.Default["gui.menu.exportModels"],
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
     private void TryOpenFromCommandLine()
     {
         string[] args = Environment.GetCommandLineArgs();

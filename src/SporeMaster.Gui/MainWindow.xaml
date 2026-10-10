@@ -40,6 +40,11 @@
                 <MenuItem Header="{loc:Loc gui.menu.extractFolder}" Click="OnExtractFolder" />
                 <MenuItem Header="{loc:Loc gui.menu.extractChecked}" Click="OnExtractChecked" />
                 <Separator />
+                <MenuItem Header="{loc:Loc gui.menu.exportModels}">
+                    <MenuItem Header="{loc:Loc gui.menu.exportModelsObj}" Click="OnExportAllModelsObj" />
+                    <MenuItem Header="{loc:Loc gui.menu.exportModelsOgre}" Click="OnExportAllModelsOgre" />
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="{loc:Loc gui.menu.checkAll}" Click="OnCheckAllFolders" />
                 <MenuItem Header="{loc:Loc gui.menu.uncheckAll}" Click="OnUncheckAllFolders" />
                 <Separator />
