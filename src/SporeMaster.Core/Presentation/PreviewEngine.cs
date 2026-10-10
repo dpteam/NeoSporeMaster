@@ -18,7 +18,7 @@ public sealed class ResourcePreview
     {
     }
 
-    /// <summary>One of: empty, image, props, locale, texture, rw4, text, hex, error.</summary>
+    /// <summary>One of: empty, image, props, locale, texture, rw4, anim, model, text, hex, error.</summary>
     public string Kind { get; private init; } = "empty";
 
     public string? Text { get; private init; }
@@ -26,13 +26,21 @@ public sealed class ResourcePreview
     /// <summary>Encoded PNG bytes when the resource is (or can be rendered as) an image.</summary>
     public byte[]? PngBytes { get; private init; }
 
+    /// <summary>3D geometry when the resource is a model that can be viewed.</summary>
+    public PreviewModel? Model { get; private init; }
+
     public bool IsImage => Kind == "image" && PngBytes is not null;
+
+    public bool IsModel => Kind == "model" && Model is not null;
 
     public static ResourcePreview Empty() => new() { Kind = "empty", Text = "(nothing selected)" };
 
     public static ResourcePreview AsText(string text, string kind = "text") => new() { Kind = kind, Text = text };
 
     public static ResourcePreview AsImage(byte[] png) => new() { Kind = "image", PngBytes = png };
+
+    public static ResourcePreview AsModel(PreviewModel model, string text) =>
+        new() { Kind = "model", Model = model, Text = text };
 }
 
 /// <summary>
@@ -43,6 +51,7 @@ public static class PreviewEngine
 {
     private const int MaxTextChars = 200_000;
     private const int MaxHexBytes = 8 * 1024;
+    private const int MaxPreviewTriangles = 300_000; // keep the 3D preview responsive
 
     public static ResourcePreview Build(ResourceItem item, byte[] data, NameRegistrySet names)
     {
@@ -105,6 +114,14 @@ public static class PreviewEngine
                 if (rw4.Sections.Count > shown)
                 {
                     builder.Append($"  … {rw4.Sections.Count - shown} more section(s)\n");
+                }
+
+                // For models, also decode the geometry so the GUI can show a 3D preview.
+                PreviewModel? model = TryBuildModel(rw4);
+                if (model is not null && model.Meshes.Count > 0)
+                {
+                    builder.Append($"\n  3D: {model.Meshes.Count} mesh(es), {model.TotalTriangles} triangles.\n");
+                    return ResourcePreview.AsModel(model, builder.ToString());
                 }
 
                 return ResourcePreview.AsText(builder.ToString(), "rw4");
@@ -179,6 +196,44 @@ public static class PreviewEngine
         catch (Exception ex)
         {
             return ResourcePreview.AsText($"Preview unavailable: {ex.Message}\n\n{HexDump(data)}", "error");
+        }
+    }
+
+    /// <summary>Decodes triangle geometry into a UI-free <see cref="PreviewModel"/> (null on failure/empty).</summary>
+    private static PreviewModel? TryBuildModel(RenderWare4File rw4)
+    {
+        try
+        {
+            IReadOnlyList<Rw4MeshGeometry> geometry = rw4.ReadGeometry();
+            var model = new PreviewModel();
+            int triangles = 0;
+            foreach (Rw4MeshGeometry mesh in geometry)
+            {
+                if (mesh.VertexCount == 0 || mesh.TriangleCount == 0)
+                {
+                    continue;
+                }
+
+                if (triangles + mesh.TriangleCount > MaxPreviewTriangles)
+                {
+                    break;
+                }
+
+                model.Meshes.Add(new PreviewMesh
+                {
+                    Positions = mesh.Positions,
+                    Normals = mesh.Normals,
+                    Indices = mesh.Indices,
+                });
+
+                triangles += mesh.TriangleCount;
+            }
+
+            return model.Meshes.Count > 0 ? model : null;
+        }
+        catch
+        {
+            return null;
         }
     }
 

@@ -189,6 +189,13 @@
                                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#FAFAFA">
                         <Image x:Name="PreviewImage" Stretch="None" Margin="8" />
                     </ScrollViewer>
+                    <Grid x:Name="PreviewModelHost" Visibility="Collapsed" Background="#202020"
+                          MouseLeftButtonDown="OnModelMouseDown" MouseLeftButtonUp="OnModelMouseUp"
+                          MouseMove="OnModelMouseMove" MouseWheel="OnModelMouseWheel">
+                        <Viewport3D x:Name="PreviewViewport" ClipToBounds="True" />
+                        <TextBlock Text="drag to rotate · wheel to zoom" Foreground="#BBB"
+                                   HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8" />
+                    </Grid>
                 </Grid>
             </DockPanel>
         </Grid>

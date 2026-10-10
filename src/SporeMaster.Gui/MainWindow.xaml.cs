@@ -2,7 +2,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using Microsoft.Win32;
 using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Presentation;
@@ -643,11 +645,27 @@ public partial class MainWindow : Window
 
         ResourcePreview preview = PreviewEngine.Build(row, data, _session.Names);
 
+        if (preview.IsModel && preview.Model!.Meshes.Count > 0)
+        {
+            try
+            {
+                ShowModel(preview.Model);
+            }
+            catch (Exception ex)
+            {
+                App.LogCrash("3D preview", ex);
+                ShowText((preview.Text ?? string.Empty) + "\n\n(3D preview failed: " + ex.Message + ")");
+            }
+
+            return;
+        }
+
         if (preview.IsImage && TryDecodeImage(preview.PngBytes!, out BitmapSource? bitmap))
         {
             PreviewImage.Source = bitmap;
             PreviewImageScroller.Visibility = Visibility.Visible;
             PreviewText.Visibility = Visibility.Collapsed;
+            PreviewModelHost.Visibility = Visibility.Collapsed;
         }
         else if (preview.IsImage)
         {
@@ -659,6 +677,144 @@ public partial class MainWindow : Window
             ShowText(preview.Text ?? string.Empty);
         }
     }
+
+    private void ShowText(string text)
+    {
+        PreviewText.Text = text;
+        PreviewText.Visibility = Visibility.Visible;
+        PreviewImageScroller.Visibility = Visibility.Collapsed;
+        PreviewModelHost.Visibility = Visibility.Collapsed;
+    }
+
+    // ---- 3D model preview ----
+
+    private PerspectiveCamera? _modelCamera;
+    private Point3D _modelCenter;
+    private double _modelRadius = 1;
+    private double _modelAzimuth = 0.6;
+    private double _modelElevation = 0.4;
+    private double _modelDistance = 3;
+    private bool _modelDragging;
+    private Point _modelDragLast;
+
+    /// <summary>Builds a WPF 3D scene from the preview model and shows it in the preview pane.</summary>
+    private void ShowModel(PreviewModel model)
+    {
+        var group = new Model3DGroup();
+
+        var material = new MaterialGroup();
+        material.Children.Add(new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(0xC8, 0xC8, 0xC8))));
+        material.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)), 20));
+
+        foreach (PreviewMesh mesh in model.Meshes)
+        {
+            var geometry = new MeshGeometry3D
+            {
+                Positions = new Point3DCollection(mesh.VertexCount),
+                TriangleIndices = new Int32Collection(mesh.Indices),
+            };
+
+            for (int i = 0; i + 2 < mesh.Positions.Length; i += 3)
+            {
+                geometry.Positions.Add(new Point3D(mesh.Positions[i], mesh.Positions[i + 1], mesh.Positions[i + 2]));
+            }
+
+            if (mesh.HasNormals)
+            {
+                geometry.Normals = new Vector3DCollection(mesh.VertexCount);
+                for (int i = 0; i + 2 < mesh.Normals.Length; i += 3)
+                {
+                    geometry.Normals.Add(new Vector3D(mesh.Normals[i], mesh.Normals[i + 1], mesh.Normals[i + 2]));
+                }
+            }
+
+            group.Children.Add(new GeometryModel3D
+            {
+                Geometry = geometry,
+                Material = material,
+                BackMaterial = material,
+            });
+        }
+
+        (float[] min, float[] max) = model.Bounds();
+        _modelCenter = new Point3D((min[0] + max[0]) / 2.0, (min[1] + max[1]) / 2.0, (min[2] + max[2]) / 2.0);
+        double dx = max[0] - min[0];
+        double dy = max[1] - min[1];
+        double dz = max[2] - min[2];
+        _modelRadius = Math.Max(0.001, Math.Max(dx, Math.Max(dy, dz)) * 0.5);
+        _modelDistance = _modelRadius * 3;
+
+        group.Children.Add(new AmbientLight(Color.FromRgb(0x60, 0x60, 0x60)));
+        group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-1, -1.5, -1)));
+        group.Children.Add(new DirectionalLight(Color.FromRgb(0x90, 0x90, 0x90), new Vector3D(1, 0.5, 1)));
+
+        _modelCamera = new PerspectiveCamera { FieldOfView = 45 };
+        PreviewViewport.Children.Clear();
+        PreviewViewport.Children.Add(new ModelVisual3D { Content = group });
+        PreviewViewport.Camera = _modelCamera;
+        UpdateModelCamera();
+
+        PreviewModelHost.Visibility = Visibility.Visible;
+        PreviewText.Visibility = Visibility.Collapsed;
+        PreviewImageScroller.Visibility = Visibility.Collapsed;
+        PreviewImage.Source = null;
+    }
+
+    private void UpdateModelCamera()
+    {
+        if (_modelCamera is null)
+        {
+            return;
+        }
+
+        double x = Math.Cos(_modelElevation) * Math.Sin(_modelAzimuth);
+        double y = Math.Sin(_modelElevation);
+        double z = Math.Cos(_modelElevation) * Math.Cos(_modelAzimuth);
+        _modelCamera.Position = new Point3D(
+            _modelCenter.X + x * _modelDistance,
+            _modelCenter.Y + y * _modelDistance,
+            _modelCenter.Z + z * _modelDistance);
+        _modelCamera.LookDirection = new Vector3D(
+            _modelCenter.X - _modelCamera.Position.X,
+            _modelCenter.Y - _modelCamera.Position.Y,
+            _modelCenter.Z - _modelCamera.Position.Z);
+        _modelCamera.UpDirection = new Vector3D(0, 1, 0);
+        _modelCamera.NearPlaneDistance = _modelDistance * 0.01;
+        _modelCamera.FarPlaneDistance = _modelDistance * 10;
+    }
+
+    private void OnModelMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _modelDragging = true;
+        _modelDragLast = e.GetPosition(PreviewModelHost);
+        PreviewModelHost.CaptureMouse();
+    }
+
+    private void OnModelMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        _modelDragging = false;
+        PreviewModelHost.ReleaseMouseCapture();
+    }
+
+    private void OnModelMouseMove(object sender, MouseEventArgs e) => Guarded(() =>
+    {
+        if (!_modelDragging)
+        {
+            return;
+        }
+
+        Point position = e.GetPosition(PreviewModelHost);
+        _modelAzimuth -= (position.X - _modelDragLast.X) * 0.01;
+        _modelElevation = Math.Clamp(_modelElevation + (position.Y - _modelDragLast.Y) * 0.01, -1.5, 1.5);
+        _modelDragLast = position;
+        UpdateModelCamera();
+    });
+
+    private void OnModelMouseWheel(object sender, MouseWheelEventArgs e) => Guarded(() =>
+    {
+        _modelDistance = Math.Clamp(_modelDistance * (e.Delta > 0 ? 0.9 : 1.1), _modelRadius * 0.2, _modelRadius * 20);
+        UpdateModelCamera();
+    });
 
     private static bool TryDecodeImage(byte[] bytes, out BitmapSource? bitmap)
     {
@@ -679,13 +835,6 @@ public partial class MainWindow : Window
             App.LogCrash("image decode", ex);
             return false;
         }
-    }
-
-    private void ShowText(string text)
-    {
-        PreviewText.Text = text;
-        PreviewText.Visibility = Visibility.Visible;
-        PreviewImageScroller.Visibility = Visibility.Collapsed;
     }
 
     // ---- extraction ----
@@ -1260,6 +1409,34 @@ public partial class MainWindow : Window
     {
         FilterBox.Text = filter;
         RefreshList();
+    }
+
+    /// <summary>Shows the preview for a row and captures the preview pane to a PNG (for verification).</summary>
+    internal string? CapturePreviewPngForTest(ResourceItem row, string path)
+    {
+        ShowPreview(row);
+        UpdateLayout();
+
+        FrameworkElement target = PreviewModelHost.Visibility == Visibility.Visible
+            ? PreviewModelHost
+            : PreviewImageScroller.Visibility == Visibility.Visible
+                ? PreviewImageScroller
+                : PreviewText;
+
+        if (target.ActualWidth < 1 || target.ActualHeight < 1)
+        {
+            return null;
+        }
+
+        var bitmap = new RenderTargetBitmap(
+            (int)target.ActualWidth, (int)target.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(target);
+
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using FileStream stream = File.Create(path);
+        encoder.Save(stream);
+        return path;
     }
 
     /// <summary>Extracts a row to a temporary file (used by the drag-out path) for the self-test.</summary>

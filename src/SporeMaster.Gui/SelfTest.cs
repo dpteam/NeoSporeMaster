@@ -47,6 +47,15 @@ internal static class SelfTest
 
                 report.AppendLine($"Folder navigation: {foldersToVisit} folder(s) selected");
 
+                // 3D model preview: show a model and capture the pane to a PNG for verification.
+                ResourceItem? modelRow = window.RowsForTest().FirstOrDefault(r => r.TypeId == 0x2F4E681B);
+                if (modelRow is not null)
+                {
+                    string shotPath = Path.Combine(Path.GetTempPath(), "sporemaster-3d-preview.png");
+                    string? shot = window.CapturePreviewPngForTest(modelRow, shotPath);
+                    report.AppendLine($"3D preview screenshot: {(shot is null ? "not captured" : shot)}");
+                }
+
                 // Checked folders (multi-select) with standard tri-state root behaviour.
                 if (window.FolderCount > 0)
                 {

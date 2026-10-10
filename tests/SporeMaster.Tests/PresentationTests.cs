@@ -103,11 +103,15 @@ public static class PresentationTests
         var item = new ResourceItem(target, names);
         ResourcePreview preview = PreviewEngine.Build(item, package.ReadEntry(target), names);
 
-        Assert.Equal("rw4", preview.Kind);
+        // A model with geometry now previews as a 3D model (Kind == "model"); the text still lists sections.
+        Assert.Equal("model", preview.Kind);
+        Assert.True(preview.IsModel, "the resource should expose 3D geometry");
+        Assert.True(preview.Model!.Meshes.Count > 0, "the model should have meshes");
+        Assert.True(preview.Model.TotalTriangles > 0, "the model should have triangles");
+        (float[] min, float[] max) = preview.Model.Bounds();
+        Assert.True(max[0] >= min[0] && max[1] >= min[1] && max[2] >= min[2], "bounds are valid");
         Assert.Contains(preview.Text!, "RenderWare 4 resource");
-        Assert.Contains(preview.Text!, "Meshes:");
-        Assert.Contains(preview.Text!, "Materials:");
-        Assert.Contains(preview.Text!, "Skeletons:");
+        Assert.Contains(preview.Text!, "3D:");
     }
 
     [SporeTest("resource glyphs are chosen per type")]
