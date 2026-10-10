@@ -36,7 +36,8 @@
   с номерами строк и сниппетами.
 - **Экспорт списка ресурсов** в CSV/JSON; **очистка авто-локалей** при распаковке.
 - **Конвертеры**: part-capabilities (`.pctp` ⇄ `.pctp_t`), анимационные группы (`.tlsa` ⇄
-  `.tlsa_t`), походка (`.gait` ⇄ `.gait_t`) и беседы (`.cnv` → `.cnv_t`, дамп).
+  `.tlsa_t`), походка (`.gait` ⇄ `.gait_t`), беседы (`.cnv` → `.cnv_t`, дамп) и таблицы добычи
+  (`.loottable` ⇄ `.loottable_t`).
 - **Хеши именования** — FNV-1 (как в SporeMaster 2 и SporeModder FX).
 - **Реестры имён** `reg_type`, `reg_file`, `reg_property`, `reg_simulator` — встроены в сборку.
 - **Устойчивость к ошибкам**: битые и обрезанные архивы не роняют программу, а дают диагностику.
@@ -176,6 +177,9 @@ dotnet run --project src/SporeMaster.Cli -- gait <файл.gait> <файл.gait_
 
 # Сделать читаемый дамп беседы (CNV)
 dotnet run --project src/SporeMaster.Cli -- cnv <файл.cnv> <файл.cnv_t>
+
+# Конвертировать таблицу добычи (loot table)
+dotnet run --project src/SporeMaster.Cli -- loottable <файл.loottable> <файл.loottable_t>
 
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales

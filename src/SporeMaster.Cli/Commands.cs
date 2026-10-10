@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using SporeMaster.Core.Bitmaps;
 using SporeMaster.Core.ArgScript;
+using SporeMaster.Core.Cell;
 using SporeMaster.Core.Cnv;
 using SporeMaster.Core.Compression;
 using SporeMaster.Core.Dbpf;
@@ -64,8 +65,8 @@ public static class Commands
         }
 
         NameRegistrySet names = OpenNames(cli);
-        int? typeFilter = ParseHashFilter(cli.Get("type"), names.GetTypeHash, output);
-        int? groupFilter = ParseHashFilter(cli.Get("group"), names.GetFileHash, output);
+        uint? typeFilter = ParseHashFilter(cli.Get("type"), names.GetTypeHash, output);
+        uint? groupFilter = ParseHashFilter(cli.Get("group"), names.GetFileHash, output);
         string? nameFilter = cli.Get("name");
         bool onlyCompressed = cli.Has("compressed");
         int limit = cli.GetInt("limit") ?? int.MaxValue;
@@ -1225,6 +1226,49 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Converts a loot table: <c>loottable &lt;in&gt; &lt;out&gt;</c> (binary or text).</summary>
+    public static int LootTable(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "loottable <input.loottable|input.loottable_t> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        NameRegistrySet names = OpenNames(cli);
+        try
+        {
+            if (input.EndsWith(".loottable_t", StringComparison.OrdinalIgnoreCase))
+            {
+                CellLootTableFile table = CellLootTableFile.Parse(File.ReadAllText(input), names);
+                using FileStream binOut = File.Create(outputPath);
+                table.Write(binOut);
+                output.Success($"Wrote binary loot table ({table.Entries.Count} entr(ies)): {outputPath}");
+            }
+            else
+            {
+                using FileStream input0 = File.OpenRead(input);
+                CellLootTableFile table = CellLootTableFile.Read(input0);
+                File.WriteAllText(outputPath, table.ToScript(names));
+                output.Success($"Wrote loot table text ({table.Entries.Count} entr(ies)): {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Loot table conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     public static int Verify(CommandLine cli, Output output)
     {
         if (!TryOpen(cli, output, out DatabasePackedFile? package))
@@ -1360,14 +1404,14 @@ public static class Commands
         }
     }
 
-    private static int? ParseHashFilter(string? value, Func<string, uint> hasher, Output output)
+    private static uint? ParseHashFilter(string? value, Func<string, uint> hasher, Output output)
     {
         if (string.IsNullOrEmpty(value))
         {
             return null;
         }
 
-        return unchecked((int)hasher(value));
+        return hasher(value);
     }
 
     private static DbpfVersion ParseVersion(string? value) => value switch
