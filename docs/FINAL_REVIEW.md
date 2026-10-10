@@ -50,6 +50,49 @@
 - [ ] `docs/*` — формат-доки и заметки; нет устаревших «не реализовано».
 - [ ] Все «TODO/в планах» из `MEMORY.md` и `RESUME.md` — либо сделано, либо осознанно отложено.
 
+## 5a. Просмотр `refs/` (источники)
+
+- [ ] **`refs/SporeModder-FX-master/`** — пройти по исходникам (форматы, конвертеры, RW4, cell,
+      `argscript`, `filestructures`, `shaders`, `simulator`, `locale`, `bitmap`/`raster`/`dds`):
+      сверить, что реализовано, что нет и что можно доделать; найти недостающие детали форматов.
+- [ ] **Прочие источники** — `refs/SporeEdit`, `refs/CheckAll`, `refs/EAPackageBrowser-main`,
+      `refs/_AlsoOnlyIfNeed`: сверить подходы/фичи, перенять утилиты/идеи.
+- [ ] **`refs/SporeMaster/`** (легаси SporeMaster 2) — проверить, не упущено ли что-то полезное
+      (suffix-array поиск, обработка ошибок, UI-логика).
+
+## 5b. Внутренности Leftovers (распакованные данные)
+
+- [ ] **`refs/SporeUnpackedData/SporeBeta2008/Data/`** — просмотреть **содержимое** файлов (не только
+      структуру): какие форматы/типы реально лежат, как отличаются от тестовых архивов.
+- [ ] **`refs/SporeUnpackedData/SporeHeroWiiPCLeftOvers/Data/`** (`Data/` + `UserData/`) — то же:
+      типы файлов, `DDFLists/`, `Config/`, `Locale/`, `PreBakedKeys.txt`, `README.txt`.
+- [ ] Сверить реальные «внутренности» с нашими парсерами (форматы, расширения, поля); найти
+      несоответствия/непокрытые типы.
+
+### 5b.1 Что реально лежит в Leftovers (первый обзор)
+
+- `SporeBeta2008/Data`: в основном **`.txt`** (8775 — это те самые текстовые `trigger`), далее
+  `.prop`, `.css`, `.png`, `.ttf`, `.html`, `.js`, `.vp6`/`.avi` (видео), `.db`, `.pkp`, `.dat`, `.bat`.
+- `SporeHeroWiiPCLeftOvers/Data`: `.prop` (978), `.txt`, **`.crt`** (54, тип `crt` = `0x2b978c46`),
+  `.py`, `.bat`.
+- Выводы: текст (`trigger`→`.txt`) и `.prop` доминируют; есть UI-веб (`.css/.html/.js`), шрифты (`.ttf`),
+  видео (`.vp6/.avi`), и `.crt`. Полезно проверить `crt`/`db`/`pkp`/`dat` на реальных данных.
+
+### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
+
+Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `rw4`, `anim`, `pctp`,
+`tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`), `argscript`.
+
+**Ещё не реализовано** (пакеты SporeModder FX, сверить на реальных данных перед реализацией!):
+- `arth` (`0x0472329b`; текст-подобный) — по KeyMap встречается 48 раз;
+- `creaturedata` (`0x0f43029a`, 260) — данные редактора существ;
+- `scn` (`0x047b8300`) — уровни/архетипы (в тестовых архивах пока не встретился);
+- `spui` (`0x250fe9a2`) — layout'ы интерфейса (есть в `CSA_Graphics`/`CSA_Main`);
+- `otdb`, `gmdl` (`0x00e6bce5`), `effects`, `shaders`, `simulator`;
+- под-форматы `cell` (напр. `.structure`) — референс SporeModder **не всегда совпадает** с данными.
+
+Приоритет — по частоте/пользе; каждый **сначала проверять на реальных файлах** (правило проекта).
+
 ## 6. Репак/игра
 
 - [ ] `roundtrip` на всех тестовых архивах + Retail.
