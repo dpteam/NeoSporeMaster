@@ -9,14 +9,20 @@
 
   <ItemGroup>
     <!--
-      SporeModder FX name/hash registries, shipped as embedded resources so the
-      library and the CLI stay self-contained (no files next to the executable).
+      SporeModder FX name/hash registries and the fragment dictionaries used by the hash
+      guesser. The registries are embedded (small); the guess dictionaries are large so they
+      are copied to the output directory and loaded from disk on demand.
       Path: <repo>/data/*.txt
     -->
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\..\data\**\*.txt"
-                      Link="data\%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\..\data\reg_*.txt"
+                      Link="data\%(Filename)%(Extension)" />
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)lang\**\*.lang"
                       Link="lang\%(RecursiveDir)%(Filename)%(Extension)" />
+
+    <Content Include="$(MSBuildThisFileDirectory)..\..\data\guess_left.txt;$(MSBuildThisFileDirectory)..\..\data\guess_right.txt"
+             Link="data\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             Condition="Exists('$(MSBuildThisFileDirectory)..\..\data\guess_left.txt')" />
   </ItemGroup>
 
 </Project>

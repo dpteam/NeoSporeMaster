@@ -709,6 +709,105 @@ public static class Commands
         return SporeBitmapTypes.ThirtyTwoBitImage;
     }
 
+    /// <summary>Recovers names from hashes: <c>guess &lt;hash&gt;... [--prefix ...] [--dict DIR]</c>.</summary>
+    public static int Guess(CommandLine cli, Output output)
+    {
+        string? dictDir = cli.Get("dict");
+        HashGuesser? guesser = GuessDictionary.TryLoad(dictDir);
+
+        if (guesser is null)
+        {
+            output.Error(
+                "Could not find the guess dictionaries (guess_left.txt / guess_right.txt). " +
+                "Pass --dict <directory> pointing at the folder that contains them.");
+            return 1;
+        }
+
+        string prefix = cli.Get("prefix") ?? string.Empty;
+        string suffix = cli.Get("suffix") ?? string.Empty;
+        string contains = cli.Get("contains") ?? string.Empty;
+        int max = cli.GetInt("max") ?? 50;
+        bool iterative = cli.Has("iterative");
+
+        output.Line($"Loaded {guesser.LeftCount} left and {guesser.RightCount} right fragment(s).");
+
+        // --package <path>: guess for every unnamed hash in a package.
+        string? packagePath = cli.Get("package");
+        if (packagePath is not null)
+        {
+            if (!TryOpenArg(packagePath, output, out DatabasePackedFile? package))
+            {
+                return 1;
+            }
+
+            NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+            var unknown = new HashSet<uint>();
+            using (package)
+            {
+                foreach (DbpfEntry entry in package!.Entries)
+                {
+                    if (names.GetFileName(entry.Key.InstanceId).StartsWith('#'))
+                    {
+                        unknown.Add(entry.Key.InstanceId);
+                    }
+                }
+            }
+
+            output.Line($"Package has {unknown.Count} unnamed instance hash(es).");
+
+            int found = 0;
+            foreach (uint hash in unknown.Take(cli.GetInt("limit") ?? 200))
+            {
+                var results = iterative
+                    ? guesser.GuessIterative(hash, prefix, suffix, contains, rounds: 3, maxResults: max)
+                    : guesser.Guess(hash, prefix, suffix, contains, maxResults: max);
+                if (results.Count > 0)
+                {
+                    found++;
+                    output.Line($"{Fnv.ToHex(hash)} => {string.Join(", ", results.Take(3))}{(results.Count > 3 ? $" (+{results.Count - 3} more)" : string.Empty)}");
+                }
+            }
+
+            output.Success($"Recovered names for {found} of the inspected hashes.");
+            return 0;
+        }
+
+        if (cli.Positional.Count == 0)
+        {
+            return UsageError(output, "guess <hash>... [--prefix P] [--suffix S] [--contains C] [--dict DIR] [--max N] [--iterative]");
+        }
+
+        int anyFound = 0;
+        foreach (string token in cli.Positional)
+        {
+            if (!uint.TryParse(token.TrimStart('0', 'x', '#'), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint hash))
+            {
+                output.Warn($"Skipping '{token}': not a hexadecimal hash.");
+                continue;
+            }
+
+            var results = iterative
+                ? guesser.GuessIterative(hash, prefix, suffix, contains, rounds: 3, maxResults: max)
+                : guesser.Guess(hash, prefix, suffix, contains, maxResults: max);
+
+            if (results.Count == 0)
+            {
+                output.Line($"{Fnv.ToHex(hash)}: no name found.");
+            }
+            else
+            {
+                anyFound++;
+                output.Line($"{Fnv.ToHex(hash)}:");
+                foreach (string result in results)
+                {
+                    output.Line($"    {result}");
+                }
+            }
+        }
+
+        return anyFound > 0 ? 0 : 1;
+    }
+
     public static int Verify(CommandLine cli, Output output)
     {
         if (!TryOpen(cli, output, out DatabasePackedFile? package))
@@ -802,7 +901,12 @@ public static class Commands
             return false;
         }
 
-        string path = cli.Positional[0];
+        return TryOpenArg(cli.Positional[0], output, out package);
+    }
+
+    private static bool TryOpenArg(string path, Output output, out DatabasePackedFile? package)
+    {
+        package = null;
         if (!File.Exists(path))
         {
             output.Error(Localizer.Default.Get("common.fileNotFound", path));
