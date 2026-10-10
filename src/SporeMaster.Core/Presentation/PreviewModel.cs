@@ -9,6 +9,9 @@ public sealed class PreviewMesh
     /// <summary>Optional vertex normals as a flat <c>xyz</c> array.</summary>
     public float[] Normals { get; init; } = Array.Empty<float>();
 
+    /// <summary>Optional texture coordinates as a flat <c>uv</c> array.</summary>
+    public float[] TexCoords { get; init; } = Array.Empty<float>();
+
     /// <summary>Triangle indices into the vertex arrays.</summary>
     public int[] Indices { get; init; } = Array.Empty<int>();
 
@@ -17,6 +20,8 @@ public sealed class PreviewMesh
     public int TriangleCount => Indices.Length / 3;
 
     public bool HasNormals => Normals.Length >= VertexCount * 3 && VertexCount > 0;
+
+    public bool HasTexCoords => TexCoords.Length >= VertexCount * 2 && VertexCount > 0;
 }
 
 /// <summary>
@@ -26,6 +31,9 @@ public sealed class PreviewMesh
 public sealed class PreviewModel
 {
     public List<PreviewMesh> Meshes { get; } = new();
+
+    /// <summary>Encoded PNG of the model's diffuse texture, when one could be decoded.</summary>
+    public byte[]? TexturePng { get; set; }
 
     public int TotalVertices => Meshes.Sum(m => m.VertexCount);
 

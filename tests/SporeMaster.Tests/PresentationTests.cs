@@ -213,6 +213,37 @@ public static class PresentationTests
         Assert.Equal("text", preview.Kind);
     }
 
+    [SporeTest("a textured RW4 model previews with a decoded texture")]
+    public static void PreviewTexturedModel()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries.Take(400))
+            {
+                if (entry.Key.TypeId != 0x2F4E681B)
+                {
+                    continue;
+                }
+
+                var item = new ResourceItem(entry, names);
+                ResourcePreview preview = PreviewEngine.Build(item, package.ReadEntry(entry), names);
+                if (preview.IsModel && preview.Model!.TexturePng is not null)
+                {
+                    Assert.True(preview.Model.TexturePng.Length > 0, "texture PNG should not be empty");
+                    // The texture is a PNG (signature).
+                    Assert.Equal(0x89, preview.Model.TexturePng[0]);
+                    Assert.Equal((byte)'P', preview.Model.TexturePng[1]);
+                    return;
+                }
+            }
+        }
+
+        throw new AssertionException("No textured RW4 model preview was found.");
+    }
+
     [SporeTest("explorer model groups resources into folders")]
     public static void ExplorerFolders()
     {

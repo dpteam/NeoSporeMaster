@@ -702,9 +702,25 @@ public partial class MainWindow : Window
     {
         var group = new Model3DGroup();
 
-        var material = new MaterialGroup();
-        material.Children.Add(new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(0xC8, 0xC8, 0xC8))));
-        material.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)), 20));
+        // If a diffuse texture was decoded, wrap it on the meshes that have texture coordinates.
+        ImageBrush? textureBrush = null;
+        if (model.TexturePng is not null && TryDecodeImage(model.TexturePng, out BitmapSource? textureImage) && textureImage is not null)
+        {
+            textureBrush = new ImageBrush(textureImage) { Stretch = Stretch.Fill };
+        }
+
+        var greyMaterial = new MaterialGroup();
+        greyMaterial.Children.Add(new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(0xC8, 0xC8, 0xC8))));
+        greyMaterial.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)), 20));
+
+        Material texturedMaterial = greyMaterial;
+        if (textureBrush is not null)
+        {
+            var textured = new MaterialGroup();
+            textured.Children.Add(new DiffuseMaterial(textureBrush));
+            textured.Children.Add(new SpecularMaterial(new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)), 20));
+            texturedMaterial = textured;
+        }
 
         foreach (PreviewMesh mesh in model.Meshes)
         {
@@ -726,6 +742,19 @@ public partial class MainWindow : Window
                 {
                     geometry.Normals.Add(new Vector3D(mesh.Normals[i], mesh.Normals[i + 1], mesh.Normals[i + 2]));
                 }
+            }
+
+            Material material = greyMaterial;
+            if (textureBrush is not null && mesh.HasTexCoords)
+            {
+                geometry.TextureCoordinates = new PointCollection(mesh.VertexCount);
+                for (int i = 0; i + 1 < mesh.TexCoords.Length; i += 2)
+                {
+                    // Flip V so the texture is not upside-down (Spore uses top-left origin).
+                    geometry.TextureCoordinates.Add(new Point(mesh.TexCoords[i], 1 - mesh.TexCoords[i + 1]));
+                }
+
+                material = texturedMaterial;
             }
 
             group.Children.Add(new GeometryModel3D

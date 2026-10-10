@@ -77,6 +77,10 @@ public sealed class Rw4Raster
         Data = data,
     };
 
+    /// <summary>Decodes the pixel data to RGBA (top mip level), or null when the format is unsupported.</summary>
+    public byte[]? DecodeRgba(byte[] data) =>
+        BlockCompressionDecoder.Decode((uint)TextureFormat, data, Width, Height);
+
     internal static Rw4Raster Read(Stream s, long offset)
     {
         s.Seek(offset, SeekOrigin.Begin);

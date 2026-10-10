@@ -76,6 +76,8 @@ little-endian; флаги и stride сохраняются для байт-то�
   Формат описан в `docs/LOCALE_FORMAT.md`.
 
 ### `Textures/*`
+- `RasterTexture`/`DdsTexture`/`TextureFormats` — текстуры `.raster` ⇄ DDS.
+- `BlockCompressionDecoder` — декодирование DXT1/3/5 (BC1/2/3) и несжатых форматов в RGBA (для 3D-превью).
 - `TextureFormats` — идентификаторы форматов (D3DFMT и FourCC) и расчёт размеров уровней.
 - `RasterTexture` — текстура Spore `.raster`: чтение/запись и конвертация в/из DDS.
 - `DdsTexture` — стандартный DDS-файл (заголовок 128 байт + данные мипмапов).

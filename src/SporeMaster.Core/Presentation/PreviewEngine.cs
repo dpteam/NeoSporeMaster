@@ -223,18 +223,82 @@ public static class PreviewEngine
                 {
                     Positions = mesh.Positions,
                     Normals = mesh.Normals,
+                    TexCoords = mesh.TexCoords,
                     Indices = mesh.Indices,
                 });
 
                 triangles += mesh.TriangleCount;
             }
 
-            return model.Meshes.Count > 0 ? model : null;
+            if (model.Meshes.Count > 0)
+            {
+                model.TexturePng = TryDecodeDiffuseTexture(rw4);
+                return model;
+            }
+
+            return null;
         }
         catch
         {
             return null;
         }
+    }
+
+    /// <summary>Decodes the model's first usable texture (DXT or uncompressed) to PNG, or null.</summary>
+    private static byte[]? TryDecodeDiffuseTexture(RenderWare4File rw4)
+    {
+        try
+        {
+            // Prefer the texture referenced by a material's first slot; fall back to the first raster.
+            var ordered = new List<Rw4Raster>();
+            IReadOnlyList<Rw4Raster> rasters = rw4.ReadRasters();
+            foreach (Rw4Material material in rw4.ReadMaterials())
+            {
+                if (material.TextureSlots.Count == 0)
+                {
+                    continue;
+                }
+
+                int section = material.TextureSlots[0].RasterSectionIndex;
+                Rw4Raster? raster = rasters.FirstOrDefault(r => r.SectionIndex == section);
+                if (raster is not null)
+                {
+                    ordered.Add(raster);
+                }
+            }
+
+            foreach (Rw4Raster raster in rasters)
+            {
+                if (!ordered.Contains(raster))
+                {
+                    ordered.Add(raster);
+                }
+            }
+
+            foreach (Rw4Raster raster in ordered)
+            {
+                byte[]? pixels = rw4.GetRasterData(raster);
+                if (pixels is null || pixels.Length == 0)
+                {
+                    continue;
+                }
+
+                byte[]? rgba = raster.DecodeRgba(pixels);
+                if (rgba is null)
+                {
+                    continue;
+                }
+
+                var image = new RgbaImage(raster.Width, raster.Height, rgba);
+                return PngCodec.Encode(image);
+            }
+        }
+        catch
+        {
+            // A broken texture must not break the model preview.
+        }
+
+        return null;
     }
 
     private static void AppendRw4Summary(RenderWare4File rw4, StringBuilder builder)
