@@ -16,6 +16,9 @@
             <MenuItem Header="_Edit">
                 <MenuItem Header="_Copy Resource Key" Click="OnCopyKey" />
                 <MenuItem Header="Copy _Name" Click="OnCopyName" />
+                <Separator />
+                <MenuItem Header="Select _All" Click="OnSelectAll" InputGestureText="Ctrl+A" />
+                <MenuItem Header="In_vert Selection" Click="OnInvertSelection" />
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="_Refresh" Click="OnRefresh" />

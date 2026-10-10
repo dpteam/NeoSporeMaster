@@ -470,7 +470,18 @@ public partial class MainWindow : Window
 
     private void OnSelectionChanged(object sender, RoutedEventArgs e) => Guarded(() =>
     {
-        if (ResourceList.SelectedItem is ResourceItem row)
+        int selected = ResourceList.SelectedItems.Count;
+
+        if (selected > 1)
+        {
+            // Explorer-style aggregate info for a multiple selection; preview the focused item.
+            UpdateDetailsPaneForSelection();
+            if (ResourceList.SelectedItem is ResourceItem current)
+            {
+                ShowPreview(current);
+            }
+        }
+        else if (ResourceList.SelectedItem is ResourceItem row)
         {
             ShowPreview(row);
             UpdateDetailsPane(row);
@@ -478,6 +489,40 @@ public partial class MainWindow : Window
         else
         {
             DetailsPane.Visibility = Visibility.Collapsed;
+        }
+    });
+
+    /// <summary>Shows aggregate information (count and sizes) for a multiple selection.</summary>
+    private void UpdateDetailsPaneForSelection()
+    {
+        var rows = ResourceList.SelectedItems.Cast<ResourceItem>().ToList();
+        long packed = rows.Sum(r => (long)r.PackedSize);
+        long mem = rows.Sum(r => (long)r.MemSize);
+        DetailsName.Text = $"📦  {rows.Count} items selected";
+        DetailsType.Text = string.Empty;
+        DetailsKey.Text = string.Empty;
+        DetailsSize.Text = $"{packed} bytes packed, {mem} bytes in memory";
+        ApplyDetailsPaneVisibility();
+    }
+
+    private void OnSelectAll(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        ResourceList.SelectAll();
+    });
+
+    private void OnInvertSelection(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        var selected = ResourceList.SelectedItems.Cast<ResourceItem>().ToHashSet();
+        ResourceList.SelectedItems.Clear();
+        if (ResourceList.ItemsSource is System.Collections.IEnumerable items)
+        {
+            foreach (object item in items)
+            {
+                if (item is ResourceItem row && !selected.Contains(row))
+                {
+                    ResourceList.SelectedItems.Add(row);
+                }
+            }
         }
     });
 
@@ -1186,6 +1231,16 @@ public partial class MainWindow : Window
     internal void ApplyDetailsViewForTest() => ApplyDetailsView();
 
     internal void ApplyLargeIconsViewForTest() => ApplyLargeIconsView();
+
+    internal int SelectAllForTest()
+    {
+        ResourceList.SelectAll();
+        return ResourceList.SelectedItems.Count;
+    }
+
+    internal void ClearSelectionForTest() => ResourceList.SelectedItems.Clear();
+
+    internal string DetailsTextForTest() => $"{DetailsName.Text} | {DetailsSize.Text}";
 
     internal void NavigateAddressForTest(string text) => NavigateAddress(text);
 

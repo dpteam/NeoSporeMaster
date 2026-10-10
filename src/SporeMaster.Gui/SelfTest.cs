@@ -92,6 +92,13 @@ internal static class SelfTest
                     window.SelectFolderForTest(0);
                 }
 
+                // Multiple selection: aggregate details + select all.
+                window.SelectFolderForTest(0);
+                int selectedCount = window.SelectAllForTest();
+                string aggregateDetails = window.DetailsTextForTest();
+                window.ClearSelectionForTest();
+                report.AppendLine($"Select all: {selectedCount} item(s); aggregate details has 'selected': {aggregateDetails.Contains("selected", StringComparison.OrdinalIgnoreCase)}");
+
                 // Exercise filtering.
                 window.SelectFolderForTest(0);
                 int before = window.VisibleRowsForTest().Count;
