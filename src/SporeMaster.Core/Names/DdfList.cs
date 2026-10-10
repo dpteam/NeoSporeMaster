@@ -3,7 +3,8 @@ namespace SporeMaster.Core.Names;
 /// <summary>
 /// A Spore <c>*_DDFList.txt</c> file: the list of <c>Data</c> directories that go into a particular
 /// build (Spore / CSA / Viewer). Files are simple: one directory per line, <c>//</c> comments and
-/// <c>#include Other_DDFList.txt</c> directives (resolved relative to the including file).
+/// <c>#include Other_DDFList.txt</c> directives (resolved next to the including file, then against
+/// its ancestor folders).
 /// </summary>
 /// <remarks>
 /// See <c>refs/SporeUnpackedData/SporeHeroWiiPCLeftOvers/Data/README.txt</c>. The master lists
@@ -57,7 +58,7 @@ public sealed class DdfList
                 if (target.Length > 0)
                 {
                     IncludeCount++;
-                    Load(Path.Combine(directory, target), visited);
+                    Load(ResolveInclude(directory, target), visited);
                 }
 
                 continue;
@@ -86,6 +87,41 @@ public sealed class DdfList
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Resolves an <c>#include</c> target. Some data trees keep the lists in a <c>DDFLists</c>
+    /// sub-folder yet write targets relative to the <c>Data</c> root (for example
+    /// <c>DDFLists/Core_DDFList.txt</c>), so the target is looked up next to the including file
+    /// first and then against its ancestors.
+    /// </summary>
+    private static string ResolveInclude(string directory, string target)
+    {
+        if (Path.IsPathRooted(target))
+        {
+            return target;
+        }
+
+        string current = directory;
+        for (int depth = 0; depth < 4; depth++)
+        {
+            string candidate = Path.Combine(current, target);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            DirectoryInfo? parent = Directory.GetParent(current);
+            if (parent is null)
+            {
+                break;
+            }
+
+            current = parent.FullName;
+        }
+
+        // Nothing matched; return the direct path so it is reported as a missing include.
+        return Path.Combine(directory, target);
     }
 
     private static string Normalize(string path) =>

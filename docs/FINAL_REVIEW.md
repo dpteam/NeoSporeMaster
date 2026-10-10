@@ -10,6 +10,12 @@
   `bbox 0x39`), включая `transform 0x38`; наши `.prop` round-trip. `transform` в `.prop.xml` у нас
   задаётся через `flags/pos/vx/vy/vz` (базис), у SporeModder — `offset/scale/rotateXYZ`; оба
   round-trip. Идея: добавить TRS-форму (`-offset/-scale/-rotateXYZ`) для дружелюбия — **остаётся**.
+- **2026-10-11 (ревизия refs/Leftovers):** найдено и исправлено два пробела в загрузке имён:
+  (1) **`PreBakedKeys.txt`** (`instance \t group \t name \t path`) не читался `KeyMap` — добавлен
+  (имена экземпляров vérified, т.к. реально хешируются; группы — только при совпадении);
+  (2) **`DdfList` `#include`** не находил цели, записанные от корня `Data` при списках в подпапке
+  `DDFLists` (`#include DDFLists/Core_DDFList.txt`) — теперь цель ищется и в родительских папках.
+  Проверено на реальных Wii-`DDFList` (0 отсутствующих include) и `PreBakedKeys.txt`.
 - **2026-10-11 (реализовано по итогам ревизии):** `world` (`0x9b8e862f`) — чтение/запись **байт-точно**
   + дамп (`cellworld`). `populate` (`0xda141c1b`) — **не реализуем**: у беты маркер 64 б, у SporeModder 76 б.
 - **2026-10-11 (продолжение):** GUI self-test **OK** на `BP2_Data`, `CSA_Graphics`, `Spore_Game`,
@@ -79,12 +85,14 @@
 
 ## 5b. Внутренности Leftovers (распакованные данные)
 
-- [ ] **`refs/SporeUnpackedData/SporeBeta2008/Data/`** — просмотреть **содержимое** файлов (не только
-      структуру): какие форматы/типы реально лежат, как отличаются от тестовых архивов.
-- [ ] **`refs/SporeUnpackedData/SporeHeroWiiPCLeftOvers/Data/`** (`Data/` + `UserData/`) — то же:
-      типы файлов, `DDFLists/`, `Config/`, `Locale/`, `PreBakedKeys.txt`, `README.txt`.
-- [ ] Сверить реальные «внутренности» с нашими парсерами (форматы, расширения, поля); найти
-      несоответствия/непокрытые типы.
+- [x] **`refs/SporeUnpackedData/SporeBeta2008/Data/`** — просмотрено: `.txt` (trigger, 8775), `.prop`,
+      `.css/.png/.ttf/.html/.js`, видео `.vp6/.avi`, `.db/.pkp/.dat/.bat`; `KeyMap.txt` —
+      **braces-формат** (`{type group instance} "path"`), моно-`Spore_DDFList.txt` (flatten). Наши
+      парсеры совпадают, кроме `PreBakedKeys` (см. 5b.2).
+- [x] **`refs/SporeUnpackedData/SporeHeroWiiPCLeftOvers/Data/`** (`Data/` + `UserData/`) — просмотрено:
+      `.prop` (978), `.txt`, `.crt` (54, XML), `.py`, `.bat`; **`DDFLists/`** в подпапке с include'ами
+      от корня `Data`; **`PreBakedKeys.txt`** (489 строк, формат `instance \t group \t name \t path`) — см. 5b.2.
+- [x] Сверено с парсерами; найдено и **исправлено** 2 пробела (KeyMap/`PreBakedKeys`, `DdfList` include).
 
 ### 5b.1 Что реально лежит в Leftovers (первый обзор)
 
@@ -99,6 +107,18 @@
 - **Найдено:** `arth`/`htra` (`0x0472329b`, в игре пути `SimulatorScripts\*.txt`) — **бинарный**
   формат с магией **`HTRA`** (проверено: `CreatureTuning.htra`); это скрипты симулятора
   (SporeModder: `ArithmeticaFile` + ANTLR-грамматика). Не текст.
+
+### 5b.2 Итоги разбора Leftovers (KeyMap/DDFList)
+
+- **`KeyMap.txt`** (обе версии) — braces-формат `{0xTYPE 0xGROUP 0xINSTANCE} "path"`; парсился и раньше.
+- **`PreBakedKeys.txt`** (Wii; 489 строк) — формат `instanceHash \t groupHash \t name \t path`;
+  **раньше не читался**. Имена экземпляров реально хешируются (`ac_Barogan House 1` → `0x5a5784a9`),
+  значит авторитетны. **Исправлено**: `KeyMap` теперь их читает (типа ресурса в этих строках нет,
+  поэтому в точный path-поиск они не идут).
+- **`*_DDFList.txt`** — две раскладки: (1) бета — плоско, `Data/*_DDFList.txt`, include рядом;
+  (2) Wii — `Data/DDFLists/*_DDFList.txt`, а include записан **от корня `Data`**
+  (`#include DDFLists/Core_DDFList.txt`). **Исправлено**: `DdfList` ищет цель рядом с файлом, затем в
+  родительских папках. На Wii-списке теперь **0 отсутствующих** include (было 6+).
 
 ### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
 Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `rw4`, `anim`, `pctp`,

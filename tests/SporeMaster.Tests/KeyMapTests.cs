@@ -153,4 +153,43 @@ public static class KeyMapTests
             map.VerifiedInstanceNames > map.UnverifiedEntries * 10,
             $"verified {map.VerifiedInstanceNames}, unverified {map.UnverifiedEntries}");
     }
+
+    [SporeTest("key map parses PreBakedKeys lines")]
+    public static void ParsePreBaked()
+    {
+        string instanceName = "ac_Barogan House 1";
+        uint instance = Fnv.Hash(instanceName);
+
+        // The group segment in the path does not hash to the listed group id, so it must be ignored.
+        string line =
+            $"0x{instance:X8}\t0x40636200\t{instanceName}\t{instanceName}_@building_editorModel!0x{instance:X8}.bld";
+
+        KeyMap map = KeyMap.Parse(new[] { line });
+
+        Assert.Equal(1, map.PreBakedEntries);
+        Assert.Equal(0, map.Entries.Count);
+        Assert.Equal(instanceName, map.InstanceNames[instance]);
+        Assert.Equal(1, map.VerifiedInstanceNames);
+
+        // PreBaked keys carry no resource type, so no extension is known for the group id.
+        Assert.True(map.GetExtension(0x40636200) is null);
+    }
+
+    [SporeTest("real PreBakedKeys.txt parses when available")]
+    public static void RealPreBaked()
+    {
+        string? path = TestData.Combine(
+            "refs", "SporeUnpackedData", "SporeHeroWiiPCLeftOvers", "Data", "PreBakedKeys.txt");
+        if (path is null || !File.Exists(path))
+        {
+            Console.WriteLine("PreBakedKeys.txt not present; skipping.");
+            return;
+        }
+
+        KeyMap map = KeyMap.ParseFile(path);
+        Assert.True(map.PreBakedEntries > 100, $"expected many PreBaked entries, got {map.PreBakedEntries}");
+        Assert.True(
+            map.VerifiedInstanceNames > 100,
+            $"expected many verified instance names, got {map.VerifiedInstanceNames}");
+    }
 }

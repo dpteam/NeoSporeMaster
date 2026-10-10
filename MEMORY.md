@@ -96,7 +96,7 @@
 | GUI (WPF) — обозреватель в стиле Проводника + превью + иконка | ✅ |
 | CLI (info/list/extract/unpack/pack/prop/propt/pctp/tlsa/gait/cnv/loottable/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (150, на реальных + синтетических данных) | ✅ |
+| Тесты (154, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -204,10 +204,11 @@
      `SporeCSA_RetailEngine`, `SporeRetail` — для **финальных тестов репаковки**.
    Ценность и планы:
    - **`KeyMap.txt`** (5.8 МБ) и **`PreBakedKeys.txt`** — это карты «ключ → реальный путь».
-     Формат `KeyMap`: `{0xTYPE 0xGROUP 0xINSTANCE} "Folder\File.ext"`. Это **авторитетный
+     Формат `KeyMap`: `{0xTYPE 0xGROUP 0xINSTANCE} "Folder\File.ext"`; формат **`PreBakedKeys`**:
+     `instanceHash \t groupHash \t name \t path` (без типа ресурса). Это **авторитетный
      источник имён**, точнее фрагментного guesser'а. Нужно:
-     * загрузчик KeyMap/PreBakedKeys в Core → построение реестра имён (hash → name) для групп,
-       инстансов и типов, с проверкой `FNV(name)==hash`; **[сделано: `KeyMap`]**
+     * загрузчик KeyMap/**PreBakedKeys** в Core → построение реестра имён (hash → name) для групп,
+       инстансов и типов, с проверкой `FNV(name)==hash`; **[сделано: `KeyMap` — оба формата]**
      * CLI: конвертация `KeyMap.txt` → `names.txt` (совместимо с `--names`); **[сделано: `keymap`]**
      * использовать как **валидацию guesser'а**; **[сделано: `guess --validate`]**
      * **ИТОГ валидации:** гиссер находит кандидатов всегда, но точность ~9 % (среди 5) / ~4 %
@@ -227,6 +228,9 @@
      (`Config`, `Arenas/textures`), комментарии `//` и `#include Other_DDFList.txt`; мастер-файлы
      (`Spore_DDFList`, `CSA_DDFList`, `Viewer_DDFList`) собирают секции. См. также
      `SporeHeroWiiPCLeftOvers/Data/README.txt`. **[сделано: `DdfList` + `unpackdata --ddflist`]**
+     В Leftovers две раскладки: бета — плоско (`Data/*_DDFList.txt`, include рядом); Wii —
+     `Data/DDFLists/*_DDFList.txt`, а include записан **от корня `Data`**. Резолвер ищет цель рядом
+     с файлом и в родительских папках. **[исправлено]**
    - **экспериментальная полная распаковка в `Data`** — цель: разобраться по файлам, как всё
      устроено, и приблизить распаковку/упаковку к «как делает игра».
    *Действие сейчас:* папки **внесены в `.gitignore`** (8.1 ГБ и 56 МБ) — в git не попадут.

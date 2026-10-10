@@ -25,6 +25,9 @@ public sealed class KeyMap
     /// <summary>Number of entries whose key did not match the path (should be 0).</summary>
     public int UnverifiedEntries { get; private set; }
 
+    /// <summary>Number of <c>PreBakedKeys.txt</c> lines merged (they carry no resource type).</summary>
+    public int PreBakedEntries { get; private set; }
+
     public IReadOnlyDictionary<uint, string> TypeNames => _typeNames;
 
     public IReadOnlyDictionary<uint, string> GroupNames => _groupNames;
@@ -39,6 +42,12 @@ public sealed class KeyMap
             string line = raw.Trim();
             if (line.Length == 0 || line.StartsWith("//") || line.StartsWith('#'))
             {
+                continue;
+            }
+
+            if (TryParsePreBaked(line, out uint preBakedInstance, out uint preBakedGroup, out string preBakedName, out string preBakedGroupName))
+            {
+                map.AddPreBaked(preBakedInstance, preBakedGroup, preBakedName, preBakedGroupName);
                 continue;
             }
 
@@ -177,6 +186,91 @@ public sealed class KeyMap
         }
 
         return uint.TryParse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+    }
+
+    /// <summary>
+    /// Parses one <c>PreBakedKeys.txt</c> line:
+    /// <c>instanceHash &lt;tab&gt; groupHash &lt;tab&gt; name &lt;tab&gt; path</c>. Returns the instance/group
+    /// hashes and the best instance/group names (from the name column, and from the
+    /// <c>name_@group!instance.ext</c> path suffix).
+    /// </summary>
+    private static bool TryParsePreBaked(
+        string line,
+        out uint instance,
+        out uint group,
+        out string instanceName,
+        out string groupName)
+    {
+        instance = 0;
+        group = 0;
+        instanceName = string.Empty;
+        groupName = string.Empty;
+
+        string[] fields = line.Split('\t');
+        if (fields.Length < 4)
+        {
+            return false;
+        }
+
+        if (!TryParseHex(fields[0], out instance) || !TryParseHex(fields[1], out group))
+        {
+            return false;
+        }
+
+        string path = fields[3].Trim();
+        instanceName = fields[2].Trim();
+
+        // Derive names from the "name_@group!instancHash.ext" path when the columns are empty.
+        int slash = path.LastIndexOfAny(new[] { '\\', '/' });
+        string file = slash >= 0 ? path[(slash + 1)..] : path;
+        int bang = file.IndexOf('!');
+        string head = bang > 0 ? file[..bang] : file;
+        int at = head.IndexOf("_@", StringComparison.Ordinal);
+        if (at >= 0)
+        {
+            if (instanceName.Length == 0)
+            {
+                instanceName = head[..at];
+            }
+
+            groupName = head[(at + 2)..];
+        }
+        else if (instanceName.Length == 0)
+        {
+            int dot = head.LastIndexOf('.');
+            instanceName = dot > 0 ? head[..dot] : head;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Merges one <c>PreBakedKeys.txt</c> entry. These lines have no resource type, so they only
+    /// contribute instance/group names (kept when they really hash to the id) — never the exact
+    /// path lookup.
+    /// </summary>
+    private void AddPreBaked(uint instance, uint group, string instanceName, string groupName)
+    {
+        PreBakedEntries++;
+
+        if (instanceName.Length > 0)
+        {
+            bool matches = Hashing.Fnv.Hash(instanceName) == instance;
+            AddName(_instanceNames, instance, instanceName, matches);
+            if (matches)
+            {
+                VerifiedInstanceNames++;
+            }
+            else
+            {
+                UnverifiedEntries++;
+            }
+        }
+
+        if (groupName.Length > 0 && Hashing.Fnv.Hash(groupName) == group)
+        {
+            AddName(_groupNames, group, groupName, verified: true);
+        }
     }
 
     /// <summary>Merges these names into a registry set (authoritative names win).</summary>

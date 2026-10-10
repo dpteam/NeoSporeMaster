@@ -1952,6 +1952,11 @@ public static class Commands
             File.WriteAllText(outputPath, map.BuildFileNameRegistry());
 
             output.Success($"Parsed {map.Entries.Count} key map entr(ies).");
+            if (map.PreBakedEntries > 0)
+            {
+                output.Line($"  PreBakedKeys entries: {map.PreBakedEntries}");
+            }
+
             output.Line($"  group names:    {map.GroupNames.Count}");
             output.Line($"  instance names: {map.InstanceNames.Count}");
             output.Line($"  type names:     {map.TypeNames.Count}");

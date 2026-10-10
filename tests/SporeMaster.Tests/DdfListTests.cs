@@ -46,4 +46,46 @@ public static class DdfListTests
         Assert.True(list.Folders.Count > 100, $"expected many folders, got {list.Folders.Count}");
         Assert.True(list.Contains("Config"), "Config should be part of the Spore build");
     }
+
+    [SporeTest("DDFList resolves sub-folder includes written against the data root")]
+    public static void SubfolderIncludes()
+    {
+        string temp = TestData.CreateTempDirectory();
+        try
+        {
+            string sub = Path.Combine(temp, "DDFLists");
+            Directory.CreateDirectory(sub);
+            File.WriteAllText(Path.Combine(sub, "Core_DDFList.txt"), "Arenas\nConfig\n");
+            File.WriteAllText(
+                Path.Combine(sub, "Spore_DDFList.txt"),
+                "// master\n#include DDFLists/Core_DDFList.txt\nUI\n");
+
+            DdfList list = DdfList.ParseFile(Path.Combine(sub, "Spore_DDFList.txt"));
+
+            Assert.Equal(0, list.MissingIncludes.Count);
+            Assert.Equal(1, list.IncludeCount);
+            Assert.True(list.Contains("Config"), "include resolved via an ancestor (data root) folder");
+            Assert.True(list.Contains("UI"), "a folder from the including file");
+        }
+        finally
+        {
+            TestData.DeleteDirectory(temp);
+        }
+    }
+
+    [SporeTest("real Wii DDFList (sub-folder) parses fully")]
+    public static void RealWiiDdfList()
+    {
+        string? path = TestData.Combine(
+            "refs", "SporeUnpackedData", "SporeHeroWiiPCLeftOvers", "Data", "DDFLists", "Spore_DDFList.txt");
+        if (path is null || !File.Exists(path))
+        {
+            Console.WriteLine("Wii DDFList not present; skipping.");
+            return;
+        }
+
+        DdfList list = DdfList.ParseFile(path);
+        Assert.Equal(0, list.MissingIncludes.Count);
+        Assert.True(list.Folders.Count > 100, $"expected many folders, got {list.Folders.Count}");
+    }
 }
