@@ -113,6 +113,8 @@ refs/                     справочные материалы и реаль�
 - В C# `"\x1aD"` — это `\x1aD` (жадный hex!); для байтов писать массив байт.
 - Реальные данные лежат в `refs/_PackageFilesBetaVer` (бета) и `refs/_PackageFilesFinalVer` (релиз);
   крупные папки (`refs/SporeGames`, `refs/SporeUnpackedData`, `_PackageFiles*`) — в `.gitignore`.
+- **Lossless raw-перепаковка подтверждена:** `unpack --raw → pack --compress → diff` идентично на
+  `BP2_Data` 184/184, `CSA_Graphics` 5822/5822, **`Spore_Game` 11676/11676, `CSA_Main` 8431/8431**.
 - `refs/SporeUnpackedData/**/KeyMap.txt` — карта «ключ → реальный путь» (авторитетные имена);
   `*.trigger`/`.txt` (тип `0x024A0E52`) — **обычный текст** (это `Config/*.txt`).
 - `refs/SporeGames/SporeBeta190208/SporeApp.pdb` — MSF 7.00 с 429k символов; инструмент `pdb`.
@@ -123,7 +125,8 @@ refs/                     справочные материалы и реаль�
    (`EA::ResourceMan::DatabasePackedFile`, `SP::CreatePackageSave`/`FinalizePackageSave`,
    `PFHoleTable`), затем `unpack → pack → diff` и запуск игры (критерий — отсутствие дамп-файлов).
    *Частично:* **lossless raw-перепаковка подтверждена** (`unpack --raw → pack → diff` идентично на
-   `BP2_Data` 184/184 и `CSA_Graphics` 5822/5822). Осталось: запуск игры с репаком.
+   `BP2_Data` 184/184, `CSA_Graphics` 5822/5822, `Spore_Game` 11676/11676, `CSA_Main` 8431/8431).
+   Осталось: запуск игры с репаком (когда будут папки игры).
 2. **Улучшить распаковку/`unpackdata`** — выборочно — **сделано** (`--group/--type/--name`, 3.36.0);
    таблица «тип → расширение» из `KeyMap` — **сделано** (3.40.0); **`DDFList`** — **сделано**
    (3.42.0, `unpackdata --ddflist` — только каталоги сборки). Дальше: пометка текстовых типов,
