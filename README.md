@@ -236,6 +236,12 @@ dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <пап�
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --group creature_parts,animations~ --raw
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --type prop --name brute
 
+# Реальная lossless-перепаковка: --raw раскладывает по числовому ключу (_raw/type/group/instance.bin),
+# pack собирает обратно по ключам (без зависимости от имён)
+dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --raw
+dotnet run --project src/SporeMaster.Cli -- pack <папка> <repack.package> --compress
+dotnet run --project src/SporeMaster.Cli -- diff <архив.package> <repack.package>
+
 # Проверить целостность (прочитать и распаковать все ресурсы)
 dotnet run --project src/SporeMaster.Cli -- verify <архив.package>
 

@@ -408,7 +408,7 @@ public static class Commands
                 else
                 {
                     string relative = raw
-                        ? $"{entry.Key.TypeId:X8}/{entry.Key.InstanceId:X8}.{entry.Key.GroupId:X8}"
+                        ? RawKeyPath.Format(entry.Key)
                         : names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
 
                     string target = Path.Combine(outputDir, SanitizePath(relative));
@@ -465,6 +465,15 @@ public static class Commands
         foreach (string file in Directory.EnumerateFiles(inputDir, "*", SearchOption.AllDirectories))
         {
             string relative = Path.GetRelativePath(inputDir, file);
+
+            // Raw-key layout (_raw/type/group/instance.bin): keys come straight from the path and no
+            // name registry is needed, so a raw unpack packs back losslessly.
+            if (RawKeyPath.TryParse(relative, out ResourceKey rawKey))
+            {
+                items.Add(new DbpfWriteItem(rawKey, File.ReadAllBytes(file)));
+                continue;
+            }
+
             bool isPropXml = relative.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
             bool isTextureDds = relative.EndsWith(".raster.dds", StringComparison.OrdinalIgnoreCase);
             bool isBitmapPng = relative.EndsWith(".png", StringComparison.OrdinalIgnoreCase);

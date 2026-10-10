@@ -86,6 +86,28 @@ dotnet run --project src/SporeMaster.Cli -- unpackdata <package> <out> \
 `unpackdata` при отсутствии точного пути берёт расширение из карты (например, для типа
 `trigger` — `.txt`), а не имя типа. Так `AppProperties.trigger` становится `AppProperties.txt`.
 
+## 4.2. Реальная (lossless) перепаковка: raw ⇄ pack
+
+Отдельно от экспериментальной раскладки есть **имя-независимая lossless перепаковка**:
+`unpack --raw` раскладывает ресурсы по **числовому ключу**:
+
+```
+_raw/{type:X8}/{group:X8}/{instance:X8}.bin
+```
+
+`pack` распознаёт этот layout (`SporeMaster.Core/Dbpf/RawKeyPath.cs`) и собирает ключи напрямую из
+пути, не обращаясь к реестру имён. Цикл:
+
+```powershell
+spore unpack <package> <dir> --raw
+spore pack   <dir> <repack.package> --compress
+spore diff   <package> <repack.package>      # -> "Archives are identical"
+```
+
+**Проверено:** `unpack --raw → pack → diff` даёт **идентичный** результат (по ключам и содержимому):
+`BP2_Data.package` — 184/184, `CSA_Graphics.package` — 5822/5822. Это эмпирическая проверка пути
+записи архива (идея заказчика №3 — «проверка репака»).
+
 ## 5. Ограничения (эксперимент)
 
 - Фолбэк для неизвестных ключей даёт `group/name.ext`, а не реальный путь.
