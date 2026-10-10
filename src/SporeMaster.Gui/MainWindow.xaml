@@ -1,79 +1,85 @@
 <Window x:Class="SporeMaster.Gui.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SporeMaster.Gui"
         Title="SporeMaster 3" Height="760" Width="1240"
         Icon="SporeMaster3.ico"
         AllowDrop="True" Drop="OnFileDrop" DragOver="OnDragOver"
         WindowStartupLocation="CenterScreen">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_File">
-                <MenuItem Header="_Open Package..." Click="OnOpenPackage" InputGestureText="Ctrl+O" />
-                <MenuItem Header="Back to _previous package" Click="OnOpenPreviousPackage" />
-                <MenuItem Header="_Close" Click="OnClosePackage" />
+            <MenuItem Header="{loc:Loc gui.menu.file}">
+                <MenuItem Header="{loc:Loc gui.menu.open}" Click="OnOpenPackage" InputGestureText="Ctrl+O" />
+                <MenuItem Header="{loc:Loc gui.menu.back}" Click="OnOpenPreviousPackage" />
+                <MenuItem Header="{loc:Loc gui.menu.close}" Click="OnClosePackage" />
                 <Separator />
-                <MenuItem Header="E_xit" Click="OnExit" />
+                <MenuItem Header="{loc:Loc gui.menu.exit}" Click="OnExit" />
             </MenuItem>
-            <MenuItem Header="_Edit">
-                <MenuItem Header="_Copy Resource Key" Click="OnCopyKey" />
-                <MenuItem Header="Copy _Name" Click="OnCopyName" />
+            <MenuItem Header="{loc:Loc gui.menu.edit}">
+                <MenuItem Header="{loc:Loc gui.menu.copyKey}" Click="OnCopyKey" />
+                <MenuItem Header="{loc:Loc gui.menu.copyName}" Click="OnCopyName" />
                 <Separator />
-                <MenuItem Header="Select _All" Click="OnSelectAll" InputGestureText="Ctrl+A" />
-                <MenuItem Header="In_vert Selection" Click="OnInvertSelection" />
+                <MenuItem Header="{loc:Loc gui.menu.selectAll}" Click="OnSelectAll" InputGestureText="Ctrl+A" />
+                <MenuItem Header="{loc:Loc gui.menu.invert}" Click="OnInvertSelection" />
             </MenuItem>
-            <MenuItem Header="_View">
-                <MenuItem Header="_Refresh" Click="OnRefresh" />
+            <MenuItem Header="{loc:Loc gui.menu.view}">
+                <MenuItem Header="{loc:Loc gui.menu.refresh}" Click="OnRefresh" />
                 <Separator />
-                <MenuItem x:Name="DetailsMenuItem" Header="_Details" Click="OnViewDetails" IsCheckable="True" IsChecked="True" />
-                <MenuItem x:Name="LargeIconsMenuItem" Header="Large _Icons" Click="OnViewLargeIcons" IsCheckable="True" />
-                <MenuItem x:Name="DetailsPaneMenuItem" Header="Details _pane" Click="OnToggleDetailsPane" IsCheckable="True" IsChecked="True" />
+                <MenuItem x:Name="DetailsMenuItem" Header="{loc:Loc gui.menu.details}" Click="OnViewDetails" IsCheckable="True" IsChecked="True" />
+                <MenuItem x:Name="LargeIconsMenuItem" Header="{loc:Loc gui.menu.largeIcons}" Click="OnViewLargeIcons" IsCheckable="True" />
+                <MenuItem x:Name="DetailsPaneMenuItem" Header="{loc:Loc gui.menu.detailsPane}" Click="OnToggleDetailsPane" IsCheckable="True" IsChecked="True" />
+                <Separator />
+                <MenuItem Header="{loc:Loc gui.menu.language}">
+                    <MenuItem x:Name="LanguageEnMenuItem" Header="English" IsCheckable="True" IsChecked="True" Click="OnLanguageEn" />
+                    <MenuItem x:Name="LanguageRuMenuItem" Header="Русский" IsCheckable="True" Click="OnLanguageRu" />
+                </MenuItem>
             </MenuItem>
-            <MenuItem Header="_Tools">
-                <MenuItem Header="_Extract Selected..." Click="OnExtractSelected" />
-                <MenuItem Header="Extract _All..." Click="OnExtractAll" />
-                <MenuItem Header="Extract _Folder..." Click="OnExtractFolder" />
-                <MenuItem Header="Extract Chec_ked Folders..." Click="OnExtractChecked" />
+            <MenuItem Header="{loc:Loc gui.menu.tools}">
+                <MenuItem Header="{loc:Loc gui.menu.extractSelected}" Click="OnExtractSelected" />
+                <MenuItem Header="{loc:Loc gui.menu.extractAll}" Click="OnExtractAll" />
+                <MenuItem Header="{loc:Loc gui.menu.extractFolder}" Click="OnExtractFolder" />
+                <MenuItem Header="{loc:Loc gui.menu.extractChecked}" Click="OnExtractChecked" />
                 <Separator />
-                <MenuItem Header="Check all folders" Click="OnCheckAllFolders" />
-                <MenuItem Header="Uncheck all folders" Click="OnUncheckAllFolders" />
+                <MenuItem Header="{loc:Loc gui.menu.checkAll}" Click="OnCheckAllFolders" />
+                <MenuItem Header="{loc:Loc gui.menu.uncheckAll}" Click="OnUncheckAllFolders" />
                 <Separator />
-                <MenuItem Header="Load recovered _names.txt..." Click="OnLoadNames" />
-                <MenuItem Header="Back to single list (flat view)" Click="OnFlatViewToggle" IsCheckable="True" />
+                <MenuItem Header="{loc:Loc gui.menu.loadNames}" Click="OnLoadNames" />
+                <MenuItem Header="{loc:Loc gui.menu.flatView}" Click="OnFlatViewToggle" IsCheckable="True" />
             </MenuItem>
-            <MenuItem Header="_Help">
-                <MenuItem Header="_About" Click="OnAbout" />
+            <MenuItem Header="{loc:Loc gui.menu.help}">
+                <MenuItem Header="{loc:Loc gui.menu.about}" Click="OnAbout" />
             </MenuItem>
         </Menu>
 
         <ToolBarTray DockPanel.Dock="Top">
             <ToolBar>
-                <Button Content="← Back" Click="OnBack" />
-                <Button Content="→ Forward" Click="OnForward" />
-                <Button Content="↑ Up" Click="OnUp" />
+                <Button Content="{loc:Loc gui.toolbar.back}" Click="OnBack" />
+                <Button Content="{loc:Loc gui.toolbar.forward}" Click="OnForward" />
+                <Button Content="{loc:Loc gui.toolbar.up}" Click="OnUp" />
                 <Separator />
-                <Button Content="Open" Click="OnOpenPackage" />
-                <Button Content="Extract" Click="OnExtractSelected" />
-                <Button Content="Extract Checked" Click="OnExtractChecked" />
+                <Button Content="{loc:Loc gui.toolbar.open}" Click="OnOpenPackage" />
+                <Button Content="{loc:Loc gui.toolbar.extract}" Click="OnExtractSelected" />
+                <Button Content="{loc:Loc gui.toolbar.extractChecked}" Click="OnExtractChecked" />
             </ToolBar>
         </ToolBarTray>
 
         <Border DockPanel.Dock="Top" Background="#F7F7F7" BorderBrush="#DDD" BorderThickness="0,0,0,1">
             <DockPanel Margin="6,3">
-                <TextBlock DockPanel.Dock="Left" Text="Address:" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#666" />
+                <TextBlock DockPanel.Dock="Left" Text="{loc:Loc gui.address}" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#666" />
                 <ComboBox x:Name="AddressBox" DockPanel.Dock="Left" Width="360" IsEditable="True" IsTextSearchEnabled="False"
-                          VerticalAlignment="Center" ToolTip="Type a folder name (or 'all') and press Enter"
+                          VerticalAlignment="Center" ToolTip="{loc:Loc gui.addressTip}"
                           KeyDown="OnAddressKeyDown" SelectionChanged="OnAddressSelected" />
                 <TextBlock x:Name="Breadcrumb" VerticalAlignment="Center" FontWeight="SemiBold" Margin="10,0,0,0"
                            TextTrimming="CharacterEllipsis" />
-                <TextBlock DockPanel.Dock="Right" Text="Search:" VerticalAlignment="Center" Margin="8,0,4,0" />
+                <TextBlock DockPanel.Dock="Right" Text="{loc:Loc gui.search}" VerticalAlignment="Center" Margin="8,0,4,0" />
                 <TextBox x:Name="FilterBox" DockPanel.Dock="Right" Width="280" TextChanged="OnFilterChanged"
-                         ToolTip="Filter by name, type or key" />
+                         ToolTip="{loc:Loc gui.filterTip}" />
             </DockPanel>
         </Border>
 
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
-                <TextBlock x:Name="StatusText" Text="Open a .package file to begin." />
+                <TextBlock x:Name="StatusText" Text="{loc:Loc gui.status.open}" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <TextBlock x:Name="CountText" Foreground="#666" />
@@ -93,13 +99,13 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" Foreground="#666" Margin="0,0,4,2" />
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Loc gui.details.name}" Foreground="#666" Margin="0,0,4,2" />
                 <TextBlock Grid.Row="0" Grid.Column="1" x:Name="DetailsName" TextTrimming="CharacterEllipsis" Margin="0,0,12,2" />
-                <TextBlock Grid.Row="0" Grid.Column="2" Text="Type:" Foreground="#666" Margin="0,0,4,2" />
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="{loc:Loc gui.details.type}" Foreground="#666" Margin="0,0,4,2" />
                 <TextBlock Grid.Row="0" Grid.Column="3" x:Name="DetailsType" TextTrimming="CharacterEllipsis" Margin="0,0,0,2" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Key:" Foreground="#666" Margin="0,0,4,0" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Loc gui.details.key}" Foreground="#666" Margin="0,0,4,0" />
                 <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DetailsKey" FontFamily="Consolas" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
-                <TextBlock Grid.Row="1" Grid.Column="2" Text="Size:" Foreground="#666" Margin="0,0,4,0" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="{loc:Loc gui.details.size}" Foreground="#666" Margin="0,0,4,0" />
                 <TextBlock Grid.Row="1" Grid.Column="3" x:Name="DetailsSize" TextTrimming="CharacterEllipsis" />
             </Grid>
         </Border>
@@ -119,13 +125,13 @@
                       VirtualizingStackPanel.VirtualizationMode="Recycling">
                 <TreeView.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="Open" Click="OnFolderMenuOpen" />
+                        <MenuItem Header="{loc:Loc gui.folder.open}" Click="OnFolderMenuOpen" />
                         <Separator />
-                        <MenuItem Header="Check this folder" Click="OnFolderMenuCheck" />
-                        <MenuItem Header="Uncheck this folder" Click="OnFolderMenuUncheck" />
+                        <MenuItem Header="{loc:Loc gui.folder.check}" Click="OnFolderMenuCheck" />
+                        <MenuItem Header="{loc:Loc gui.folder.uncheck}" Click="OnFolderMenuUncheck" />
                         <Separator />
-                        <MenuItem Header="Extract this folder..." Click="OnExtractFolder" />
-                        <MenuItem Header="Copy folder name" Click="OnFolderMenuCopyName" />
+                        <MenuItem Header="{loc:Loc gui.folder.extract}" Click="OnExtractFolder" />
+                        <MenuItem Header="{loc:Loc gui.folder.copyName}" Click="OnFolderMenuCopyName" />
                     </ContextMenu>
                 </TreeView.ContextMenu>
                 <TreeView.ItemTemplate>
@@ -155,23 +161,23 @@
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="" Width="26" DisplayMemberBinding="{Binding Glyph}" />
-                        <GridViewColumn Header="Name" Width="240" DisplayMemberBinding="{Binding ShortName}" />
-                        <GridViewColumn Header="Type" Width="110" DisplayMemberBinding="{Binding TypeName}" />
-                        <GridViewColumn Header="Size" Width="80" DisplayMemberBinding="{Binding PackedSize}" />
-                        <GridViewColumn Header="Mem" Width="80" DisplayMemberBinding="{Binding MemSize}" />
-                        <GridViewColumn Header="Comp" Width="60" DisplayMemberBinding="{Binding Compression}" />
+                        <GridViewColumn Header="{loc:Loc gui.col.name}" Width="240" DisplayMemberBinding="{Binding ShortName}" />
+                        <GridViewColumn Header="{loc:Loc gui.col.type}" Width="110" DisplayMemberBinding="{Binding TypeName}" />
+                        <GridViewColumn Header="{loc:Loc gui.col.size}" Width="80" DisplayMemberBinding="{Binding PackedSize}" />
+                        <GridViewColumn Header="{loc:Loc gui.col.mem}" Width="80" DisplayMemberBinding="{Binding MemSize}" />
+                        <GridViewColumn Header="{loc:Loc gui.col.comp}" Width="60" DisplayMemberBinding="{Binding Compression}" />
                     </GridView>
                 </ListView.View>
                 <ListView.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="Extract..." Click="OnExtractSelected" />
-                        <MenuItem Header="Open as package" Click="OnOpenResourceAsPackage" />
-                        <MenuItem Header="Extract Folder..." Click="OnExtractFolder" />
+                        <MenuItem Header="{loc:Loc gui.res.extract}" Click="OnExtractSelected" />
+                        <MenuItem Header="{loc:Loc gui.res.openAsPackage}" Click="OnOpenResourceAsPackage" />
+                        <MenuItem Header="{loc:Loc gui.res.extractFolder}" Click="OnExtractFolder" />
                         <Separator />
-                        <MenuItem Header="Copy Resource Key" Click="OnCopyKey" />
-                        <MenuItem Header="Copy Name" Click="OnCopyName" />
+                        <MenuItem Header="{loc:Loc gui.res.copyKey}" Click="OnCopyKey" />
+                        <MenuItem Header="{loc:Loc gui.res.copyName}" Click="OnCopyName" />
                         <Separator />
-                        <MenuItem Header="Open in preview" Click="OnPreviewSelected" />
+                        <MenuItem Header="{loc:Loc gui.res.openInPreview}" Click="OnPreviewSelected" />
                     </ContextMenu>
                 </ListView.ContextMenu>
             </ListView>
@@ -180,7 +186,7 @@
 
             <DockPanel Grid.Column="4">
                 <TextBlock x:Name="PreviewHeader" DockPanel.Dock="Top" Padding="6,4"
-                           FontWeight="SemiBold" Text="Preview" Background="#F3F3F3" TextTrimming="CharacterEllipsis" />
+                           FontWeight="SemiBold" Text="{loc:Loc gui.preview}" Background="#F3F3F3" TextTrimming="CharacterEllipsis" />
                 <Grid>
                     <TextBox x:Name="PreviewText" IsReadOnly="True" AcceptsReturn="True"
                              FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
@@ -193,7 +199,7 @@
                           MouseLeftButtonDown="OnModelMouseDown" MouseLeftButtonUp="OnModelMouseUp"
                           MouseMove="OnModelMouseMove" MouseWheel="OnModelMouseWheel">
                         <Viewport3D x:Name="PreviewViewport" ClipToBounds="True" />
-                        <TextBlock Text="drag to rotate · wheel to zoom" Foreground="#BBB"
+                        <TextBlock Text="{loc:Loc gui.model.hint}" Foreground="#BBB"
                                    HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8" />
                     </Grid>
                 </Grid>

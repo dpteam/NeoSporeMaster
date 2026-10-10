@@ -816,7 +816,7 @@ public static class RenderWare4Tests
         Assert.Equal("1", doc.Descendants("faces").First().Attribute("count")!.Value);
         Assert.Equal("mat0", doc.Descendants("submesh").First().Attribute("material")!.Value);
 
-        string material = Rw4OgreExporter.ExportMaterial(new[] { ("mat0", "tex0.dds") });
+        string material = Rw4OgreExporter.ExportMaterial(new (string, string?)[] { ("mat0", "tex0.dds") });
         Assert.Contains(material, "material mat0");
         Assert.Contains(material, "texture tex0.dds");
 

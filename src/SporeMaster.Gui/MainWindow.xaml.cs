@@ -42,13 +42,47 @@ public partial class MainWindow : Window
     /// <summary>Paths of packages opened before the current one (so nested packages can be left again).</summary>
     private readonly List<string> _packageStack = new();
 
-    private const string AllResourcesLabel = "(all resources)";
+    private static string AllResourcesLabel => Core.Localization.Localizer.Default["gui.all"];
 
     public MainWindow()
     {
         InitializeComponent();
         AddHandler(GridViewColumnHeader.ClickEvent, new RoutedEventHandler(OnColumnHeaderClick));
         Loaded += (_, _) => Guarded(TryOpenFromCommandLine);
+
+        // Reflect the active language in the View -> Language submenu.
+        bool russian = string.Equals(Core.Localization.Localizer.Default.Language, "ru", StringComparison.OrdinalIgnoreCase);
+        LanguageRuMenuItem.IsChecked = russian;
+        LanguageEnMenuItem.IsChecked = !russian;
+    }
+
+    // ---- language ----
+
+    private void OnLanguageEn(object sender, RoutedEventArgs e) => Guarded(() => SwitchLanguage("en"));
+
+    private void OnLanguageRu(object sender, RoutedEventArgs e) => Guarded(() => SwitchLanguage("ru"));
+
+    /// <summary>Switches the UI language, persists it and reloads the window (keeping the open package).</summary>
+    private void SwitchLanguage(string code)
+    {
+        if (string.Equals(Core.Localization.Localizer.Default.Language, code, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        Core.Localization.Localizer.Use(code);
+        GuiSettings.Language = code;
+
+        string? path = _session?.FilePath;
+        var window = new MainWindow();
+        Application.Current.MainWindow = window;
+        window.Show();
+        if (!string.IsNullOrEmpty(path))
+        {
+            window.OpenPackageForTest(path);
+        }
+
+        Close();
     }
 
     // ---- opening / closing ----
@@ -129,7 +163,7 @@ public partial class MainWindow : Window
             _historyIndex = -1;
             Navigate(_root, record: true, resetHistory: true);
 
-            StatusText.Text = $"{_session.Count} resource(s) — DBPF {_session.Header?.Version}";
+            StatusText.Text = Core.Localization.Localizer.Default.Get("gui.status.resources", _session.Count, _session.Header?.Version);
         }
         catch (NotAPackageException ex)
         {
@@ -255,10 +289,10 @@ public partial class MainWindow : Window
         AddressBox.Text = string.Empty;
         PreviewText.Text = string.Empty;
         PreviewImage.Source = null;
-        PreviewHeader.Text = "Preview";
+        PreviewHeader.Text = Core.Localization.Localizer.Default["gui.preview"];
         Breadcrumb.Text = string.Empty;
         Title = "SporeMaster 3";
-        StatusText.Text = "Open a .package file to begin.";
+        StatusText.Text = Core.Localization.Localizer.Default["gui.status.open"];
         CountText.Text = string.Empty;
     });
 
@@ -401,17 +435,17 @@ public partial class MainWindow : Window
         string package = _session is null ? string.Empty : Path.GetFileName(_session.FilePath);
         if (_flatView)
         {
-            Breadcrumb.Text = $"{package}  ▸  (flat view, {_items.Count} items)";
+            Breadcrumb.Text = Core.Localization.Localizer.Default.Get("gui.crumb.flat", package, _items.Count);
             SetAddressText(AllResourcesLabel);
         }
         else if (_current is null || _current.IsRoot)
         {
-            Breadcrumb.Text = $"{package}  ▸  (all {_items.Count} items)";
+            Breadcrumb.Text = Core.Localization.Localizer.Default.Get("gui.crumb.all", package, _items.Count);
             SetAddressText(AllResourcesLabel);
         }
         else
         {
-            Breadcrumb.Text = $"{package}  ▸  📁 {_current.Name}  ({_current.Items.Count} items)";
+            Breadcrumb.Text = Core.Localization.Localizer.Default.Get("gui.crumb.folder", package, _current.Name, _current.Items.Count);
             SetAddressText($"📁 {_current.Name}");
         }
     }
@@ -1374,9 +1408,8 @@ public partial class MainWindow : Window
     {
         MessageBox.Show(
             this,
-            "SporeMaster 3\n\nA .NET 9 toolkit for exploring and editing Spore .package (DBPF) files.\n" +
-            "Supports DBPF/DBBF, properties, locales, textures, bitmaps, RenderWare 4 and hash guessing.",
-            "About SporeMaster 3",
+            Core.Localization.Localizer.Default["gui.about.text"],
+            Core.Localization.Localizer.Default["gui.menu.about"].Replace("_", string.Empty),
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     });
@@ -1465,6 +1498,18 @@ public partial class MainWindow : Window
                 ? PreviewImageScroller
                 : PreviewText;
 
+        return CaptureElement(target, path);
+    }
+
+    /// <summary>Captures the whole window to a PNG (used by the self-test to verify the layout).</summary>
+    internal string? CaptureWindowForTest(string path)
+    {
+        UpdateLayout();
+        return CaptureElement(this, path);
+    }
+
+    private static string? CaptureElement(FrameworkElement target, string path)
+    {
         if (target.ActualWidth < 1 || target.ActualHeight < 1)
         {
             return null;

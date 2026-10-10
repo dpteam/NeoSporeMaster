@@ -22,6 +22,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Apply the saved UI language (falls back to English).
+        Core.Localization.Localizer.Use(GuiSettings.Language);
+
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
             LogCrash("AppDomain", args.ExceptionObject as Exception ?? new Exception("unknown"));

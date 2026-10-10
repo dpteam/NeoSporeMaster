@@ -37,5 +37,18 @@ public static class LocalizationTests
         // Unknown languages fall back to English.
         Localizer unknown = Localizer.Load("zz");
         Assert.Equal("en", unknown.Language);
+
+        // The GUI keys must exist and be translated in both languages.
+        foreach (string key in new[]
+                 {
+                     "gui.menu.file", "gui.menu.tools", "gui.menu.view", "gui.toolbar.open",
+                     "gui.details.name", "gui.col.name", "gui.preview", "gui.status.open",
+                 })
+        {
+            Assert.True(russian[key] != key, $"missing Russian translation for '{key}'");
+        }
+
+        Assert.True(russian["gui.menu.file"] != english["gui.menu.file"], "gui.menu.file translated");
+        Assert.True(russian["gui.toolbar.open"] != english["gui.toolbar.open"], "gui.toolbar.open translated");
     }
 }

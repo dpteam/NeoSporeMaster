@@ -37,6 +37,11 @@ internal static class SelfTest
                 window.Show();
                 window.UpdateLayout();
                 report.AppendLine("Layout pass: OK");
+                report.AppendLine($"Language: {Core.Localization.Localizer.Default.Language}");
+
+                // Capture the whole window (chrome) to a PNG so the layout/labels can be checked.
+                string windowShot = Path.Combine(Path.GetTempPath(), "sporemaster-gui-window.png");
+                report.AppendLine($"Window screenshot: {window.CaptureWindowForTest(windowShot) ?? "not captured"}");
 
                 // Exercise folder navigation.
                 int foldersToVisit = Math.Min(window.FolderCount, 20);
