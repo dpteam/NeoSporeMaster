@@ -1,4 +1,5 @@
 using SporeMaster.Core.Bitmaps;
+using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Imaging;
 
 namespace SporeMaster.Tests;
@@ -61,6 +62,54 @@ public static class BitmapTests
         RgbaImage fromPng = PngCodec.Decode(png);
 
         Assert.True(image.Pixels.AsSpan().SequenceEqual(fromPng.Pixels), "bitmap -> PNG must preserve pixels");
+    }
+
+    [SporeTest("real bitmap resources decode")]
+    public static void RealBitmaps()
+    {
+        int tested = 0;
+        var types = new SortedSet<uint>();
+
+        foreach (string packagePath in TestData.FinalPackages.Concat(TestData.BetaPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (!SporeBitmapTypes.IsSupported(entry.Key.TypeId))
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                BitmapImage bitmap = BitmapImage.Read(new MemoryStream(data), entry.Key.TypeId);
+
+                Assert.True(bitmap.Width > 0 && bitmap.Width <= 8192, $"plausible width ({bitmap.Width})");
+                Assert.True(bitmap.Height > 0 && bitmap.Height <= 8192, $"plausible height ({bitmap.Height})");
+                Assert.Equal(bitmap.Width * bitmap.Height * 4, bitmap.Image.Pixels.Length);
+
+                // The decoded image must survive a PNG encode.
+                byte[] png = PngCodec.Encode(bitmap.Image);
+                Assert.True(png.Length > 8);
+
+                types.Add(entry.Key.TypeId);
+                tested++;
+
+                if (tested >= 100)
+                {
+                    break;
+                }
+            }
+
+            if (tested >= 100)
+            {
+                break;
+            }
+        }
+
+        if (tested == 0)
+        {
+            throw new AssertionException("No bitmap resources found in the reference packages.");
+        }
     }
 
     [SporeTest("unsupported bitmap type is rejected on read")]

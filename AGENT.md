@@ -18,7 +18,10 @@
 
 ## 2. Структура и стиль кода
 
-- Проекты и пространства имён: `SporeMaster.Core`, `SporeMaster.Cli`, `SporeMaster.Tests`.
+- Проекты и пространства имён: `SporeMaster.Core`, `SporeMaster.Cli`, `SporeMaster.Gui`,
+  `SporeMaster.Tests`.
+- Логика форматов живёт только в `SporeMaster.Core`. GUI и CLI — тонкие оболочки над Core;
+  UI-независимые данные (сессии, превью) — в `Core.Presentation`.
 - Публичные типы оформляем XML-комментариями (`/// <summary>`), язык комментариев — английский.
 - Соблюдаем стиль окружения: `file-scoped namespace`, `var` где очевидно, `ArgumentNullException.ThrowIfNull`,
   записи (`record`) для маленьких неизменяемых структур.
@@ -59,5 +62,7 @@
 
 1. `dotnet build SporeMaster3.sln -c Release` — без ошибок и предупреждений.
 2. `dotnet run --project tests/SporeMaster.Tests -c Release` — все тесты зелёные.
-3. Обновлены `HISTORY.md` (и при необходимости `MEMORY.md`, `README.md`).
-4. Новые строки интерфейса добавлены в `en.lang`, если они видимы пользователю.
+3. Для изменений в GUI: `dotnet run --project src/SporeMaster.Gui -- --selftest <архив.package>`
+   и убедиться, что отчёт заканчивается на `RESULT: OK`.
+4. Обновлены `HISTORY.md` (и при необходимости `MEMORY.md`, `README.md`).
+5. Новые строки интерфейса добавлены в `en.lang`, если они видимы пользователю.

@@ -99,16 +99,16 @@ public sealed class BitmapImage
             throw new NotSupportedException($"Unsupported bitmap type 0x{type:X8}.");
         }
 
-        int version = stream.ReadI32();
+        int version = stream.ReadI32BE();
         if (version != Version)
         {
             throw new InvalidDataException($"Unsupported bitmap version {version}.");
         }
 
-        int width = stream.ReadI32();
-        int height = stream.ReadI32();
-        int channelCount = stream.ReadI32();
-        int bufferSize = stream.ReadI32();
+        int width = stream.ReadI32BE();
+        int height = stream.ReadI32BE();
+        int channelCount = stream.ReadI32BE();
+        int bufferSize = stream.ReadI32BE();
 
         if (width <= 0 || height <= 0 || width > 1 << 16 || height > 1 << 16)
         {
@@ -132,7 +132,7 @@ public sealed class BitmapImage
 
         if (type == SporeBitmapTypes.BitImage)
         {
-            image.Unknown = stream.ReadI32();
+            image.Unknown = stream.ReadI32BE();
         }
 
         image.Image = Decode(type, width, height, data);
@@ -143,16 +143,16 @@ public sealed class BitmapImage
     {
         byte[] data = Encode();
 
-        stream.WriteI32(Version);
-        stream.WriteI32(Width);
-        stream.WriteI32(Height);
-        stream.WriteI32(ChannelCount);
-        stream.WriteI32(data.Length);
+        stream.WriteI32BE(Version);
+        stream.WriteI32BE(Width);
+        stream.WriteI32BE(Height);
+        stream.WriteI32BE(ChannelCount);
+        stream.WriteI32BE(data.Length);
         stream.Write(data);
 
         if (Type == SporeBitmapTypes.BitImage)
         {
-            stream.WriteI32(Unknown);
+            stream.WriteI32BE(Unknown);
         }
     }
 

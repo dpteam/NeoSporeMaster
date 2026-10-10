@@ -47,11 +47,12 @@ RenderWare4 (материалы, скелеты, анимации, экспор�
 SporeMaster3/
 ├─ SporeMaster3.sln            решение .NET 9
 ├─ Directory.Build.props       общие свойства сборки
-├─ data/                       реестры имён из SporeModder FX (reg_*.txt)
+├─ data/                       реестры имён и словари фрагментов (reg_*.txt, guess_*.txt)
 ├─ docs/                       техническая документация (RU)
 ├─ src/
-│  ├─ SporeMaster.Core/        ядро: DBPF, RefPack, хеши, реестры, локализация
-│  └─ SporeMaster.Cli/         headless-утилита командной строки (`spore`)
+│  ├─ SporeMaster.Core/        ядро: DBPF, RefPack, хеши, свойства, локали, текстуры, RW4
+│  ├─ SporeMaster.Cli/         headless-утилита командной строки (`spore`)
+│  └─ SporeMaster.Gui/         графический интерфейс (WPF, net9.0-windows)
 ├─ tests/
 │  └─ SporeMaster.Tests/       собственный тест-раннер и тесты
 ├─ refs/                       эталонные материалы и тестовые .package (не в сборке)
@@ -86,6 +87,29 @@ dotnet run --project tests/SporeMaster.Tests -c Release
 ## Использование CLI
 
 Утилита называется `spore`.
+
+### Графический интерфейс
+
+```powershell
+dotnet run --project src/SporeMaster.Gui
+# либо передать архив сразу:
+dotnet run --project src/SporeMaster.Gui -- путь\к\архиву.package
+```
+
+Окно позволяет открыть архив, отфильтровать ресурсы, посмотреть превью (свойства как XML,
+текстуры/bitmap как изображение, RenderWare4 как список секций, иначе — hex) и извлечь ресурсы
+(с автоматической конвертацией свойств в `.xml`, текстур в `.dds`, bitmap в `.png`).
+
+У GUI есть режим самопроверки (создаёт окно, открывает архив, строит превью и завершает работу
+без показа интерфейса — удобно для CI):
+
+```powershell
+dotnet run --project src/SporeMaster.Gui -- --selftest путь\к\архиву.package
+```
+
+Отчёт пишется в `%TEMP%\sporemaster-gui-selftest.txt`.
+
+### Команды CLI
 
 ```powershell
 # Информация об архиве

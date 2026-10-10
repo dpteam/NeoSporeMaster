@@ -1,0 +1,82 @@
+<Window x:Class="SporeMaster.Gui.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SporeMaster 3" Height="720" Width="1180"
+        WindowStartupLocation="CenterScreen">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open Package..." Click="OnOpenPackage" InputGestureText="Ctrl+O" />
+                <MenuItem Header="_Close" Click="OnClosePackage" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="OnExit" />
+            </MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem Header="_Extract Selected..." Click="OnExtractSelected" />
+                <MenuItem Header="Extract _All..." Click="OnExtractAll" />
+                <Separator />
+                <MenuItem Header="_Copy Resource Key" Click="OnCopyKey" />
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Click="OnAbout" />
+            </MenuItem>        </Menu>
+
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar>
+                <Button Content="Open" Click="OnOpenPackage" />
+                <Button Content="Extract Selected" Click="OnExtractSelected" />
+                <Separator />
+                <TextBlock Text="Filter:" VerticalAlignment="Center" Margin="6,0,4,0" />
+                <TextBox x:Name="FilterBox" Width="260" TextChanged="OnFilterChanged"
+                         ToolTip="Filter by name, type or key" />
+                <TextBlock x:Name="CountText" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#666" />
+            </ToolBar>
+        </ToolBarTray>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="Open a .package file to begin." />
+            </StatusBarItem>
+        </StatusBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="360" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="3*" MinWidth="280" />
+            </Grid.ColumnDefinitions>
+
+            <ListView x:Name="ResourceList" Grid.Column="0"
+                      SelectionMode="Single" SelectionChanged="OnSelectionChanged"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="#" Width="55" DisplayMemberBinding="{Binding Index}" />
+                        <GridViewColumn Header="Type" Width="110" DisplayMemberBinding="{Binding TypeName}" />
+                        <GridViewColumn Header="Comp" Width="60" DisplayMemberBinding="{Binding Compression}" />
+                        <GridViewColumn Header="Packed" Width="80" DisplayMemberBinding="{Binding PackedSize}" />
+                        <GridViewColumn Header="Mem" Width="80" DisplayMemberBinding="{Binding MemSize}" />
+                        <GridViewColumn Header="Path" Width="420" DisplayMemberBinding="{Binding Path}" />
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#DDD" />
+
+            <DockPanel Grid.Column="2">
+                <TextBlock x:Name="PreviewHeader" DockPanel.Dock="Top" Padding="6,4"
+                           FontWeight="SemiBold" Text="Preview" Background="#F3F3F3" />
+                <Grid>
+                    <TextBox x:Name="PreviewText" IsReadOnly="True" AcceptsReturn="True"
+                             FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                    <ScrollViewer x:Name="PreviewImageScroller" Visibility="Collapsed"
+                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#FAFAFA">
+                        <Image x:Name="PreviewImage" Stretch="None" Margin="8" />
+                    </ScrollViewer>
+                </Grid>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>
