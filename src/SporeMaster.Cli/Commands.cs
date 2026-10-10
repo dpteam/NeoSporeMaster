@@ -17,6 +17,7 @@ using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
 using SporeMaster.Core.Pctp;
 using SporeMaster.Core.Pdb;
+using SporeMaster.Core.Presentation;
 using SporeMaster.Core.Properties;
 using SporeMaster.Core.RenderWare4;
 using SporeMaster.Core.Search;
@@ -281,7 +282,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 2)
         {
-            return UsageError(output, "unpack <package> <output-dir> [--raw] [--clean-autolocales]");
+            return UsageError(output, "unpack <package> <output-dir> [--raw] [--clean-autolocales] [--group A,B] [--type T] [--name S]");
         }
 
         if (!TryOpen(cli, output, out DatabasePackedFile? package))
@@ -294,6 +295,9 @@ public static class Commands
         bool cleanAutoLocales = cli.Has("clean-autolocales");
         NameRegistrySet names = OpenNames(cli);
         Directory.CreateDirectory(outputDir);
+
+        // Selective extraction: choose one or more folders (groups), types and/or a name substring.
+        ResourceSelector selector = ResourceSelector.Parse(cli.Get("type"), cli.Get("group"), cli.Get("name"), names);
 
         // Identify auto-generated locales (by content) so they can be rebuilt on packing.
         var autoLocaleIds = new HashSet<uint>();
@@ -324,10 +328,18 @@ public static class Commands
 
         int written = 0;
         int skipped = 0;
+        int filtered = 0;
         using (package)
         {
             foreach (DbpfEntry entry in package!.Entries)
             {
+                string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+                if (!selector.IsEmpty && !selector.Matches(entry.Key.TypeId, entry.Key.GroupId, resolved))
+                {
+                    filtered++;
+                    continue;
+                }
+
                 byte[] data = package.ReadEntry(entry);
 
                 if (cleanAutoLocales &&
@@ -408,6 +420,11 @@ public static class Commands
             }
 
             output.Success(Localizer.Default.Get("result.unpacked", written, outputDir));
+            if (!selector.IsEmpty)
+            {
+                output.Line($"Selected {written} of {written + filtered} resource(s) (filtered out {filtered}).");
+            }
+
             if (cleanAutoLocales && skipped > 0)
             {
                 output.Line($"Cleaned {skipped} auto-generated locale(s).");
@@ -1522,7 +1539,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 2)
         {
-            return UsageError(output, "unpackdata <package> <output-dir> [--keymap KeyMap.txt]");
+            return UsageError(output, "unpackdata <package> <output-dir> [--keymap KeyMap.txt] [--group A,B] [--type T] [--name S]");
         }
 
         if (!TryOpen(cli, output, out DatabasePackedFile? package))
@@ -1532,6 +1549,7 @@ public static class Commands
 
         string outputDir = Path.GetFullPath(cli.Positional[1]);
         NameRegistrySet names = OpenNames(cli);
+        ResourceSelector selector = ResourceSelector.Parse(cli.Get("type"), cli.Get("group"), cli.Get("name"), names);
 
         KeyMap? keyMap = null;
         string? keyMapPath = cli.Get("keymap");
@@ -1558,6 +1576,11 @@ public static class Commands
             {
                 string? realPath = keyMap?.GetPath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
                 string relative = realPath ?? names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+                if (!selector.IsEmpty && !selector.Matches(entry.Key.TypeId, entry.Key.GroupId, relative))
+                {
+                    continue;
+                }
+
                 if (realPath is not null)
                 {
                     keyed++;

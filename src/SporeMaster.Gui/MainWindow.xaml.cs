@@ -488,27 +488,57 @@ public partial class MainWindow : Window
 
     private void ExtractSelected()
     {
-        if (_session is null || ResourceList.SelectedItem is not ResourceItem row)
+        if (_session is null)
+        {
+            MessageBox.Show(this, "Open a package first.", "No package");
+            return;
+        }
+
+        var rows = ResourceList.SelectedItems.Cast<ResourceItem>().ToList();
+        if (rows.Count == 0)
         {
             MessageBox.Show(this, "Select a resource first.", "Nothing selected");
             return;
         }
 
-        var dialog = new SaveFileDialog
+        // A single resource: let the user pick a file name (with a suggested extension).
+        if (rows.Count == 1)
         {
-            Title = "Extract resource",
-            FileName = Path.GetFileName(row.ShortName),
-            Filter = "All files (*.*)|*.*",
-        };
+            ResourceItem row = rows[0];
+            var dialog = new SaveFileDialog
+            {
+                Title = "Extract resource",
+                FileName = Path.GetFileName(row.ShortName),
+                Filter = "All files (*.*)|*.*",
+            };
 
-        if (dialog.ShowDialog(this) != true)
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            byte[] data = _session.Read(row.Entry);
+            WriteConverted(row, data, dialog.FileName);
+            StatusText.Text = $"Extracted {row.Path} ({data.Length} bytes).";
+            return;
+        }
+
+        // Multiple resources: pick a folder and extract each (as an Explorer "extract selection").
+        var folderDialog = new OpenFolderDialog { Title = "Choose an output folder" };
+        if (folderDialog.ShowDialog(this) != true)
         {
             return;
         }
 
-        byte[] data = _session.Read(row.Entry);
-        WriteConverted(row, data, dialog.FileName);
-        StatusText.Text = $"Extracted {row.Path} ({data.Length} bytes).";
+        (int written, int failed) = ExtractItems(rows, folderDialog.FolderName);
+        StatusText.Text = $"Extracted {written} resource(s) to {folderDialog.FolderName}" +
+            (failed > 0 ? $" ({failed} failed)" : string.Empty);
+        MessageBox.Show(
+            this,
+            $"Extracted {written} resource(s)." + (failed > 0 ? $"\n{failed} failed (see status bar)." : string.Empty),
+            "Extract selected",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private void OnExtractFolder(object sender, RoutedEventArgs e) => Guarded(() =>

@@ -123,6 +123,42 @@ public static class PresentationTests
         Assert.Equal("\U0001F9CA", ResourceGlyph.For("0x2F4E681B/0x0", 0x2F4E681B));
     }
 
+    [SporeTest("resource selector matches folders, types and names")]
+    public static void ResourceSelectorMatching()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+
+        // Unknown group: match by resolved name (group names carry a trailing '~' alias marker).
+        var selector = ResourceSelector.Parse(types: null, groups: "creature_parts", name: null, names);
+        Assert.False(selector.IsEmpty);
+        uint group = names.GetFileHash("0x40626000");
+        Assert.True(selector.Matches(0x00B1B104, group, "creature_parts~/thing.prop"), "matches by folder name");
+        Assert.False(selector.Matches(0x00B1B104, 0x12345678, "other~/thing.prop"), "other folder excluded");
+
+        // Multiple folders.
+        var multi = ResourceSelector.Parse(null, "creature_parts, animations~", null, names);
+        Assert.Equal(2, multi.Groups.Count);
+
+        // Match by explicit hash literal.
+        var byHash = ResourceSelector.Parse(null, "0x40626000", null, names);
+        Assert.True(byHash.Matches(0x00B1B104, 0x40626000, "creature_parts~/x.prop"));
+        Assert.False(byHash.Matches(0x00B1B104, 0x40626001, "creature_parts~/x.prop"));
+
+        // Type and name filters.
+        var byType = ResourceSelector.Parse("prop", null, null, names);
+        Assert.True(byType.Matches(0x00B1B104, 1, "g/n.prop"));
+        Assert.False(byType.Matches(0x2F4E681B, 1, "g/n.rw4"));
+
+        var byName = ResourceSelector.Parse(null, null, "brute", names);
+        Assert.True(byName.Matches(0x00B1B104, 1, "creature_parts~/ce_Brute_02.prop"));
+        Assert.False(byName.Matches(0x00B1B104, 1, "creature_parts~/ce_mouth.prop"));
+
+        // Empty selector matches everything.
+        var empty = ResourceSelector.Parse(null, null, null, names);
+        Assert.True(empty.IsEmpty);
+        Assert.True(empty.Matches(0x00B1B104, 0x99999999, "x/y.z"));
+    }
+
     [SporeTest("explorer model groups resources into folders")]
     public static void ExplorerFolders()
     {
