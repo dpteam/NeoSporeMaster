@@ -1269,6 +1269,48 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Converts a cell look table: <c>looktable &lt;in&gt; &lt;out&gt;</c>.</summary>
+    public static int LookTable(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "looktable <input.look_table|input.look_table_t> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            if (input.EndsWith(".look_table_t", StringComparison.OrdinalIgnoreCase))
+            {
+                CellLookTableFile table = CellLookTableFile.Parse(File.ReadAllText(input));
+                using FileStream binOut = File.Create(outputPath);
+                table.Write(binOut);
+                output.Success($"Wrote binary look table ({table.Entries.Count} entr(ies)): {outputPath}");
+            }
+            else
+            {
+                using FileStream input0 = File.OpenRead(input);
+                CellLookTableFile table = CellLookTableFile.Read(input0);
+                File.WriteAllText(outputPath, table.ToScript());
+                output.Success($"Wrote look table text ({table.Entries.Count} entr(ies)): {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Look table conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     public static int Verify(CommandLine cli, Output output)
     {
         if (!TryOpen(cli, output, out DatabasePackedFile? package))

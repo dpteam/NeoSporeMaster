@@ -133,6 +133,8 @@ little-endian; флаги и stride сохраняются для байт-то�
 ### `Cell/*`
 - `CellLootTableFile` — таблицы добычи (`.loottable`): бинарное чтение/запись и текст
   (`.loottable_t`), байт-точно. Формат описан в `docs/LOOTTABLE_FORMAT.md`.
+- `CellLookTableFile` — таблицы «взгляда» (`.look_table`): бинарное чтение/запись и текст
+  (`.look_table_t`), байт-точно. Формат описан в `docs/LOOKTABLE_FORMAT.md`.
 
 ### `Presentation/*`
 UI-независимый слой, переиспользуемый GUI и CLI:

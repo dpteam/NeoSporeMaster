@@ -68,6 +68,7 @@ public static class Program
             "gait" => Commands.Gait(cli, output),
             "cnv" => Commands.Cnv(cli, output),
             "loottable" => Commands.LootTable(cli, output),
+            "looktable" => Commands.LookTable(cli, output),
             "rw4" => Commands.Rw4(cli, output),
             "verify" => Commands.Verify(cli, output),
             "hash" => Commands.Hash(cli, output),
@@ -108,6 +109,7 @@ public static class Program
         output.Line($"  {loc["cmd.gait.usage"],-58} {loc["cmd.gait.summary"]}");
         output.Line($"  {loc["cmd.cnv.usage"],-58} {loc["cmd.cnv.summary"]}");
         output.Line($"  {loc["cmd.loottable.usage"],-58} {loc["cmd.loottable.summary"]}");
+        output.Line($"  {loc["cmd.looktable.usage"],-58} {loc["cmd.looktable.summary"]}");
         output.Line($"  {loc["cmd.rw4.usage"],-58} {loc["cmd.rw4.summary"]}");
         output.Line($"  {loc["cmd.verify.usage"],-58} {loc["cmd.verify.summary"]}");
         output.Line($"  {loc["cmd.hash.usage"],-58} {loc["cmd.hash.summary"]}");
