@@ -76,10 +76,13 @@ little-endian; флаги и stride сохраняются для байт-то�
   Формат описан в `docs/TEXTURE_FORMAT.md`.
 
 ### `RenderWare4/*`
-- `RenderWare4File` — контейнер `.rw4`: заголовок, манифест, таблица секций; чтение мешей.
+- `RenderWare4File` — контейнер `.rw4`: заголовок, манифест, таблица секций; чтение мешей и
+  декодирование геометрии (`ReadGeometry`).
 - `Rw4SectionTypes` / `Rw4SectionInfo` — коды и описатели секций.
 - `Rw4SectionManifest` — манифест (типы, внешние арены, подссылки, атомы).
-- `Rw4Mesh` — меш (примитивы, ссылки на буферы).
+- `Rw4Mesh` / `Rw4Geometry` — меш и декодирование вершин/индексов (`Rw4VertexDescription`,
+  `Rw4VertexBuffer`, `Rw4IndexBuffer`, `Rw4VertexElement`).
+- `Rw4ObjExporter` — экспорт геометрии в OBJ.
   Формат описан в `docs/RW4_FORMAT.md`.
 
 ### `Imaging/*` и `Bitmaps/*`

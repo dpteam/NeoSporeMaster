@@ -192,8 +192,9 @@ public sealed class RenderWare4File : IDisposable
         }
 
         var meshes = new List<Rw4Mesh>();
-        foreach (Rw4SectionInfo section in Sections)
+        for (int i = 0; i < Sections.Count; i++)
         {
+            Rw4SectionInfo section = Sections[i];
             if (section.TypeCode != (int)Rw4SectionType.Mesh || section.Size < 36)
             {
                 continue;
@@ -201,7 +202,7 @@ public sealed class RenderWare4File : IDisposable
 
             try
             {
-                meshes.Add(Rw4Mesh.Read(_stream, section.DataOffset, this));
+                meshes.Add(Rw4Mesh.Read(_stream, section.DataOffset, i));
             }
             catch (EndOfStreamException ex)
             {
@@ -222,6 +223,164 @@ public sealed class RenderWare4File : IDisposable
 
         _stream.Seek(offset, SeekOrigin.Begin);
         return _stream.ReadI32();
+    }
+
+    /// <summary>Reads the raw bytes of a section (its <see cref="Rw4SectionInfo.Size"/> bytes).</summary>
+    public byte[] ReadSectionBytes(Rw4SectionInfo section)
+    {
+        if (_stream is null || section.Size <= 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        if (section.DataOffset < 0 || section.DataOffset + section.Size > _length)
+        {
+            Diagnostics.Warn($"RW4 base resource at 0x{section.DataOffset:X} is out of range.");
+            return Array.Empty<byte>();
+        }
+
+        _stream.Seek(section.DataOffset, SeekOrigin.Begin);
+        return _stream.ReadBytesExactly(section.Size);
+    }
+
+    /// <summary>
+    /// Reads the triangle geometry for every mesh in this resource. Best-effort: meshes whose
+    /// buffers cannot be resolved or decoded are reported through <see cref="Diagnostics"/>.
+    /// </summary>
+    public IReadOnlyList<Rw4MeshGeometry> ReadGeometry()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4MeshGeometry>();
+        }
+
+        var result = new List<Rw4MeshGeometry>();
+
+        foreach (Rw4Mesh mesh in ReadMeshes())
+        {
+            try
+            {
+                Rw4MeshGeometry? geometry = ReadMeshGeometry(mesh);
+                if (geometry is not null)
+                {
+                    result.Add(geometry);
+                }
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 mesh #{mesh.MeshSectionIndex} geometry could not be decoded: {ex.Message}");
+            }
+        }
+
+        return result;
+    }
+
+    private Rw4MeshGeometry? ReadMeshGeometry(Rw4Mesh mesh)
+    {
+        if (mesh.VertexBufferIndices.Count == 0)
+        {
+            return null;
+        }
+
+        Rw4SectionInfo? vertexBufferSection = GetSection(mesh.VertexBufferIndices[0]);
+        if (vertexBufferSection is null || vertexBufferSection.TypeCode != (int)Rw4SectionType.VertexBuffer)
+        {
+            return null;
+        }
+
+        Rw4VertexBuffer vertexBuffer = ReadAt(vertexBufferSection, Rw4VertexBuffer.Read);
+        Rw4SectionInfo? descriptionSection = GetSection(vertexBuffer.VertexDescriptionIndex);
+        Rw4SectionInfo? vertexDataSection = GetSection(vertexBuffer.VertexDataIndex);
+        if (descriptionSection is null || vertexDataSection is null)
+        {
+            return null;
+        }
+
+        Rw4VertexDescription description = ReadAt(descriptionSection, Rw4VertexDescription.Read);
+        int positionOffset = description.PositionOffset;
+        if (positionOffset < 0)
+        {
+            return null;
+        }
+
+        byte[] vertexData = ReadSectionBytes(vertexDataSection);
+        int stride = vertexBuffer.VertexSize > 0 ? vertexBuffer.VertexSize : description.VertexSize;
+        if (stride <= 0)
+        {
+            return null;
+        }
+
+        int vertexCount = vertexBuffer.VertexCount;
+        var positions = new float[vertexCount * 3];
+        for (int i = 0; i < vertexCount; i++)
+        {
+            int baseOffset = (i * stride) + positionOffset;
+            if (baseOffset + 12 > vertexData.Length)
+            {
+                break;
+            }
+
+            positions[(i * 3) + 0] = BitConverter.ToSingle(vertexData, baseOffset);
+            positions[(i * 3) + 1] = BitConverter.ToSingle(vertexData, baseOffset + 4);
+            positions[(i * 3) + 2] = BitConverter.ToSingle(vertexData, baseOffset + 8);
+        }
+
+        int[] indices = ReadIndices(mesh, out _);
+        if (indices.Length < 3)
+        {
+            return null;
+        }
+
+        return new Rw4MeshGeometry
+        {
+            MeshSectionIndex = mesh.MeshSectionIndex,
+            Positions = positions,
+            Indices = indices,
+        };
+    }
+
+    private int[] ReadIndices(Rw4Mesh mesh, out Rw4IndexBuffer? indexBuffer)
+    {
+        indexBuffer = null;
+        Rw4SectionInfo? indexSection = GetSection(mesh.IndexBufferIndex);
+        if (indexSection is null || indexSection.TypeCode != (int)Rw4SectionType.IndexBuffer)
+        {
+            return Array.Empty<int>();
+        }
+
+        indexBuffer = ReadAt(indexSection, Rw4IndexBuffer.Read);
+        Rw4SectionInfo? dataSection = GetSection(indexBuffer.IndexDataIndex);
+        if (dataSection is null)
+        {
+            return Array.Empty<int>();
+        }
+
+        byte[] data = ReadSectionBytes(dataSection);
+        bool wide = indexBuffer.Format == 102; // D3DFMT_INDEX32
+        int elementSize = wide ? 4 : 2;
+        int available = data.Length / elementSize;
+
+        // The mesh declares how many indices belong to it (triangleCount * 3 for triangle lists).
+        int wanted = mesh.PrimitiveCount > 0 && mesh.PrimitiveCount <= available ? mesh.PrimitiveCount : available;
+        int start = indexBuffer.StartIndex >= 0 && indexBuffer.StartIndex < available ? indexBuffer.StartIndex : 0;
+        wanted = Math.Min(wanted, available - start);
+
+        var indices = new int[wanted];
+        for (int i = 0; i < wanted; i++)
+        {
+            int offset = (start + i) * elementSize;
+            indices[i] = wide
+                ? BitConverter.ToInt32(data, offset)
+                : BitConverter.ToUInt16(data, offset);
+        }
+
+        return indices;
+    }
+
+    private T ReadAt<T>(Rw4SectionInfo section, Func<Stream, T> reader)
+    {
+        _stream!.Seek(section.DataOffset, SeekOrigin.Begin);
+        return reader(_stream);
     }
 
     public void Dispose()

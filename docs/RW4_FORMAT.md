@@ -99,21 +99,29 @@ int32  vertexBufferN…       // vertexBufferCount ссылок на секци�
 ## 7. Что реализовано
 
 - `RenderWare4File` — разбор заголовка, манифеста и таблицы секций; чтение мешей
-  (`ReadMeshes`).
-- CLI: команда `rw4 <файл.rw4>` печатает тип контейнера, число секций, полный список секций
-  (тип/смещение/размер/выравнивание) и сводку по мешам.
-- Тесты: контейнер на всех 2883 ресурсах, наличие `Raster` в текстурах, чтение мешей,
-  отклонение чужого magic.
+  (`ReadMeshes`); чтение «сырых» данных секций (`ReadSectionBytes`); декодирование геометрии
+  (`ReadGeometry`).
+- Декодирование геометрии меша:
+  - `VertexDescription` (`0x20004`) — набор элементов вершины (`Rw4VertexElement`): смещение,
+    тип, назначение; ищется первичный элемент позиции (`typeCode == 0`);
+  - `VertexBuffer` (`0x20005`) — описание вершин, число вершин, размер вершины и ссылка на данные;
+  - `IndexBuffer` (`0x20007`) — формат (16/32 бита), число примитивов и ссылка на данные;
+  - `BaseResource` (`0x10030`) — сырые байты буферов.
+- **Экспорт в OBJ** (`Rw4ObjExporter`): по одному `o mesh_N` на меш, позиции `v` и треугольники `f`.
+- CLI: команда `rw4 <файл.rw4> [--export file.obj]` печатает тип контейнера, секции и сводку по
+  мешам, а по `--export` выгружает геометрию в OBJ.
+- Тесты: контейнер на всех 2883 ресурсах; чтение мешей; **декодирование геометрии на 150 реальных
+  моделях** (позиции конечны, индексы в диапазоне); OBJ-экспорт.
 
 ## 8. Что осталось (будущее)
 
-Полноценное декодирование секций — большая задача: описания вершин, материалы
-(`CompiledState`, требуется компилятор состояний Direct3D), скелеты, анимации, блендшейпы и
-экспорт в Ogre XML (как в SporeMaster 2 / SporeModder FX). Это вынесено в дорожную карту
-(`MEMORY.md`).
+- Материалы (`CompiledState`, нужен компилятор состояний Direct3D), скелеты и анимации,
+  блендшейпы, нормали/UV-координаты (сейчас извлекаются только позиции и индексы).
+- Экспорт в Ogre XML (как в SporeMaster 2 / SporeModder FX).
 
 ## 9. Ссылки
 
 - SporeModder FX: `refs/SporeModder-FX-master/src/sporemodder/file/rw4/RenderWare.java`,
-  `RWHeader.java`, `RWSection*.java`, `RWMesh.java`, `RWVertexBuffer.java`, `RWIndexBuffer.java`.
+  `RWHeader.java`, `RWSection*.java`, `RWMesh.java`, `RWVertexBuffer.java`, `RWIndexBuffer.java`,
+  `RWVertexDescription.java`, `RWVertexElement.java`.
 - SporeMaster 2: `SporeMaster/SporeMaster/RenderWare4/RW4Model.cs`.

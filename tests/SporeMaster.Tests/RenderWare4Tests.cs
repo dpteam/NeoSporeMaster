@@ -181,6 +181,81 @@ public static class RenderWare4Tests
         }
     }
 
+    [SporeTest("RW4 meshes decode to valid geometry")]
+    public static void MeshGeometry()
+    {
+        int meshes = 0;
+
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                if (rw4.ContainerType != Rw4ContainerType.Model)
+                {
+                    continue;
+                }
+
+                foreach (Rw4MeshGeometry geometry in rw4.ReadGeometry())
+                {
+                    Assert.True(geometry.VertexCount > 0, "geometry should have vertices");
+                    Assert.True(geometry.TriangleCount > 0, "geometry should have triangles");
+
+                    // All positions must be finite.
+                    foreach (float f in geometry.Positions)
+                    {
+                        Assert.True(!float.IsNaN(f) && !float.IsInfinity(f), "position must be finite");
+                    }
+
+                    // All indices must reference an existing vertex.
+                    foreach (int index in geometry.Indices)
+                    {
+                        Assert.True(index >= 0 && index < geometry.VertexCount, $"index {index} out of range (0..{geometry.VertexCount - 1})");
+                    }
+
+                    meshes++;
+                }
+
+                if (meshes >= 150)
+                {
+                    return;
+                }
+            }
+        }
+
+        if (meshes == 0)
+        {
+            throw new AssertionException("No RW4 mesh geometry decoded.");
+        }
+    }
+
+    [SporeTest("RW4 OBJ export is well-formed")]
+    public static void ObjExport()
+    {
+        var geometry = new Rw4MeshGeometry
+        {
+            Positions = new[] { 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f, 0f },
+            Indices = new[] { 0, 1, 2 },
+        };
+
+        string obj = Rw4ObjExporter.Export(new[] { geometry });
+        Assert.Contains(obj, "o mesh_0");
+        Assert.Contains(obj, "v 0 0 0");
+        Assert.Contains(obj, "f 1 2 3");
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

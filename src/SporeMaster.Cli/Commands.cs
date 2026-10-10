@@ -608,6 +608,24 @@ public static class Commands
             output.Table(new[] { "#", "Primitive", "Triangles", "Vertices", "Prims", "VBufs" }, meshRows);
         }
 
+        // --export <file.obj>: dump decoded geometry.
+        string? exportPath = cli.Get("export");
+        if (exportPath is not null)
+        {
+            IReadOnlyList<Core.RenderWare4.Rw4MeshGeometry> geometry = rw4.ReadGeometry();
+            if (geometry.Count == 0)
+            {
+                output.Warn("No decodable mesh geometry was found.");
+            }
+            else
+            {
+                Core.RenderWare4.Rw4ObjExporter.Export(geometry, exportPath);
+                int totalTriangles = geometry.Sum(g => g.TriangleCount);
+                int totalVertices = geometry.Sum(g => g.VertexCount);
+                output.Success($"Exported {geometry.Count} mesh(es) ({totalVertices} vertices, {totalTriangles} triangles) to {exportPath}");
+            }
+        }
+
         foreach (var diagnostic in rw4.Diagnostics.Items)
         {
             if (diagnostic.Level == Core.Diagnostics.DiagnosticLevel.Error)

@@ -25,9 +25,8 @@
   таблиц из текстов-заглушек свойств при упаковке (как в SporeMaster 2).
 - **Текстуры (`.raster` ⇄ DDS)** — конвертация растровых текстур Spore в стандартный DDS и
   обратно (байт-точно), включая блочные форматы (DXT/ATI) и мипмапы.
-- **RenderWare 4 (`.rw4`)** — разбор контейнера (заголовок, манифест, таблица секций, типы) и
-  чтение мешей (примитивы, ссылки на буферы вершин/индексов).
-- **Bitmap (`.bitImage`/`8bitImage`/`32bitImage`/`48bitImage` ⇄ PNG)** — конвертация «сырых»
+- **RenderWare 4 (`.rw4`)** — разбор контейнера (заголовок, манифест, таблица секций, типы),
+  чтение мешей и **декодирование геометрии** (позиции + индексы) с экспортом в **OBJ**.- **Bitmap (`.bitImage`/`8bitImage`/`32bitImage`/`48bitImage` ⇄ PNG)** — конвертация «сырых»
   растровых ресурсов Spore в PNG и обратно. PNG-кодек написан нами (только BCL+zlib).
 - **Восстановление имён по хешам** — «hash guesser» с обращением FNV и словарями фрагментов
   (`data/guess_left.txt`, `data/guess_right.txt`).
@@ -112,8 +111,9 @@ dotnet run --project src/SporeMaster.Cli -- locale <файл.locale>
 dotnet run --project src/SporeMaster.Cli -- texture <файл.raster> <файл.dds>
 dotnet run --project src/SporeMaster.Cli -- texture <файл.dds> <файл.raster>
 
-# Разобрать структуру ресурса RenderWare 4
+# Разобрать структуру ресурса RenderWare 4 (и выгрузить меши в OBJ)
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4>
+dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export <файл.obj>
 
 # Конвертировать растровый ресурс (bitmap ⇄ PNG, определяется автоматически)
 dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage> <файл.32bitImage.png>

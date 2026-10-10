@@ -24,6 +24,9 @@ public enum Rw4IndexFormat
 /// <remarks>Layout mirrors SporeModder FX's <c>RWMesh</c>.</remarks>
 public sealed class Rw4Mesh
 {
+    /// <summary>The index of the section this mesh was read from.</summary>
+    public int MeshSectionIndex { get; private init; }
+
     public int Field0 { get; private init; }
 
     public Rw4PrimitiveType PrimitiveType { get; private init; }
@@ -42,7 +45,7 @@ public sealed class Rw4Mesh
 
     public List<int> VertexBufferIndices { get; } = new();
 
-    internal static Rw4Mesh Read(Stream stream, long offset, RenderWare4File file)
+    internal static Rw4Mesh Read(Stream stream, long offset, int meshSectionIndex)
     {
         stream.Seek(offset, SeekOrigin.Begin);
 
@@ -58,6 +61,7 @@ public sealed class Rw4Mesh
 
         var mesh = new Rw4Mesh
         {
+            MeshSectionIndex = meshSectionIndex,
             Field0 = field0,
             PrimitiveType = Enum.IsDefined(primitive) ? primitive : Rw4PrimitiveType.TriangleList,
             IndexBufferIndex = indexBufferIndex,
