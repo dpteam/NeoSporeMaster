@@ -4,6 +4,7 @@ using SporeMaster.Core.Bitmaps;
 using SporeMaster.Core.ArgScript;
 using SporeMaster.Core.Compression;
 using SporeMaster.Core.Dbpf;
+using SporeMaster.Core.Gait;
 using SporeMaster.Core.Hashing;
 using SporeMaster.Core.Imaging;
 using SporeMaster.Core.Locale;
@@ -1136,6 +1137,48 @@ public static class Commands
         catch (Exception ex)
         {
             output.Error($"TLSA conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /// <summary>Converts a gait file: <c>gait &lt;in&gt; &lt;out&gt;</c> (binary or text).</summary>
+    public static int Gait(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "gait <input.gait|input.gait_t> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            if (input.EndsWith(".gait_t", StringComparison.OrdinalIgnoreCase))
+            {
+                GaitFile gait = GaitFile.Parse(File.ReadAllText(input));
+                using FileStream binOut = File.Create(outputPath);
+                gait.Write(binOut);
+                output.Success($"Wrote binary GAIT ({gait.StepLengthKeys.Count} step keys, {gait.GaitGroupKeys.Count} group(s)): {outputPath}");
+            }
+            else
+            {
+                using FileStream input0 = File.OpenRead(input);
+                GaitFile gait = GaitFile.Read(input0);
+                File.WriteAllText(outputPath, gait.ToScript());
+                output.Success($"Wrote GAIT text ({gait.StepLengthKeys.Count} step keys, {gait.GaitGroupKeys.Count} group(s)): {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"GAIT conversion failed: {ex.Message}");
             return 1;
         }
 
