@@ -139,16 +139,56 @@ int32  countAgain
 Связка «скелет ↔ матрицы ↔ позы» читается и проверяется на реальных моделях (например,
 `ce_sense_ear_top_01-symmetric.rw4`: 3 кости = 3 матрицы = 3 позы)._
 
-## 9. Что осталось (будущее)
+## 9. Ключевые анимации (RWKeyframeAnim / RWAnimations)
 
-- Материалы (`CompiledState`, нужен компилятор состояний Direct3D), анимации, блендшейпы.
+**`KeyframeAnim`** (`0x70001`) — каналы анимации (обычно по одному на кость). Заголовок (48 байт):
+
+```
+uint32 pChannelNames   // абсолютное смещение массива имён каналов
+int32  channelCount
+int32  skeletonID      // какой скелет анимируется
+int32  field_C
+uint32 pChannelData
+uint32 pPaddingEnd     // конец данных каналов
+uint32 channelCount    // снова
+int32  field_1C
+float  length          // длительность, секунды
+int32  field_24        // обычно 12
+int32  flags
+uint32 pChannelInfo    // массив (offset, poseSize, components) по 12 байт
+```
+
+Затем: `channelCount` имён (int32) по `pChannelNames`; `channelCount` троек
+`(uint32 offset, int32 poseSize, int32 components)` по `pChannelInfo`, где `offset` — **относительно
+начала секции**. Ключевые кадры лежат по `baseOffset + offset`; число кадров канала =
+`(offset[i+1] − offset[i]) / poseSize[i]` (для последнего канала читаем до нарушения
+монотонности времени). Размеры кадра по маске компонент:
+
+| components | тип | размер | поля |
+|-----------:|-----|-------:|------|
+| `0x100` | BlendFactor | 8 | factor, time |
+| `0x101` | LocRot | 32 | rotation(4), location(3), time |
+| `0x601` | LocRotScale | 48 | rotation(4), location(3), scale(3), резерв(4), time |
+
+**`Animations`** (`0xFF0001`) — таблица «id анимации → объект (секция) KeyframeAnim»:
+`int32 subRefIndex; int32 count` + `count` пар `(int32 animationId, int32 objectIndex)`, причём
+`objectIndex` — индекс секции. Читается (`ReadAnimationSets`), индекс разрешается в
+`KeyframeAnim`-секцию.
+
+Реализовано чтение (`ReadKeyframeAnimations` / `ReadAnimationSets`); CLI `rw4` печатает сводку по
+ключевым анимациям (скелет, каналы, кадры, длительность). Пример: `CSA_Main` →
+анимация со скелетом `0xFDB981D0`, 2 канала, 62 кадра, 1.25 с (совпадает со скелетом файла).
+
+## 10. Что осталось (будущее)
+
+- Материалы (`CompiledState`, нужен компилятор состояний Direct3D), блендшейпы.
 - Нормали извлекаются только когда хранятся как float-элементы; на практике Spore часто хранит
   их в упакованном виде, поэтому `vn` может отсутствовать.
 - Экспорт в Ogre XML (как в SporeMaster 2 / SporeModder FX).
 
-## 9. Ссылки
+## 11. Ссылки
 
 - SporeModder FX: `refs/SporeModder-FX-master/src/sporemodder/file/rw4/RenderWare.java`,
   `RWHeader.java`, `RWSection*.java`, `RWMesh.java`, `RWVertexBuffer.java`, `RWIndexBuffer.java`,
-  `RWVertexDescription.java`, `RWVertexElement.java`.
+  `RWVertexDescription.java`, `RWVertexElement.java`, `RWKeyframeAnim.java`, `RWKeyframe.java`.
 - SporeMaster 2: `SporeMaster/SporeMaster/RenderWare4/RW4Model.cs`.

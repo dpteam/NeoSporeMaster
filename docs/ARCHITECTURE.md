@@ -91,6 +91,8 @@ little-endian; флаги и stride сохраняются для байт-то�
 - `Rw4Skeleton` — скелет: имена костей (хеши), флаги и иерархия (родители).
 - `Rw4Skin` — скин-секции: `Rw4SkinsInK` (связки), `Rw4SkinMatrixBuffer` (матрицы 3x4),
   `Rw4AnimationSkin` (bind-позы костей), `Rw4Matrix3x4`.
+- `Rw4Animation` — ключевые анимации: `Rw4KeyframeAnim` (каналы и кадры), `Rw4AnimationSet`
+  (таблица «id → секция»), `Rw4Keyframe`, `Rw4AnimationChannel`.
 - `Rw4ObjExporter` — экспорт геометрии в OBJ.
   Формат описан в `docs/RW4_FORMAT.md`.
 

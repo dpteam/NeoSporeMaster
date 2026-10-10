@@ -792,6 +792,22 @@ public static class Commands
             output.Table(new[] { "#", "Bones", "Matrices", "Poses" }, skinRows);
         }
 
+        IReadOnlyList<Core.RenderWare4.Rw4KeyframeAnim> animations = rw4.ReadKeyframeAnimations();
+        if (animations.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Keyframe animations ({animations.Count})");
+            var animRows = animations.Select((a, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                $"0x{a.SkeletonId:X8}",
+                a.Channels.Count.ToString(CultureInfo.InvariantCulture),
+                a.Channels.Sum(c => c.Keyframes.Count).ToString(CultureInfo.InvariantCulture),
+                a.Length.ToString("0.###", CultureInfo.InvariantCulture),
+            }).ToList();
+            output.Table(new[] { "#", "Skeleton", "Channels", "Keyframes", "Length" }, animRows);
+        }
+
         // --export <file.obj>: dump decoded geometry.
         string? exportPath = cli.Get("export");
         if (exportPath is not null)

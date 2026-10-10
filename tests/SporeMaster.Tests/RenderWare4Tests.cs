@@ -386,6 +386,118 @@ public static class RenderWare4Tests
         }
     }
 
+    [SporeTest("RW4 keyframe animations parse on real data")]
+    public static void KeyframeAnimations()
+    {
+        int animations = 0;
+        int channels = 0;
+
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                foreach (Rw4KeyframeAnim anim in rw4.ReadKeyframeAnimations())
+                {
+                    foreach (Rw4AnimationChannel channel in anim.Channels)
+                    {
+                        Assert.True(
+                            Enum.IsDefined(channel.Components),
+                            $"unknown keyframe components 0x{(int)channel.Components:X}");
+
+                        float last = float.NegativeInfinity;
+                        foreach (Rw4Keyframe keyframe in channel.Keyframes)
+                        {
+                            // Time must be non-decreasing along a channel.
+                            Assert.True(
+                                keyframe.Time >= last,
+                                $"non-monotonic keyframe time {keyframe.Time} after {last}");
+                            last = keyframe.Time;
+                            Assert.True(
+                                !float.IsNaN(keyframe.Location[0]) && !float.IsInfinity(keyframe.Location[0]),
+                                "keyframe has a non-finite location");
+                        }
+
+                        channels++;
+                    }
+
+                    animations++;
+                    if (animations >= 200)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (animations == 0)
+        {
+            throw new AssertionException("No RW4 keyframe animations found.");
+        }
+
+        Assert.True(channels > 0, "animations were found but no channels");
+    }
+
+    [SporeTest("RW4 animation sets reference keyframe animation sections")]
+    public static void AnimationSets()
+    {
+        int sets = 0;
+        int resolved = 0;
+
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                foreach (Rw4AnimationSet set in rw4.ReadAnimationSets())
+                {
+                    foreach ((int _, int objectIndex) in set.Animations)
+                    {
+                        Rw4SectionInfo? section = rw4.GetSection(objectIndex);
+                        if (section is { TypeCode: (int)Rw4SectionType.KeyframeAnim })
+                        {
+                            resolved++;
+                        }
+                    }
+
+                    sets++;
+                }
+            }
+        }
+
+        if (sets == 0)
+        {
+            throw new AssertionException("No RW4 animation sets found.");
+        }
+
+        // Object indices are section indices: the references should point at keyframe anim sections.
+        Assert.True(resolved > 0, "no animation-set object index resolved to a keyframe animation section");
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

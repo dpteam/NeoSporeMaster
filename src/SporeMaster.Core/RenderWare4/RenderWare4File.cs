@@ -326,6 +326,87 @@ public sealed class RenderWare4File : IDisposable
     }
 
     /// <summary>
+    /// Reads every keyframe-animation section (type <c>0x70001</c>) of this resource. Each section
+    /// is a set of channels (usually one per bone) with their keyframes.
+    /// </summary>
+    public IReadOnlyList<Rw4KeyframeAnim> ReadKeyframeAnimations()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4KeyframeAnim>();
+        }
+
+        var animations = new List<Rw4KeyframeAnim>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.KeyframeAnim || section.Size < 48)
+            {
+                continue;
+            }
+
+            try
+            {
+                animations.Add(Rw4KeyframeAnim.Read(_stream, section.DataOffset, _length));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 keyframe animation at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return animations;
+    }
+
+    /// <summary>
+    /// Reads every animations section (type <c>0xFF0001</c>): tables that map an animation id to the
+    /// keyframe-animation section holding it. Each object index is resolved to a section when it
+    /// points at a <see cref="Rw4KeyframeAnim"/> section.
+    /// </summary>
+    public IReadOnlyList<Rw4AnimationSet> ReadAnimationSets()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4AnimationSet>();
+        }
+
+        var sets = new List<Rw4AnimationSet>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.Animations || section.Size < 8)
+            {
+                continue;
+            }
+
+            try
+            {
+                _stream.Seek(section.DataOffset, SeekOrigin.Begin);
+                var set = new Rw4AnimationSet { SubReferenceIndex = _stream.ReadI32() };
+                int count = _stream.ReadI32();
+                if (count < 0 || count > 100_000 || section.DataOffset + 8L + count * 8L > _length)
+                {
+                    sets.Add(set);
+                    continue;
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    int animationId = _stream.ReadI32();
+                    int objectIndex = _stream.ReadI32();
+                    set.Animations.Add((animationId, objectIndex));
+                }
+
+                sets.Add(set);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 animations section at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return sets;
+    }
+
+    /// <summary>
     /// Reads the triangle geometry for every mesh in this resource. Best-effort: meshes whose
     /// buffers cannot be resolved or decoded are reported through <see cref="Diagnostics"/>.
     /// </summary>
