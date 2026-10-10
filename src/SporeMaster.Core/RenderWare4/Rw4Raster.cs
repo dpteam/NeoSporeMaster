@@ -1,4 +1,5 @@
 using SporeMaster.Core.IO;
+using SporeMaster.Core.Textures;
 
 namespace SporeMaster.Core.RenderWare4;
 
@@ -60,6 +61,18 @@ public sealed class Rw4Raster
             };
         }
     }
+
+    /// <summary>Builds a DDS texture from this raster and its pixel data.</summary>
+    public DdsTexture ToDds(byte[] data) => new()
+    {
+        Width = Width,
+        Height = Height,
+        MipmapCount = Math.Max(1, MipmapLevels),
+        Format = (uint)TextureFormat,
+        RgbBitCount = 8 * TextureFormats.BytesPerPixelForD3dFormat((uint)TextureFormat),
+        IsCubeMap = (TextureFlags & 0x1000) != 0,
+        Data = data,
+    };
 
     internal static Rw4Raster Read(Stream s, long offset)
     {

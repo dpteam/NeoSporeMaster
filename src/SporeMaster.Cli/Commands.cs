@@ -727,7 +727,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 1)
         {
-            return UsageError(output, "rw4 <file.rw4>");
+            return UsageError(output, "rw4 <file.rw4> [--export file.obj] [--export-textures DIR]");
         }
 
         string input = cli.Positional[0];
@@ -938,6 +938,41 @@ public static class Commands
                 int totalVertices = geometry.Sum(g => g.VertexCount);
                 output.Success($"Exported {geometry.Count} mesh(es) ({totalVertices} vertices, {totalTriangles} triangles) to {exportPath}");
             }
+        }
+
+        // --export-textures <dir>: dump embedded textures as DDS.
+        string? textureDir = cli.Get("export-textures");
+        if (!string.IsNullOrEmpty(textureDir))
+        {
+            IReadOnlyList<Core.RenderWare4.Rw4Raster> exportRasters = rw4.ReadRasters();
+            Directory.CreateDirectory(textureDir);
+            string baseName = Path.GetFileNameWithoutExtension(input);
+            int written = 0;
+
+            for (int i = 0; i < exportRasters.Count; i++)
+            {
+                Core.RenderWare4.Rw4Raster raster = exportRasters[i];
+                byte[]? data = rw4.GetRasterData(raster);
+                if (data is null || data.Length == 0)
+                {
+                    output.Warn($"Raster {i} has no pixel data; skipped.");
+                    continue;
+                }
+
+                try
+                {
+                    string target = Path.Combine(textureDir, $"{baseName}_tex{i}.dds");
+                    using FileStream ddsOut = File.Create(target);
+                    raster.ToDds(data).Write(ddsOut);
+                    written++;
+                }
+                catch (Exception ex)
+                {
+                    output.Warn($"Raster {i} could not be exported: {ex.Message}");
+                }
+            }
+
+            output.Success($"Exported {written} texture(s) to {textureDir}.");
         }
 
         foreach (var diagnostic in rw4.Diagnostics.Items)

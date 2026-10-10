@@ -244,8 +244,11 @@ uint32 padding
 | `0x18` | int32 | `field_18` |
 | `0x1C` | int32 | ссылка на `BaseResource` (пиксельные данные) |
 
-Реализовано чтение (`ReadRasters`); CLI `rw4` печатает сводку по растрам (формат, размер, мипы).
-**Проверено:** например `ce_weapon_club_01__diffuse.rw4` — **DXT5 128×128, 8 мипов**.
+Реализовано чтение (`ReadRasters`); CLI `rw4` печатает сводку по растрам (формат, размер, мипы) и
+умеет выгружать текстуры в **DDS** (`rw4 --export-textures <папка>`); данные берутся из
+`BaseResource`-секции (`RenderWare4File.GetRasterData`).
+**Проверено:** например `ce_weapon_club_01__diffuse.rw4` — **DXT5 128×128, 8 мипов** (выгруженный
+DDS читается обратно с теми же размерами/форматом).
 
 ## 13. Морфы и блендшейпы (MorphHandle / BlendShape / BlendShapeBuffer)
 

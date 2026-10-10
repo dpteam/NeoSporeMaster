@@ -701,6 +701,56 @@ public static class RenderWare4Tests
         }
     }
 
+    [SporeTest("RW4 textures export to a valid DDS")]
+    public static void ExportTexture()
+    {
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                if (rw4.RawType != (uint)Rw4ContainerType.Texture)
+                {
+                    continue;
+                }
+
+                foreach (Rw4Raster raster in rw4.ReadRasters())
+                {
+                    byte[]? pixels = rw4.GetRasterData(raster);
+                    if (pixels is null || pixels.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    using var buffer = new MemoryStream();
+                    raster.ToDds(pixels).Write(buffer);
+                    buffer.Position = 0;
+                    Core.Textures.DdsTexture readBack = Core.Textures.DdsTexture.Read(buffer);
+
+                    Assert.Equal(raster.Width, readBack.Width);
+                    Assert.Equal(raster.Height, readBack.Height);
+                    Assert.Equal(Math.Max(1, raster.MipmapLevels), readBack.MipmapCount);
+                    Assert.Equal((uint)raster.TextureFormat, readBack.Format);
+                    return;
+                }
+            }
+        }
+
+        throw new AssertionException("No RW4 texture with pixel data was found.");
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

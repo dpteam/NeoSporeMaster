@@ -456,6 +456,21 @@ public sealed class RenderWare4File : IDisposable
     }
 
     /// <summary>
+    /// Reads the raw pixel data of a raster (from the base-resource section it references), or null
+    /// when the section is missing.
+    /// </summary>
+    public byte[]? GetRasterData(Rw4Raster raster)
+    {
+        if (_stream is null)
+        {
+            return null;
+        }
+
+        Rw4SectionInfo? section = GetSection(raster.DataSectionIndex);
+        return section is null ? null : ReadSectionBytes(section);
+    }
+
+    /// <summary>
     /// Reads every compiled material state (section type <c>0x2000B</c>). Each is decoded into a
     /// <see cref="Rw4Material"/>; undecodable sections keep their raw bytes.
     /// </summary>

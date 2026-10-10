@@ -189,9 +189,10 @@ dotnet run --project src/SporeMaster.Cli -- locale <файл.locale>
 dotnet run --project src/SporeMaster.Cli -- texture <файл.raster> <файл.dds>
 dotnet run --project src/SporeMaster.Cli -- texture <файл.dds> <файл.raster>
 
-# Разобрать структуру ресурса RenderWare 4 (и выгрузить меши в OBJ)
+# Разобрать структуру ресурса RenderWare 4 (и выгрузить меши в OBJ / текстуры в DDS)
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4>
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export <файл.obj>
+dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export-textures <папка>
 
 # Конвертировать растровый ресурс (bitmap ⇄ PNG, определяется автоматически)
 dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage> <файл.32bitImage.png>

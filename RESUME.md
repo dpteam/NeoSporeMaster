@@ -85,11 +85,11 @@ refs/                     справочные материалы и реаль�
 
 ## 5. Снимок состояния (обновлять по мере продвижения)
 
-- Версия — около **3.49.0**; тесты — **126/126**; дерево git чистое.
+- Версия — около **3.50.0**; тесты — **127/127**; дерево git чистое.
 - Готово в Core: DBPF 2.0/3.0 (в т.ч. бета) read/write; RefPack (байт-в-байт); `.prop`+`.prop.xml`;
   `.prop_t`; `.locale`+авто-локали; `.raster`⇄DDS; bitmap⇄PNG; RW4 (контейнер, меши, геометрия
   pos/uv/normal + OBJ, скелеты, скины, ключевые анимации, **материалы** `CompiledState`, морфы/
-  блендшейпы, метаданные текстур-растров); `.anim` (чтение: заголовок/события/каналы + ключевые кадры компонент + интерполяторы); hash guesser + `guess --validate`;
+  блендшейпы, метаданные текстур-растров + экспорт текстур в DDS); `.anim` (чтение: заголовок/события/каналы + ключевые кадры компонент + интерполяторы); hash guesser + `guess --validate`;
   KeyMap; полнотекстовый поиск; `diff`; `pdb`, `strings` (реверс-инжиниринг). CLI: `info list extract
   unpack unpackdata pack prop propt locale texture bitmap guess search pctp tlsa gait cnv loottable
   looktable keymap rw4 anim verify diff strings pdb hash types`.
