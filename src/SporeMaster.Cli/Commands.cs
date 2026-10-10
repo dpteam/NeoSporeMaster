@@ -80,6 +80,7 @@ public static class Commands
         using (package)
         {
             var rows = new List<string[]>();
+            var filtered = new List<DbpfEntry>();
             foreach (DbpfEntry entry in package!.Entries)
             {
                 if (typeFilter is not null && entry.Key.TypeId != typeFilter)
@@ -123,6 +124,7 @@ public static class Commands
 
                 string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
 
+                filtered.Add(entry);
                 rows.Add(new[]
                 {
                     entry.Index.ToString(CultureInfo.InvariantCulture),
@@ -145,14 +147,14 @@ public static class Commands
             if (string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
             {
                 string csvPath = cli.Get("out") ?? "resources.csv";
-                WriteCsv(csvPath, package!, names);
-                output.Success($"Wrote {package!.Entries.Count} row(s) to {csvPath}");
+                WriteCsv(csvPath, filtered, names);
+                output.Success($"Wrote {filtered.Count} row(s) to {csvPath}");
             }
             else if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
             {
                 string jsonPath = cli.Get("out") ?? "resources.json";
-                File.WriteAllText(jsonPath, BuildJson(package!, names));
-                output.Success($"Wrote {package!.Entries.Count} record(s) to {jsonPath}");
+                File.WriteAllText(jsonPath, BuildJson(filtered, names));
+                output.Success($"Wrote {filtered.Count} record(s) to {jsonPath}");
             }
             else
             {
@@ -179,11 +181,11 @@ public static class Commands
         return 0;
     }
 
-    private static void WriteCsv(string path, DatabasePackedFile package, NameRegistrySet names)
+    private static void WriteCsv(string path, IReadOnlyList<DbpfEntry> entries, NameRegistrySet names)
     {
         using var writer = new StreamWriter(path, false, new UTF8Encoding(false));
         writer.WriteLine("index,type,group,instance,compressed,packedSize,memSize,path");
-        foreach (DbpfEntry entry in package.Entries)
+        foreach (DbpfEntry entry in entries)
         {
             string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
             writer.WriteLine(string.Join(',',
@@ -203,13 +205,13 @@ public static class Commands
             ? "\"" + value.Replace("\"", "\"\"") + "\""
             : value;
 
-    private static string BuildJson(DatabasePackedFile package, NameRegistrySet names)
+    private static string BuildJson(IReadOnlyList<DbpfEntry> entries, NameRegistrySet names)
     {
         var builder = new StringBuilder();
         builder.Append("[\n");
-        for (int i = 0; i < package.Entries.Count; i++)
+        for (int i = 0; i < entries.Count; i++)
         {
-            DbpfEntry entry = package.Entries[i];
+            DbpfEntry entry = entries[i];
             string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
             builder.Append("  {")
                 .Append("\"index\":").Append(entry.Index).Append(',')
@@ -221,7 +223,7 @@ public static class Commands
                 .Append("\"memSize\":").Append(entry.MemSize).Append(',')
                 .Append("\"path\":\"").Append(JsonEscape(resolved)).Append('"')
                 .Append('}');
-            if (i < package.Entries.Count - 1)
+            if (i < entries.Count - 1)
             {
                 builder.Append(',');
             }
