@@ -477,7 +477,7 @@ public static class RenderWare4Tests
                 {
                     foreach ((int _, int objectIndex) in set.Animations)
                     {
-                        Rw4SectionInfo? section = rw4.GetSection(objectIndex);
+                        Rw4SectionInfo? section = rw4.ResolveReference(objectIndex);
                         if (section is { TypeCode: (int)Rw4SectionType.KeyframeAnim })
                         {
                             resolved++;
@@ -496,6 +496,118 @@ public static class RenderWare4Tests
 
         // Object indices are section indices: the references should point at keyframe anim sections.
         Assert.True(resolved > 0, "no animation-set object index resolved to a keyframe animation section");
+    }
+
+    [SporeTest("RW4 compiled materials decode on real data")]
+    public static void Materials()
+    {
+        int materials = 0;
+        int rasterSlots = 0;
+
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                foreach (Rw4Material material in rw4.ReadMaterials())
+                {
+                    Assert.True(material.Decompiled, "a compiled material failed to decode");
+                    Assert.True(
+                        material.Raw.Length > 0,
+                        "a decoded material should keep its raw bytes");
+
+                    foreach (Rw4TextureSlotMaterial slot in material.TextureSlots)
+                    {
+                        if (slot.RasterSectionIndex < 0)
+                        {
+                            continue;
+                        }
+
+                        // The reference must resolve to a valid section, and practically always a raster.
+                        // A "no object" reference (INDEX_NO_OBJECT) legitimately resolves to nothing.
+                        Rw4SectionInfo? section = rw4.ResolveReference(slot.RasterSectionIndex);
+                        if (section is { TypeCode: (int)Rw4SectionType.Raster })
+                        {
+                            rasterSlots++;
+                        }
+                        else if (section is not null)
+                        {
+                            Assert.True(
+                                section.TypeCode == (int)Rw4SectionType.CompiledState,
+                                $"texture slot raster reference points at {Rw4SectionTypes.Describe(section.TypeCode)}");
+                        }
+                    }
+
+                    materials++;
+                }
+            }
+        }
+
+        if (materials == 0)
+        {
+            throw new AssertionException("No RW4 compiled materials found.");
+        }
+
+        Assert.True(rasterSlots > 0, "no texture slot resolved to a raster section");
+    }
+
+    [SporeTest("RW4 material links reference compiled states")]
+    public static void MaterialLinks()
+    {
+        int links = 0;
+        int references = 0;
+
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                foreach (Rw4MaterialLink link in rw4.ReadMaterialLinks())
+                {
+                    foreach (int index in link.MaterialSectionIndices)
+                    {
+                        Rw4SectionInfo? section = rw4.ResolveReference(index);
+                        Assert.True(
+                            section is { TypeCode: (int)Rw4SectionType.CompiledState },
+                            $"material link index {index} does not point at a compiled state");
+                        references++;
+                    }
+
+                    links++;
+                }
+            }
+        }
+
+        if (links == 0)
+        {
+            throw new AssertionException("No RW4 material links found.");
+        }
+
+        Assert.True(references > 0, "material links were found but no references");
     }
 
     [SporeTest("bad RW4 magic is rejected")]

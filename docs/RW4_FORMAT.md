@@ -179,16 +179,64 @@ uint32 pChannelInfo    // массив (offset, poseSize, components) по 12 б
 ключевым анимациям (скелет, каналы, кадры, длительность). Пример: `CSA_Main` →
 анимация со скелетом `0xFDB981D0`, 2 канала, 62 кадра, 1.25 с (совпадает со скелетом файла).
 
-## 10. Что осталось (будущее)
+## 10. Ссылки между секциями (кодирование)
 
-- Материалы (`CompiledState`, нужен компилятор состояний Direct3D), блендшейпы.
+Ссылки в RW4 — это 32-битные значения, у которых **верхние 2 бита задают тип**:
+
+```
+тип = (uint)reference >> 22
+0 — индекс секции (объекта)   -> Sections[reference]
+1 — «нет объекта»             -> null        (напр. 0x00400000 = 1 << 22)
+2 — подссылка (sub-reference) -> Manifest.SubReferences[reference & 0x3FFFF].ObjectIndex
+```
+
+Реализовано (`RenderWare4File.ResolveReference`); применяется при разборе скинов, анимаций и
+материалов. Значение `1 << 22` встречается в реальных архивах, например в текстурном слоте
+материала, у которого нет растра.
+
+## 11. Материалы (CompiledState / MeshCompiledStateLink)
+
+**`CompiledState`** (`0x2000B`) — скомпилированное состояние Direct3D (байткод состояния).
+Читается целиком (`Rw4Material`): заголовок + опциональные блоки по флагам:
+
+```
+uint32 size
+int32  primitiveType      // D3DPT_*
+int32  flags1, flags2, flags3
+int32  field_14
+int32  rendererID         // FNV-хеш имени шейдера
+uint32 padding
+...   по флагам: modelToWorld, vertexDescription, shaderData (константы),
+      materialColor (RGBA, 4 float), ambientColor (RGB, 3 float),
+      8 условных float, 17 bool, доп. флаги field_14 ...
+      renderStates: группы «группа -> (state, value)»
+      textureSlots: сэмплер + ссылка на растр + stage/sampler states
+```
+
+Имена состояний и форматирование значений (int/float/цвет/перечисление) — в `Direct3DStates`
+(портировано из `Direct3DEnums` SporeModder FX).
+
+**`MeshCompiledStateLink`** (`0x2001A`) — `int32 mesh; int32 count; int32 materialRef[count]`
+(ссылки на `CompiledState`, `Rw4MaterialLink`).
+
+Перекомпиляция байткода **не реализована** (при записи движок/SporeModder генерируют состояние
+заново), но чтение (декомпиляция) — полное, исходные байты сохраняются в `Rw4Material.Raw`.
+
+**Проверено:** во всех тестовых архивах **4514** материала, **все 4514** декодированы; **1807**
+текстурных слотов ссылаются на растр; **1598** связок «меш→материал», все ссылки разрешаются.
+
+## 12. Что осталось (будущее)
+
+- Перекомпиляция материалов и блендшейпы.
 - Нормали извлекаются только когда хранятся как float-элементы; на практике Spore часто хранит
   их в упакованном виде, поэтому `vn` может отсутствовать.
 - Экспорт в Ogre XML (как в SporeMaster 2 / SporeModder FX).
 
-## 11. Ссылки
+## 13. Ссылки
 
 - SporeModder FX: `refs/SporeModder-FX-master/src/sporemodder/file/rw4/RenderWare.java`,
   `RWHeader.java`, `RWSection*.java`, `RWMesh.java`, `RWVertexBuffer.java`, `RWIndexBuffer.java`,
-  `RWVertexDescription.java`, `RWVertexElement.java`, `RWKeyframeAnim.java`, `RWKeyframe.java`.
+  `RWVertexDescription.java`, `RWVertexElement.java`, `RWKeyframeAnim.java`, `RWKeyframe.java`,
+  `RWCompiledState.java`, `RWMeshCompiledStateLink.java`, `MaterialStateCompiler.java`,
+  `Direct3DEnums.java`.
 - SporeMaster 2: `SporeMaster/SporeMaster/RenderWare4/RW4Model.cs`.

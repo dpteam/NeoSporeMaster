@@ -808,6 +808,31 @@ public static class Commands
             output.Table(new[] { "#", "Skeleton", "Channels", "Keyframes", "Length" }, animRows);
         }
 
+        IReadOnlyList<Core.RenderWare4.Rw4Material> materials = rw4.ReadMaterials();
+        if (materials.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Materials ({materials.Count})");
+            var materialRows = materials.Select((m, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                $"0x{m.RendererId:X8}",
+                Core.RenderWare4.Direct3DStates.FormatPrimitiveType(m.PrimitiveType),
+                m.RenderGroups.Sum(g => g.States.Count).ToString(CultureInfo.InvariantCulture),
+                m.TextureSlots.Count.ToString(CultureInfo.InvariantCulture),
+                m.Decompiled ? "yes" : "no",
+            }).ToList();
+            output.Table(new[] { "#", "Shader", "Primitive", "States", "Slots", "Decoded" }, materialRows);
+        }
+
+        IReadOnlyList<Core.RenderWare4.Rw4MaterialLink> materialLinks = rw4.ReadMaterialLinks();
+        if (materialLinks.Count > 0)
+        {
+            int referenced = materialLinks.Sum(l => l.MaterialSectionIndices.Count);
+            output.Line();
+            output.Line($"Material links: {materialLinks.Count} mesh(es), {referenced} material reference(s).");
+        }
+
         // --export <file.obj>: dump decoded geometry.
         string? exportPath = cli.Get("export");
         if (exportPath is not null)

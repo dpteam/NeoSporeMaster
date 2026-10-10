@@ -183,6 +183,26 @@ public sealed class RenderWare4File : IDisposable
     public Rw4SectionInfo? GetSection(int index) =>
         index >= 0 && index < Sections.Count ? Sections[index] : null;
 
+    /// <summary>
+    /// Resolves a RenderWare 4 reference. The top two bits encode the kind: <c>0</c> is a section
+    /// (object) index, <c>1</c> means "no object" and <c>2</c> is a sub-reference into the manifest's
+    /// sub-reference table. Returns null when the reference points at nothing.
+    /// </summary>
+    public Rw4SectionInfo? ResolveReference(int reference)
+    {
+        switch ((int)((uint)reference >> 22))
+        {
+            case 0:
+                return GetSection(reference);
+            case 2:
+                int subIndex = reference & 0x3FFFF;
+                IReadOnlyList<(int ObjectIndex, int FieldOffset)> refs = Manifest.SubReferences.References;
+                return subIndex >= 0 && subIndex < refs.Count ? GetSection(refs[subIndex].ObjectIndex) : null;
+            default:
+                return null;
+        }
+    }
+
     /// <summary>Reads the mesh sections of this resource (empty for non-mesh containers).</summary>
     public IReadOnlyList<Rw4Mesh> ReadMeshes()
     {
@@ -296,13 +316,13 @@ public sealed class RenderWare4File : IDisposable
                 Rw4SkinsInK link = Rw4SkinsInK.Read(_stream, section.DataOffset);
                 var linkage = new Rw4SkinLinkage { Link = link };
 
-                Rw4SectionInfo? matrixSection = GetSection(link.SkinMatrixBufferIndex);
+                Rw4SectionInfo? matrixSection = ResolveReference(link.SkinMatrixBufferIndex);
                 if (matrixSection is { TypeCode: (int)Rw4SectionType.SkinMatrixBuffer })
                 {
                     linkage.MatrixBuffer = Rw4SkinMatrixBuffer.Read(_stream, matrixSection.DataOffset, _length);
                 }
 
-                Rw4SectionInfo? skeletonSection = GetSection(link.SkeletonIndex);
+                Rw4SectionInfo? skeletonSection = ResolveReference(link.SkeletonIndex);
                 if (skeletonSection is { TypeCode: (int)Rw4SectionType.Skeleton })
                 {
                     linkage.Skeleton = Rw4Skeleton.Read(_stream, skeletonSection.DataOffset, _length);
@@ -404,6 +424,77 @@ public sealed class RenderWare4File : IDisposable
         }
 
         return sets;
+    }
+
+    /// <summary>
+    /// Reads every compiled material state (section type <c>0x2000B</c>). Each is decoded into a
+    /// <see cref="Rw4Material"/>; undecodable sections keep their raw bytes.
+    /// </summary>
+    public IReadOnlyList<Rw4Material> ReadMaterials()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4Material>();
+        }
+
+        var materials = new List<Rw4Material>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.CompiledState || section.Size <= 0)
+            {
+                continue;
+            }
+
+            materials.Add(Rw4Material.Read(_stream, section.DataOffset, section.Size, _length));
+        }
+
+        return materials;
+    }
+
+    /// <summary>
+    /// Reads every mesh-compiled-state link (section type <c>0x2001A</c>): which material sections a
+    /// mesh uses.
+    /// </summary>
+    public IReadOnlyList<Rw4MaterialLink> ReadMaterialLinks()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4MaterialLink>();
+        }
+
+        var links = new List<Rw4MaterialLink>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.MeshCompiledStateLink || section.Size < 8)
+            {
+                continue;
+            }
+
+            try
+            {
+                _stream.Seek(section.DataOffset, SeekOrigin.Begin);
+                var link = new Rw4MaterialLink { MeshSectionIndex = _stream.ReadI32() };
+                int count = _stream.ReadI32();
+                if (count < 0 || count > 100_000 || section.DataOffset + 8L + count * 4L > _length)
+                {
+                    links.Add(link);
+                    continue;
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    link.MaterialSectionIndices.Add(_stream.ReadI32());
+                }
+
+                links.Add(link);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 material link at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return links;
     }
 
     /// <summary>

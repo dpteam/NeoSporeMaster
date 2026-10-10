@@ -93,6 +93,9 @@ little-endian; флаги и stride сохраняются для байт-то�
   `Rw4AnimationSkin` (bind-позы костей), `Rw4Matrix3x4`.
 - `Rw4Animation` — ключевые анимации: `Rw4KeyframeAnim` (каналы и кадры), `Rw4AnimationSet`
   (таблица «id → секция»), `Rw4Keyframe`, `Rw4AnimationChannel`.
+- `Rw4Material` — материалы: `Rw4Material` (декомпиляция `CompiledState`), `Rw4MaterialLink`
+  (`MeshCompiledStateLink`), `Rw4TextureSlotMaterial`, `Rw4RenderGroup`, `Rw4ShaderData`.
+- `Direct3DStates` — таблицы состояний Direct3D (имена и форматирование значений).
 - `Rw4ObjExporter` — экспорт геометрии в OBJ.
   Формат описан в `docs/RW4_FORMAT.md`.
 
