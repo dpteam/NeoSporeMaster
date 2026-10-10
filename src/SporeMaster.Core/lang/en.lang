@@ -167,6 +167,7 @@ gui.res.copyName = Copy Name
 gui.res.openInPreview = Open in preview
 gui.preview = Preview
 gui.model.hint = drag to rotate · wheel to zoom
+gui.model.animTip = Animation time (scrub)
 gui.all = (all resources)
 gui.crumb.flat = {0}  ▸  (flat view, {1} items)
 gui.crumb.all = {0}  ▸  (all {1} items)

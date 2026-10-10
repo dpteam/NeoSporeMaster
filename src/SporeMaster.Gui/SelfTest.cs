@@ -99,6 +99,23 @@ internal static class SelfTest
                     report.AppendLine($"Skeleton overlay: {skeletonRow.ShortName}, {joints} joint(s)");
                 }
 
+                // Animation scrub: find an animatable model, pose it and capture.
+                ResourceItem? animRow = window.RowsForTest()
+                    .Where(r => r.TypeId == 0x2F4E681B)
+                    .FirstOrDefault(r => window.CanAnimateForTest(r));
+                if (animRow is not null)
+                {
+                    int bones = window.ScrubAnimationForTest(animRow, 0.5);
+                    string animPath = Path.Combine(Path.GetTempPath(), "sporemaster-3d-anim.png");
+                    window.CapturePreviewPngForTest(animRow, animPath);
+                    window.SetSkeletonForTest(false);
+                    report.AppendLine($"Animation scrub: {animRow.ShortName}, {bones} bone(s)");
+                }
+                else
+                {
+                    report.AppendLine("Animation scrub: no animatable model found.");
+                }
+
                 // Checked folders (multi-select) with standard tri-state root behaviour.
                 if (window.FolderCount > 0)
                 {

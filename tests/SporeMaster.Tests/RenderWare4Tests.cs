@@ -898,6 +898,60 @@ public static class RenderWare4Tests
         Console.WriteLine("No RW4 keyframe animation found; skipping sampler check.");
     }
 
+    [SporeTest("RW4 skeleton poser returns finite joint positions")]
+    public static void SkeletonPoser()
+    {
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                IReadOnlyList<Rw4SkinLinkage> skins = rw4.ReadSkins();
+                IReadOnlyList<Rw4KeyframeAnim> animations = rw4.ReadKeyframeAnimations();
+                if (skins.Count == 0 || skins[0].Skeleton is null || animations.Count == 0)
+                {
+                    continue;
+                }
+
+                Rw4Skeleton skeleton = skins[0].Skeleton!;
+                var bind = new List<float[]>();
+                for (int i = 0; i < skeleton.Bones.Count; i++)
+                {
+                    float[] m = skins[0].MatrixBuffer is not null && i < skins[0].MatrixBuffer!.Matrices.Count
+                        ? skins[0].MatrixBuffer!.Matrices[i].Values
+                        : new float[12];
+                    bind.Add(new[] { m[3], m[7], m[11] });
+                }
+
+                List<float[]> posed = Rw4SkeletonPoser.PosePositions(skeleton, animations[0], bind, animations[0].Length * 0.5f);
+                Assert.Equal(skeleton.Bones.Count, posed.Count);
+                foreach (float[] p in posed)
+                {
+                    foreach (float v in p)
+                    {
+                        Assert.True(!float.IsNaN(v) && !float.IsInfinity(v), "posed joint must be finite");
+                    }
+                }
+
+                return;
+            }
+        }
+
+        Console.WriteLine("No posable RW4 skeleton found; skipping poser check.");
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

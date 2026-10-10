@@ -166,6 +166,7 @@ gui.res.copyName = Копировать имя
 gui.res.openInPreview = Открыть в превью
 gui.preview = Превью
 gui.model.hint = тяните мышью — вращение · колесо — масштаб
+gui.model.animTip = Время анимации (прокрутка)
 gui.all = (все ресурсы)
 gui.crumb.flat = {0}  ▸  (плоский вид, {1} элем.)
 gui.crumb.all = {0}  ▸  (всего {1} элем.)

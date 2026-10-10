@@ -47,6 +47,35 @@ public sealed class PreviewModel
     /// <summary>Skeleton links as (child, parent) bone index pairs (parent -1 = root).</summary>
     public List<(int Child, int Parent)> SkeletonBones { get; } = new();
 
+    /// <summary>The bind-pose joint positions (used as the fallback and the posing origin).</summary>
+    public List<float[]> SkeletonBindJoints { get; } = new();
+
+    /// <summary>The skeleton, kept for posing (null when the model has none).</summary>
+    public RenderWare4.Rw4Skeleton? Skeleton { get; set; }
+
+    /// <summary>The first keyframe animation driving the skeleton, when present.</summary>
+    public RenderWare4.Rw4KeyframeAnim? SkeletonAnimation { get; set; }
+
+    /// <summary>Length of <see cref="SkeletonAnimation"/> in seconds (0 when none).</summary>
+    public float AnimationLength { get; set; }
+
+    /// <summary>True when the model can be animated (has a skeleton and an animation).</summary>
+    public bool CanAnimate => Skeleton is not null && SkeletonAnimation is not null && SkeletonAnimation.Channels.Count > 0;
+
+    /// <summary>
+    /// Poses the skeleton at <paramref name="time"/> seconds using <see cref="SkeletonAnimation"/>, or
+    /// returns the bind-pose joints when there is nothing to animate.
+    /// </summary>
+    public List<float[]> PoseJoints(float time)
+    {
+        if (!CanAnimate)
+        {
+            return SkeletonBindJoints;
+        }
+
+        return RenderWare4.Rw4SkeletonPoser.PosePositions(Skeleton!, SkeletonAnimation!, SkeletonBindJoints, time);
+    }
+
     public int TotalVertices => Meshes.Sum(m => m.VertexCount);
 
     public int TotalTriangles => Meshes.Sum(m => m.TriangleCount);

@@ -223,6 +223,10 @@
                         <Viewport3D x:Name="PreviewViewport" ClipToBounds="True" />
                         <TextBlock Text="{loc:Loc gui.model.hint}" Foreground="#BBB"
                                    HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8" />
+                        <Slider x:Name="AnimSlider" Minimum="0" Maximum="1" Visibility="Collapsed"
+                                VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="8,0,8,4"
+                                ValueChanged="OnAnimSliderChanged"
+                                ToolTip="{loc:Loc gui.model.animTip}" />
                     </Grid>
                 </Grid>
             </DockPanel>

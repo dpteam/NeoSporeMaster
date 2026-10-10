@@ -1076,6 +1076,9 @@ public partial class MainWindow : Window
 
     private PerspectiveCamera? _modelCamera;
     private PreviewModel? _currentModel;
+    private Model3DGroup? _sceneGroup;
+    private Model3DGroup? _skeletonGroup;
+    private bool _updatingAnimSlider;
     private bool _showSkeleton;
     private Point3D _modelCenter;
     private double _modelRadius = 1;
@@ -1169,10 +1172,17 @@ public partial class MainWindow : Window
                 group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-1, -1.5, -1)));
                 group.Children.Add(new DirectionalLight(Color.FromRgb(0x90, 0x90, 0x90), new Vector3D(1, 0.5, 1)));
 
-                if (_showSkeleton && model.SkeletonJoints.Count > 0)
+                if (_showSkeleton && model.SkeletonBones.Count > 0)
                 {
-                    group.Children.Add(BuildSkeleton(model, _modelRadius));
+                    _skeletonGroup = BuildSkeleton(model.SkeletonJoints, model.SkeletonBones, _modelRadius);
+                    group.Children.Add(_skeletonGroup);
                 }
+                else
+                {
+                    _skeletonGroup = null;
+                }
+
+                _sceneGroup = group;
 
         _modelCamera = new PerspectiveCamera { FieldOfView = 45 };
         PreviewViewport.Children.Clear();
@@ -1180,11 +1190,56 @@ public partial class MainWindow : Window
         PreviewViewport.Camera = _modelCamera;
         UpdateModelCamera();
 
+        // Show the animation slider when the model can be animated.
+        _updatingAnimSlider = true;
+        if (model.CanAnimate)
+        {
+            AnimSlider.Minimum = 0;
+            AnimSlider.Maximum = Math.Max(0.001, model.AnimationLength);
+            AnimSlider.Value = 0;
+            AnimSlider.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            AnimSlider.Visibility = Visibility.Collapsed;
+        }
+
+        _updatingAnimSlider = false;
+
         PreviewModelHost.Visibility = Visibility.Visible;
         PreviewText.Visibility = Visibility.Collapsed;
         PreviewImageScroller.Visibility = Visibility.Collapsed;
         PreviewImage.Source = null;
     }
+
+    private void OnAnimSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => Guarded(() =>
+    {
+        if (_updatingAnimSlider || _currentModel is null || !_currentModel.CanAnimate || _sceneGroup is null)
+        {
+            return;
+        }
+
+        // Ensure the skeleton overlay exists, then pose it at the slider time.
+        if (_showSkeleton && _skeletonGroup is null)
+        {
+            _skeletonGroup = BuildSkeleton(_currentModel.SkeletonJoints, _currentModel.SkeletonBones, _modelRadius);
+            _sceneGroup.Children.Add(_skeletonGroup);
+        }
+
+        if (_skeletonGroup is null)
+        {
+            return;
+        }
+
+        List<float[]> posed = _currentModel.PoseJoints((float)AnimSlider.Value);
+        if (_skeletonGroup is not null)
+        {
+            _sceneGroup.Children.Remove(_skeletonGroup);
+        }
+
+        _skeletonGroup = BuildSkeleton(posed, _currentModel.SkeletonBones, _modelRadius);
+        _sceneGroup.Children.Add(_skeletonGroup);
+    });
 
     private void UpdateModelCamera()
     {
@@ -1256,7 +1311,7 @@ public partial class MainWindow : Window
     });
 
     /// <summary>Builds cube markers at each bone and thin boxes along the bones.</summary>
-    private static Model3DGroup BuildSkeleton(PreviewModel model, double radius)
+    private static Model3DGroup BuildSkeleton(IReadOnlyList<float[]> joints, IReadOnlyList<(int Child, int Parent)> bones, double radius)
     {
         var group = new Model3DGroup();
         var jointMaterial = new MaterialGroup();
@@ -1268,9 +1323,9 @@ public partial class MainWindow : Window
         double jointSize = Math.Max(0.001, radius * 0.1);
         double thickness = Math.Max(0.0005, radius * 0.02);
 
-        for (int i = 0; i < model.SkeletonJoints.Count; i++)
+        for (int i = 0; i < joints.Count; i++)
         {
-            float[] p = model.SkeletonJoints[i];
+            float[] p = joints[i];
             var transform = new Matrix3D();
             transform.Scale(new Vector3D(jointSize, jointSize, jointSize));
             transform.Translate(new Vector3D(p[0], p[1], p[2]));
@@ -1283,15 +1338,15 @@ public partial class MainWindow : Window
             });
         }
 
-        foreach ((int child, int parent) in model.SkeletonBones)
+        foreach ((int child, int parent) in bones)
         {
-            if (parent < 0 || child >= model.SkeletonJoints.Count || parent >= model.SkeletonJoints.Count)
+            if (parent < 0 || child >= joints.Count || parent >= joints.Count)
             {
                 continue;
             }
 
-            float[] a = model.SkeletonJoints[parent];
-            float[] b = model.SkeletonJoints[child];
+            float[] a = joints[parent];
+            float[] b = joints[child];
             var va = new Vector3D(a[0], a[1], a[2]);
             var vb = new Vector3D(b[0], b[1], b[2]);
             Vector3D dir = vb - va;
@@ -2107,6 +2162,19 @@ public partial class MainWindow : Window
         {
             ShowModel(_currentModel);
         }
+    }
+
+    internal bool CanAnimateForTest(ResourceItem row) => PreviewForTest(row).Model?.CanAnimate ?? false;
+
+    /// <summary>Shows the preview, enables the skeleton overlay, then scrubs the animation slider.</summary>
+    internal int ScrubAnimationForTest(ResourceItem row, double time)
+    {
+        ShowPreview(row);          // sets up _currentModel/_sceneGroup
+        SetSkeletonForTest(true);  // rebuilds with the bind skeleton
+        AnimSlider.Minimum = 0;
+        AnimSlider.Maximum = Math.Max(0.001, _currentModel?.AnimationLength ?? 1);
+        AnimSlider.Value = Math.Min(time, AnimSlider.Maximum);
+        return _currentModel?.SkeletonBones.Count ?? 0;
     }
 
     internal int SkeletonJointCountForTest(ResourceItem row)

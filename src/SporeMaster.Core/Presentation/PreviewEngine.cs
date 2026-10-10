@@ -285,8 +285,18 @@ public static class PreviewEngine
                 {
                     int parent = skeleton.Bones[i].ParentIndex;
                     world[i] = parent >= 0 && parent < count ? Multiply(local[i], world[parent]) : (float[])local[i].Clone();
-                    model.SkeletonJoints.Add(new[] { world[i][3], world[i][7], world[i][11] });
+                    var joint = new[] { world[i][3], world[i][7], world[i][11] };
+                    model.SkeletonJoints.Add(joint);
+                    model.SkeletonBindJoints.Add((float[])joint.Clone());
                     model.SkeletonBones.Add((i, parent));
+                }
+
+                model.Skeleton = skeleton;
+                IReadOnlyList<Rw4KeyframeAnim> animations = rw4.ReadKeyframeAnimations();
+                if (animations.Count > 0)
+                {
+                    model.SkeletonAnimation = animations[0];
+                    model.AnimationLength = animations[0].Length;
                 }
 
                 return;
