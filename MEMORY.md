@@ -337,6 +337,9 @@
 - **Lossless raw-перепаковка** (`unpack --raw → pack --compress → diff` идентично): `BP2_Data`
   184/184, `CSA_Graphics` 5822/5822, `Spore_Game` 11676/11676, `CSA_Main` 8431/8431,
   **Retail-игра**: `SporeRetail/Data/Spore_Game` 11529/11529, `Spore_Pack_03` 266/266.
+- **`verify` на всех 15 тестовых архивах** (релиз+бета) — **0 проблем** (39817 ресурсов);
+  **`roundtrip` lossless** на всех бета-архивах (`CellGame`, `CellGame_Layers`, `Cinematics`,
+  `CompiledMaterials`, `Effects`, `Effects_SkinPaint`, `Images`) и релизных.
 - **Смоук-тест в игре (Retail):** репак `Spore_Game` (11529/11529) → запуск `SporeApp.exe -w -devDirs`
   → **игра работала 60 с (не вылетела)**, новых `*.mdmp`/`*exception*.txt` нет → **PASS**
   (`tools/smoke-test.ps1 -Auto`). Требования игры к пакету разобраны по PDB:

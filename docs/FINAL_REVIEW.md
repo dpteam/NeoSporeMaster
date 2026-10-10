@@ -172,6 +172,13 @@ SporeModder поле `offset` (6-е int) обязано быть `28`, а в р�
 - [ ] Смоук-тест игры (`tools/smoke-test.ps1 -Auto`, `-w -devDirs`).
 - [ ] Проверка папок игры (Main/Data) и тест-контур с батником (когда заказчик даст).
 
+**Проверено (2026-10-11):**
+- **`verify` на всех 15 тестовых архивах** (релиз+бета) — **0 проблем** на 39817 ресурсах.
+- **`roundtrip` lossless** на всех: финальные (`BP2_Data`, `CSA_Graphics`, `Spore_Game`, `CSA_Main`,
+  `BoosterPack_01`) и **бета** (`CellGame`, `CellGame_Layers`, `Cinematics`, `CompiledMaterials`,
+  `Effects`, `Effects_SkinPaint`, `Images`); ранее — Retail-игра.
+- **Смоук-тест игры** (Retail, `-w -devDirs`) — **PASS** (см. `docs/GAME_SMOKE_TEST.md`).
+
 ## 7. Гигиена репозитория
 
 - [ ] `.gitignore` (крупные `refs/*`) корректен; нет случайных файлов (scratch-тесты, temp).
