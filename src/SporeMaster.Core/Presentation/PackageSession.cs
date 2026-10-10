@@ -45,6 +45,9 @@ public sealed class PackageSession : IDisposable
         return items;
     }
 
+    /// <summary>Merges an extra names registry (e.g. a recovered <c>names.txt</c>).</summary>
+    public void LoadNames(string path) => Names.LoadProjectNames(path);
+
     /// <summary>Reads a resource and (if necessary) decompresses it.</summary>
     public byte[] Read(DbpfEntry entry) => _package.ReadEntry(entry);
 

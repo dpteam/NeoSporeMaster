@@ -261,6 +261,38 @@ public partial class MainWindow : Window
         : ResourceTypeIds.IsTexture(row.TypeId) ? ".dds"
         : ".png";
 
+    private void OnLoadNames(object sender, RoutedEventArgs e)
+    {
+        if (_session is null)
+        {
+            MessageBox.Show(this, "Open a package first.", "No package");
+            return;
+        }
+
+        var dialog = new OpenFileDialog
+        {
+            Title = "Load recovered names",
+            Filter = "Names registry (*.txt)|*.txt|All files (*.*)|*.*",
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _session.LoadNames(dialog.FileName);
+            _rows = _session.BuildItems().ToList();
+            ApplyFilter();
+            StatusText.Text = $"Loaded names from {Path.GetFileName(dialog.FileName)}.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Failed to load names", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void OnCopyKey(object sender, RoutedEventArgs e)
     {
         if (ResourceList.SelectedItem is ResourceItem row)

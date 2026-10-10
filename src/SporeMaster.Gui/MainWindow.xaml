@@ -15,6 +15,8 @@
                 <MenuItem Header="_Extract Selected..." Click="OnExtractSelected" />
                 <MenuItem Header="Extract _All..." Click="OnExtractAll" />
                 <Separator />
+                <MenuItem Header="Load recovered _names.txt..." Click="OnLoadNames" />
+                <Separator />
                 <MenuItem Header="_Copy Resource Key" Click="OnCopyKey" />
             </MenuItem>
             <MenuItem Header="_Help">
