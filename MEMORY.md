@@ -38,6 +38,13 @@
 (Info/Warning/Error) и продолжает. Исключение — только `NotAPackageException`, когда данных
 не наш формат.
 
+### 1.7. Смешанная эндианность свойств и сохранение «мусора»
+В формате `.prop` описатель и скаляры — **big-endian**, а составные значения (`key`, `text`,
+`vector*`, `color*`, `transform`, `bbox`) — **little-endian**. Кроме того, у массивов в реальных
+файлах `flags` = `0x9C` (а не `0x30`), а «хвостовые» байты одиночных составных значений содержат
+данные. Чтобы получить **байт-точный** round-trip, читалка сохраняет исходные `flags`, `itemSize`
+и хвостовые байты и записывает их обратно. Проверено на ~18 000 реальных свойств.
+
 ---
 
 ## 2. Что сделано (карта)
@@ -49,9 +56,10 @@
 | Запись DBPF 2.0/3.0, DBBF | ✅ |
 | RefPack compress/decompress | ✅ |
 | FNV-хеш, реестры имён | ✅ |
-| CLI (info/list/extract/unpack/pack/verify/hash/types) | ✅ |
+| Свойства `.prop` (бинарно, байт-в-байт) + `.prop.xml` | ✅ |
+| CLI (info/list/extract/unpack/pack/prop/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (20, на реальных архивах) | ✅ |
+| Тесты (24, на реальных архивах) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -60,17 +68,15 @@
 
 Приоритет сверху вниз.
 
-1. **Текстовый формат свойств (`.prop` / ArgScript)** — сейчас `.prop` читается/пишется как
-   бинарный блоб. Нужен человекочитаемый формат, как в SporeModder FX
-   (`refs/SporeModder-FX-master/src/sporemodder/file/prop`).
-2. **Локали (`locale`, STBL)** — разбор и сборка таблиц строк; автоматическая генерация
-   `auto_*`-локалей (как делал SporeMaster 2).
-3. **Текстуры (DDS / `raster`)** — конвертация и упаковка изображений.
-4. **Модели RenderWare4** — перенос `RW4Model`, `ModelPack/Unpack`, `OgreXml*` и `DecodeRW4`.
-5. **GUI** — миграция WPF на `net9.0-windows` (или новый UI), переиспользуя `SporeMaster.Core`.
-6. **Хеш-гуссер** (`guess_left.txt` / `guess_right.txt`) — восстановление имён по хешам.
-7. **Индекс для полнотекстового поиска** (`FullTextIndex`).
-8. **Скрипты/конвертеры** из `refs/SporeModder-FX-master` (cnv, tlsa, spui, effect и т.д.).
+1. **Локали (`locale`, STBL)** — разбор и сборка таблиц строк; автоматическая генерация
+   `auto_*`-локалей (как делал SporeMaster 2 и SporeModder FX).
+2. **Текстуры (DDS / `raster`)** — конвертация и упаковка изображений.
+3. **Модели RenderWare4** — перенос `RW4Model`, `ModelPack/Unpack`, `OgreXml*` и `DecodeRW4`.
+4. **GUI** — миграция WPF на `net9.0-windows` (или новый UI), переиспользуя `SporeMaster.Core`.
+5. **Хеш-гуссер** (`guess_left.txt` / `guess_right.txt`) — восстановление имён по хешам.
+6. **Индекс для полнотекстового поиска** (`FullTextIndex`).
+7. **Скрипты/конвертеры** из `refs/SporeModder-FX-master` (cnv, tlsa, spui, effect и т.д.).
+8. **ArgScript-формат `.prop_t`** (текстовый формат SporeModder FX) — дополнительно к `.prop.xml`.
 
 ---
 
@@ -110,3 +116,6 @@
 - `refs/_PackageFilesFinalVer/Spore_Game.package`: 11676 записей, индекс типа `0x04`, версия **3.0**.
 - Имена ресурсов корректно восстанавливаются: например, первый ресурс `Spore_Game` — это
   `planetTerrainThemes_space_T1A0~/T1A0_T2_conglomerate_02.prop`.
+- **Свойства**: все `.prop` из бета- и релизной сборок (5575 и 12328 файлов соответственно)
+  проходят байт-точный round-trip. Пример: `CellGame.package` содержит
+  `animations~/cell_properties.prop` (массивы `vector2s`, и т.д.).

@@ -5,6 +5,7 @@ using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Hashing;
 using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
+using SporeMaster.Core.Properties;
 
 namespace SporeMaster.Cli;
 
@@ -142,8 +143,8 @@ public static class Commands
             }
 
             NameRegistrySet names = NameRegistrySet.LoadEmbedded();
-            string outPath = cli.Get("out") ?? names.GetRelativePath(key.TypeId, key.GroupId, key.InstanceId);
-            outPath = SanitizePath(outPath);
+            string? explicitOut = cli.Get("out");
+            string outPath = explicitOut ?? SanitizePath(names.GetRelativePath(key.TypeId, key.GroupId, key.InstanceId));
 
             byte[] data = package.ReadEntry(entry);
             string? directory = Path.GetDirectoryName(Path.GetFullPath(outPath));
@@ -182,19 +183,29 @@ public static class Commands
         {
             foreach (DbpfEntry entry in package!.Entries)
             {
-                string relative = raw
-                    ? $"{entry.Key.TypeId:X8}/{entry.Key.InstanceId:X8}.{entry.Key.GroupId:X8}"
-                    : names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+                byte[] data = package.ReadEntry(entry);
 
-                string target = Path.Combine(outputDir, SanitizePath(relative));
-                string? directory = Path.GetDirectoryName(target);
-                if (!string.IsNullOrEmpty(directory))
+                if (!raw && ResourceTypeIds.IsProperty(entry.Key.TypeId))
                 {
-                    Directory.CreateDirectory(directory);
+                    string propPath = Path.Combine(
+                        outputDir,
+                        SanitizePath(names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId) + ".xml"));
+                    WriteDirectory(propPath);
+                    PropertyList list = PropertyList.Read(new MemoryStream(data));
+                    using FileStream xmlOut = File.Create(propPath);
+                    list.WriteXml(xmlOut, names);
+                }
+                else
+                {
+                    string relative = raw
+                        ? $"{entry.Key.TypeId:X8}/{entry.Key.InstanceId:X8}.{entry.Key.GroupId:X8}"
+                        : names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+
+                    string target = Path.Combine(outputDir, SanitizePath(relative));
+                    WriteDirectory(target);
+                    File.WriteAllBytes(target, data);
                 }
 
-                byte[] data = package.ReadEntry(entry);
-                File.WriteAllBytes(target, data);
                 written++;
             }
 
@@ -234,14 +245,37 @@ public static class Commands
         foreach (string file in Directory.EnumerateFiles(inputDir, "*", SearchOption.AllDirectories))
         {
             string relative = Path.GetRelativePath(inputDir, file);
-            if (!names.TryParseRelativePath(relative, out uint typeId, out uint groupId, out uint instanceId))
+            bool isPropXml = relative.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
+
+            if (!TryResolveInput(relative, names, stripXml: isPropXml, out uint typeId, out uint groupId, out uint instanceId))
             {
                 output.Warn($"Skipping '{relative}': cannot derive a resource key (expected group/name.ext).");
                 continue;
             }
 
-            byte[] data = File.ReadAllBytes(file);
-            items.Add(new DbpfWriteItem(new ResourceKey(typeId, groupId, instanceId), data));
+            if (isPropXml && ResourceTypeIds.IsProperty(typeId))
+            {
+                byte[] binary;
+                try
+                {
+                    using FileStream xmlIn = File.OpenRead(file);
+                    PropertyList list = PropertyList.ReadXml(xmlIn, names);
+                    using var buffer = new MemoryStream();
+                    list.Write(buffer);
+                    binary = buffer.ToArray();
+                }
+                catch (Exception ex)
+                {
+                    output.Error($"Failed to convert '{relative}': {ex.Message}");
+                    continue;
+                }
+
+                items.Add(new DbpfWriteItem(new ResourceKey(typeId, groupId, instanceId), binary));
+            }
+            else
+            {
+                items.Add(new DbpfWriteItem(new ResourceKey(typeId, groupId, instanceId), File.ReadAllBytes(file)));
+            }
         }
 
         string? directory = Path.GetDirectoryName(outputPath);
@@ -256,6 +290,51 @@ public static class Commands
             output.Success(Localizer.Default.Get("result.packed", count, outputPath));
             output.Line($"Version: {options.Version}, compressed: {options.Compress}, big: {options.Big}");
             output.Line($"Output size: {Output.FormatSize(stream.Length)} ({stream.Length} bytes)");
+        }
+
+        return 0;
+    }
+
+    /// <summary>Converts a property file to XML or back: <c>prop &lt;input&gt; &lt;output&gt;</c>.</summary>
+    public static int Prop(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "prop <input.prop|input.prop.xml> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        try
+        {
+            if (input.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+            {
+                using FileStream xmlIn = File.OpenRead(input);
+                PropertyList list = PropertyList.ReadXml(xmlIn, names);
+                using FileStream binOut = File.Create(outputPath);
+                list.Write(binOut);
+                output.Success($"Wrote binary property file: {outputPath}");
+            }
+            else
+            {
+                byte[] data = File.ReadAllBytes(input);
+                PropertyList list = PropertyList.Read(new MemoryStream(data));
+                using FileStream xmlOut = File.Create(outputPath);
+                list.WriteXml(xmlOut, names);
+                output.Success($"Wrote {list.Count} propert(ies) to: {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Conversion failed: {ex.Message}");
+            return 1;
         }
 
         return 0;
@@ -425,6 +504,51 @@ public static class Commands
         }
 
         return builder.ToString();
+    }
+
+    private static void WriteDirectory(string path)
+    {
+        string? directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+    }
+
+    /// <summary>Derives a resource key from a <c>group/name.ext</c> path (optionally with a trailing .xml).</summary>
+    private static bool TryResolveInput(
+        string relative,
+        NameRegistrySet names,
+        bool stripXml,
+        out uint typeId,
+        out uint groupId,
+        out uint instanceId)
+    {
+        typeId = groupId = instanceId = 0;
+        string normalized = relative.Replace('\\', '/');
+        int slash = normalized.IndexOf('/');
+        if (slash < 0)
+        {
+            return false;
+        }
+
+        string group = normalized[..slash];
+        string rest = normalized[(slash + 1)..];
+        if (stripXml && rest.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+        {
+            rest = rest[..^4];
+        }
+
+        int dot = rest.LastIndexOf('.');
+        if (dot < 0)
+        {
+            return false;
+        }
+
+        groupId = names.GetFileHash(group);
+        instanceId = names.GetFileHash(rest[..dot]);
+        typeId = names.GetTypeHash(rest[(dot + 1)..]);
+        return true;
     }
 
     private static void PrintDiagnostics(DatabasePackedFile package, Output output)

@@ -56,6 +56,7 @@ public static class Program
             "extract" => Commands.Extract(cli, output),
             "unpack" => Commands.Unpack(cli, output),
             "pack" => Commands.Pack(cli, output),
+            "prop" => Commands.Prop(cli, output),
             "verify" => Commands.Verify(cli, output),
             "hash" => Commands.Hash(cli, output),
             "types" => Commands.Types(cli, output),
@@ -83,6 +84,7 @@ public static class Program
         output.Line($"  {loc["cmd.extract.usage"],-58} {loc["cmd.extract.summary"]}");
         output.Line($"  {loc["cmd.unpack.usage"],-58} {loc["cmd.unpack.summary"]}");
         output.Line($"  {loc["cmd.pack.usage"],-58} {loc["cmd.pack.summary"]}");
+        output.Line($"  {loc["cmd.prop.usage"],-58} {loc["cmd.prop.summary"]}");
         output.Line($"  {loc["cmd.verify.usage"],-58} {loc["cmd.verify.summary"]}");
         output.Line($"  {loc["cmd.hash.usage"],-58} {loc["cmd.hash.summary"]}");
         output.Line($"  {loc["cmd.types.usage"],-58} {loc["cmd.types.summary"]}");
