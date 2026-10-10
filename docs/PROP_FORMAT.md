@@ -93,9 +93,7 @@ int32  itemSize                   // размер одного элемента 
 
 ## 4. Текстовое представление (XML)
 
-Поддерживается формат `.prop.xml`, совместимый со SporeMaster 2.0:
-
-```xml
+Поддерживается формат `.prop.xml`, совместимый со SporeMaster 2.0:```xml
 <?xml version="1.0" encoding="utf-8"?>
 <properties>
   <bool name="someFlag">true</bool>
@@ -113,6 +111,34 @@ int32  itemSize                   // размер одного элемента 
 - Для свойств, у которых имя является псевдонимом (хеш не равен FNV имени), дополнительно
   пишется атрибут `id="0x........"`, чтобы XML был обратим во бинарный вид без потерь.
 - `transform` и `bbox` пишутся через атрибуты/подэлементы (как в SporeMaster 2).
+
+## 4a. Текстовое представление ArgScript (.prop_t)
+
+Дополнительно поддерживается формат SporeModder FX — ArgScript `.prop_t`:
+
+```
+vector2s anim_dilation
+	(0.5, 0.5)
+	(1, 0.75)
+end
+<bool> someFlag true
+<int32> someValue 42
+<texts> title
+	(my_locale!0x00000001) "Hello"
+end
+<key> parent CreatureGame!MyThing.prop
+```
+
+- Скаляры: `bool`, `int8/16/32/64` (+unsigned), `float`, `double`, `char`, `wchar`.
+- Строки: `string8`, `string16` (в кавычках, с эскейпом `"`→`&quot;`, `#`→`&hash;`).
+- Составные: `key`, `vector2/3/4`, `colorRGB`, `colorRGBA`, `bbox` — значения в круглых скобках.
+- `texts` — блок строк вида `(table!0xinstance) "текст"` (или просто `"текст"` без локали).
+- Имена значений-хешей пишутся как `hash(NAME)` либо `0x........`.
+- Команда CLI: `propt <вход> <выход>` (`.prop` ⇄ `.prop_t`).
+
+Ограничение: `transform` записывается в «сыром» виде (flags + 13 float), а не в форме
+опций `-offset/-scale/-rotateXYZ` SporeModder; это сохраняет данные точно, но синтаксис
+отличается (в планах — совместимая форма).
 
 ## 5. Ссылки на исходники
 

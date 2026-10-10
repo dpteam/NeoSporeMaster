@@ -63,6 +63,11 @@ SporeModder FX. Важно: ID типов и свойств — не резул�
 Формат описан в `docs/PROP_FORMAT.md`: описатель и скаляры — big-endian, составные значения —
 little-endian; флаги и stride сохраняются для байт-точного round-trip.
 
+### `ArgScript/*`
+- `PropertyScript` — чтение/запись свойств в ArgScript-текст (`.prop_t`, формат SporeModder FX).
+- `ArgScriptTokenizer` — минимальный лексер строк (комментарии, кавычки, скобки).
+  Формат описан в `docs/PROP_FORMAT.md`.
+
 ### `Locale/*`
 - `LocaleTable` — таблица локализации (`.locale`): текстовый формат `0x{id} текст`, разбор и
   сериализация с сохранением комментариев/пустых строк.

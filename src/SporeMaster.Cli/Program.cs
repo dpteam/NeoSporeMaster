@@ -57,6 +57,7 @@ public static class Program
             "unpack" => Commands.Unpack(cli, output),
             "pack" => Commands.Pack(cli, output),
             "prop" => Commands.Prop(cli, output),
+            "propt" => Commands.PropT(cli, output),
             "locale" => Commands.Locale(cli, output),
             "texture" => Commands.Texture(cli, output),
             "bitmap" => Commands.Bitmap(cli, output),
@@ -91,6 +92,7 @@ public static class Program
         output.Line($"  {loc["cmd.unpack.usage"],-58} {loc["cmd.unpack.summary"]}");
         output.Line($"  {loc["cmd.pack.usage"],-58} {loc["cmd.pack.summary"]}");
         output.Line($"  {loc["cmd.prop.usage"],-58} {loc["cmd.prop.summary"]}");
+        output.Line($"  {loc["cmd.propt.usage"],-58} {loc["cmd.propt.summary"]}");
         output.Line($"  {loc["cmd.locale.usage"],-58} {loc["cmd.locale.summary"]}");
         output.Line($"  {loc["cmd.texture.usage"],-58} {loc["cmd.texture.summary"]}");
         output.Line($"  {loc["cmd.bitmap.usage"],-58} {loc["cmd.bitmap.summary"]}");

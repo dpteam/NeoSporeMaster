@@ -32,6 +32,9 @@ public sealed class KeyProperty : Property
         _singlePadding = Array.Empty<byte>();
     }
 
+    /// <summary>Appends a value.</summary>
+    public void Add(ResourceKey value) => _values.Add(value);
+
     public override void ReadElement(Stream s, bool isArray)
     {
         uint instance = s.ReadU32();
@@ -244,6 +247,9 @@ public abstract class FloatVectorProperty : Property
 
     public int PaddingSize => (16 - (Components * 4)) % 16;
 
+    /// <summary>Returns a copy of the components of element <paramref name="index"/>.</summary>
+    public float[] GetComponents(int index) => (float[])_values[index].Clone();
+
     public override PropertyType Type => _type;
 
     public override int Count => _values.Count;
@@ -253,6 +259,9 @@ public abstract class FloatVectorProperty : Property
         _values.Clear();
         _singlePadding = Array.Empty<byte>();
     }
+
+    /// <summary>Appends a value (must have <see cref="Components"/> entries).</summary>
+    public void Add(float[] value) => _values.Add((float[])value.Clone());
 
     public override void ReadElement(Stream s, bool isArray)
     {
@@ -324,7 +333,13 @@ public sealed class BoundingBoxProperty : Property
 
     public override int Count => _values.Count;
 
+    /// <summary>Returns min (0..2) and max (3..5) of element <paramref name="index"/>.</summary>
+    public float[] GetBox(int index) => (float[])_values[index].Clone();
+
     public override void Clear() => _values.Clear();
+
+    /// <summary>Appends a value (min xyz, max xyz).</summary>
+    public void Add(float[] value) => _values.Add((float[])value.Clone());
 
     public override void ReadElement(Stream s, bool isArray)
     {
@@ -391,7 +406,17 @@ public sealed class TransformProperty : Property
 
     public override int Count => _values.Count;
 
+    /// <summary>Returns the raw flags, 12-float matrix and reserved word of element <paramref name="index"/>.</summary>
+    public (uint Flags, float[] Matrix, uint Reserved) GetTransform(int index)
+    {
+        (uint flags, float[] matrix, uint reserved) = _values[index];
+        return (flags, (float[])matrix.Clone(), reserved);
+    }
+
     public override void Clear() => _values.Clear();
+
+    /// <summary>Appends a value.</summary>
+    public void Add(uint flags, float[] matrix, uint reserved = 0) => _values.Add((flags, (float[])matrix.Clone(), reserved));
 
     public override void ReadElement(Stream s, bool isArray)
     {

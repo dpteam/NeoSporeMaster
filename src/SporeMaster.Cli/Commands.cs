@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using SporeMaster.Core.Bitmaps;
+using SporeMaster.Core.ArgScript;
 using SporeMaster.Core.Compression;
 using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Hashing;
@@ -1009,6 +1010,48 @@ public static class Commands
         output.Line();
         output.Line($"{results.Count} match(es).");
         return results.Count > 0 ? 0 : 1;
+    }
+
+    /// <summary>Converts a property file to/from ArgScript text: <c>propt &lt;in&gt; &lt;out&gt;</c>.</summary>
+    public static int PropT(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "propt <input.prop|input.prop_t> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        NameRegistrySet names = OpenNames(cli);
+        try
+        {
+            if (input.EndsWith(".prop_t", StringComparison.OrdinalIgnoreCase))
+            {
+                PropertyList list = PropertyScript.Parse(File.ReadAllText(input), names);
+                using FileStream binOut = File.Create(outputPath);
+                list.Write(binOut);
+                output.Success($"Wrote binary property file ({list.Count} propert(ies)): {outputPath}");
+            }
+            else
+            {
+                PropertyList list = PropertyList.Read(new MemoryStream(File.ReadAllBytes(input)));
+                File.WriteAllText(outputPath, PropertyScript.Write(list, names));
+                output.Success($"Wrote ArgScript text ({list.Count} propert(ies)): {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
     }
 
     public static int Verify(CommandLine cli, Output output)

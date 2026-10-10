@@ -20,7 +20,8 @@
 - **Распаковка и сборка** архивов с восстановлением имён ресурсов по реестрам SporeModder FX.
 - **RefPack / QFS** — полный порт компрессора и декомпрессора (байт-совместимо с эталоном).
 - **Свойства (`.prop`)** — чтение/запись бинарного формата **байт-в-байт**, конвертация в
-  понятный XML (`.prop.xml`), совместимый со SporeMaster 2. Поддержаны все типы значений.
+  понятный XML (`.prop.xml`) и в ArgScript-текст (`.prop_t`, формат SporeModder FX).
+  Поддержаны все типы значений.
 - **Локали (`.locale`)** — чтение/запись текстовых таблиц локализации и **авто-генерация**
   таблиц из текстов-заглушек свойств при упаковке (как в SporeMaster 2).
 - **Текстуры (`.raster` ⇄ DDS)** — конвертация растровых текстур Spore в стандартный DDS и
@@ -132,6 +133,10 @@ dotnet run --project src/SporeMaster.Cli -- pack <папка> <архив.packag
 # Конвертировать один файл свойств в XML и обратно
 dotnet run --project src/SporeMaster.Cli -- prop <файл.prop> <файл.prop.xml>
 dotnet run --project src/SporeMaster.Cli -- prop <файл.prop.xml> <файл.prop>
+
+# Конвертировать свойства в ArgScript-текст (.prop_t, формат SporeModder) и обратно
+dotnet run --project src/SporeMaster.Cli -- propt <файл.prop> <файл.prop_t>
+dotnet run --project src/SporeMaster.Cli -- propt <файл.prop_t> <файл.prop>
 
 # Посмотреть таблицу локализации
 dotnet run --project src/SporeMaster.Cli -- locale <файл.locale>

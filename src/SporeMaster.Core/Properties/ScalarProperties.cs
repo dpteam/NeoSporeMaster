@@ -24,6 +24,9 @@ public sealed class BoolProperty : Property
 
     public override void Clear() => _values.Clear();
 
+    /// <summary>Appends a value.</summary>
+    public void Add(bool value) => _values.Add(value);
+
     public override void ReadElement(Stream s, bool isArray) => _values.Add(s.ReadByte() != 0);
 
     public override void WriteElement(Stream s, int index, bool isArray) =>
@@ -51,6 +54,9 @@ public sealed class CharProperty : Property
 
     public override void Clear() => _values.Clear();
 
+    /// <summary>Appends a value.</summary>
+    public void Add(byte value) => _values.Add(value);
+
     public override void ReadElement(Stream s, bool isArray) => _values.Add((byte)s.ReadByte());
 
     public override void WriteElement(Stream s, int index, bool isArray) => s.WriteByte(_values[index]);
@@ -73,6 +79,9 @@ public sealed class WCharProperty : Property
     public IReadOnlyList<ushort> Values => _values;
 
     public override void Clear() => _values.Clear();
+
+    /// <summary>Appends a value.</summary>
+    public void Add(ushort value) => _values.Add(value);
 
     public override void ReadElement(Stream s, bool isArray) => _values.Add(s.ReadU16BE());
 
@@ -100,6 +109,9 @@ public sealed class IntegerProperty : Property
     public IReadOnlyList<long> Values => _values;
 
     public override void Clear() => _values.Clear();
+
+    /// <summary>Appends a value.</summary>
+    public void Add(long value) => _values.Add(value);
 
     public override void ReadElement(Stream s, bool isArray) => _values.Add(ReadOne(s));
 
@@ -191,6 +203,9 @@ public sealed class FloatProperty : Property
 
     public override void Clear() => _values.Clear();
 
+    /// <summary>Appends a value.</summary>
+    public void Add(float value) => _values.Add(value);
+
     public override void ReadElement(Stream s, bool isArray) => _values.Add(s.ReadF32BE());
 
     public override void WriteElement(Stream s, int index, bool isArray) => s.WriteF32BE(_values[index]);
@@ -213,6 +228,9 @@ public sealed class DoubleProperty : Property
     public IReadOnlyList<double> Values => _values;
 
     public override void Clear() => _values.Clear();
+
+    /// <summary>Appends a value.</summary>
+    public void Add(double value) => _values.Add(value);
 
     public override void ReadElement(Stream s, bool isArray) => _values.Add(s.ReadF64BE());
 
@@ -240,6 +258,9 @@ public sealed class StringProperty : Property
     private bool Wide => _info.Type == PropertyType.String16;
 
     public override void Clear() => _raw.Clear();
+
+    /// <summary>Appends a value.</summary>
+    public void Add(string value) => _raw.Add(Encode(value));
 
     public override void ReadElement(Stream s, bool isArray)
     {

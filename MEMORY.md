@@ -63,7 +63,7 @@
 | Запись DBPF 2.0/3.0, DBBF | ✅ |
 | RefPack compress/decompress | ✅ |
 | FNV-хеш, реестры имён | ✅ |
-| Свойства `.prop` (бинарно, байт-в-байт) + `.prop.xml` | ✅ |
+| Свойства `.prop` (бинарно, байт-в-байт) + `.prop.xml` + `.prop_t` | ✅ |
 | Локали `.locale` (текст) + авто-генерация | ✅ |
 | Текстуры `.raster` ⇄ DDS (байт-точно, мипмапы, DXT) | ✅ |
 | RenderWare4 `.rw4` (контейнер + меши + геометрия + OBJ) | ✅ |
@@ -71,9 +71,9 @@
 | Восстановление имён по хешам (hash guesser + names.txt) | ✅ |
 | Полнотекстовый поиск, экспорт CSV/JSON, очистка авто-локалей | ✅ |
 | GUI (WPF) — обозреватель архивов с превью | ✅ |
-| CLI (info/list/extract/unpack/pack/prop/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
+| CLI (info/list/extract/unpack/pack/prop/propt/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (69, на реальных + синтетических данных) | ✅ |
+| Тесты (72, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -85,7 +85,7 @@
 1. **Материалы, скелеты и анимации RW4** — `CompiledState` (компилятор состояний Direct3D),
    скелеты/скины, анимации; нормали и UV-координаты в геометрии; экспорт в Ogre XML.
 2. **Скрипты/конвертеры** из `refs/SporeModder-FX-master` (cnv, tlsa, spui, effect и т.д.).
-3. **ArgScript-формат `.prop_t`** (текстовый формат SporeModder FX) — дополнительно к `.prop.xml`.
+3. **`.prop_t`: совместимая форма transform** — опции `-offset/-scale/-rotateXYZ` вместо «сырой».
 4. **GUI — дальнейшее развитие**: редактирование свойств, дерево папок, извлечение с диалогами
    прогресса, поиск по распакованной папке, темы оформления.
 
