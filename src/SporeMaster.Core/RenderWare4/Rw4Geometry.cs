@@ -180,11 +180,17 @@ public sealed class Rw4IndexBuffer
     }
 }
 
-/// <summary>Extracted mesh geometry: positions and triangle indices.</summary>
+/// <summary>Extracted mesh geometry: positions, optional normals/UVs and triangle indices.</summary>
 public sealed class Rw4MeshGeometry
 {
     /// <summary>Position triplets (x, y, z), length = 3 * vertex count.</summary>
     public float[] Positions { get; init; } = Array.Empty<float>();
+
+    /// <summary>Normal triplets (x, y, z), or empty when the mesh has no normals.</summary>
+    public float[] Normals { get; init; } = Array.Empty<float>();
+
+    /// <summary>Texture coordinates (u, v), or empty when the mesh has no UVs.</summary>
+    public float[] TexCoords { get; init; } = Array.Empty<float>();
 
     /// <summary>Triangle indices, length = 3 * triangle count.</summary>
     public int[] Indices { get; init; } = Array.Empty<int>();
@@ -195,4 +201,8 @@ public sealed class Rw4MeshGeometry
     public int VertexCount => Positions.Length / 3;
 
     public int TriangleCount => Indices.Length / 3;
+
+    public bool HasNormals => Normals.Length >= VertexCount * 3 && VertexCount > 0;
+
+    public bool HasTexCoords => TexCoords.Length >= VertexCount * 2 && VertexCount > 0;
 }

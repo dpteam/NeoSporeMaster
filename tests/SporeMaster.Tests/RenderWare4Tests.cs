@@ -219,6 +219,25 @@ public static class RenderWare4Tests
                         Assert.True(!float.IsNaN(f) && !float.IsInfinity(f), "position must be finite");
                     }
 
+                    // When present, normals and UVs must be complete and finite.
+                    if (geometry.HasNormals)
+                    {
+                        Assert.Equal(geometry.VertexCount * 3, geometry.Normals.Length);
+                        foreach (float f in geometry.Normals)
+                        {
+                            Assert.True(!float.IsNaN(f) && !float.IsInfinity(f), "normal must be finite");
+                        }
+                    }
+
+                    if (geometry.HasTexCoords)
+                    {
+                        Assert.Equal(geometry.VertexCount * 2, geometry.TexCoords.Length);
+                        foreach (float f in geometry.TexCoords)
+                        {
+                            Assert.True(!float.IsNaN(f) && !float.IsInfinity(f), "texcoord must be finite");
+                        }
+                    }
+
                     // All indices must reference an existing vertex.
                     foreach (int index in geometry.Indices)
                     {
@@ -247,13 +266,15 @@ public static class RenderWare4Tests
         var geometry = new Rw4MeshGeometry
         {
             Positions = new[] { 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f, 0f },
+            TexCoords = new[] { 0f, 0f, 1f, 0f, 0f, 1f },
             Indices = new[] { 0, 1, 2 },
         };
 
         string obj = Rw4ObjExporter.Export(new[] { geometry });
         Assert.Contains(obj, "o mesh_0");
         Assert.Contains(obj, "v 0 0 0");
-        Assert.Contains(obj, "f 1 2 3");
+        Assert.Contains(obj, "vt 1 0");
+        Assert.Contains(obj, "f 1/1 2/2 3/3");
     }
 
     [SporeTest("bad RW4 magic is rejected")]

@@ -13,31 +13,76 @@ public static class Rw4ObjExporter
         builder.Append("# Exported by SporeMaster 3\n");
 
         int vertexBase = 1;
+        int texCoordBase = 1;
+        int normalBase = 1;
         int meshIndex = 0;
+
         foreach (Rw4MeshGeometry mesh in meshes)
         {
             builder.Append("o mesh_").Append(meshIndex).Append('\n');
 
             for (int v = 0; v < mesh.VertexCount; v++)
             {
-                float x = mesh.Positions[(v * 3) + 0];
-                float y = mesh.Positions[(v * 3) + 1];
-                float z = mesh.Positions[(v * 3) + 2];
                 builder.Append("v ")
-                    .Append(Format(x)).Append(' ')
-                    .Append(Format(y)).Append(' ')
-                    .Append(Format(z)).Append('\n');
+                    .Append(Format(mesh.Positions[(v * 3) + 0])).Append(' ')
+                    .Append(Format(mesh.Positions[(v * 3) + 1])).Append(' ')
+                    .Append(Format(mesh.Positions[(v * 3) + 2])).Append('\n');
+            }
+
+            if (mesh.HasTexCoords)
+            {
+                for (int v = 0; v < mesh.VertexCount; v++)
+                {
+                    builder.Append("vt ")
+                        .Append(Format(mesh.TexCoords[(v * 2) + 0])).Append(' ')
+                        .Append(Format(mesh.TexCoords[(v * 2) + 1])).Append('\n');
+                }
+            }
+
+            if (mesh.HasNormals)
+            {
+                for (int v = 0; v < mesh.VertexCount; v++)
+                {
+                    builder.Append("vn ")
+                        .Append(Format(mesh.Normals[(v * 3) + 0])).Append(' ')
+                        .Append(Format(mesh.Normals[(v * 3) + 1])).Append(' ')
+                        .Append(Format(mesh.Normals[(v * 3) + 2])).Append('\n');
+                }
             }
 
             for (int t = 0; t < mesh.TriangleCount; t++)
             {
-                int i = mesh.Indices[(t * 3) + 0] + vertexBase;
-                int j = mesh.Indices[(t * 3) + 1] + vertexBase;
-                int k = mesh.Indices[(t * 3) + 2] + vertexBase;
-                builder.Append("f ").Append(i).Append(' ').Append(j).Append(' ').Append(k).Append('\n');
+                builder.Append("f ");
+                for (int k = 0; k < 3; k++)
+                {
+                    int index = mesh.Indices[(t * 3) + k];
+                    if (k > 0)
+                    {
+                        builder.Append(' ');
+                    }
+
+                    builder.Append(index + vertexBase);
+                    if (mesh.HasTexCoords || mesh.HasNormals)
+                    {
+                        builder.Append('/');
+                        if (mesh.HasTexCoords)
+                        {
+                            builder.Append(index + texCoordBase);
+                        }
+
+                        if (mesh.HasNormals)
+                        {
+                            builder.Append('/').Append(index + normalBase);
+                        }
+                    }
+                }
+
+                builder.Append('\n');
             }
 
             vertexBase += mesh.VertexCount;
+            texCoordBase += mesh.HasTexCoords ? mesh.VertexCount : 0;
+            normalBase += mesh.HasNormals ? mesh.VertexCount : 0;
             meshIndex++;
         }
 

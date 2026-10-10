@@ -325,6 +325,9 @@ public sealed class RenderWare4File : IDisposable
             positions[(i * 3) + 2] = BitConverter.ToSingle(vertexData, baseOffset + 8);
         }
 
+        float[] normals = ReadFloatElements(vertexData, description, stride, vertexCount, usageCode: 2, componentCount: 3);
+        float[] texCoords = ReadFloatElements(vertexData, description, stride, vertexCount, usageCode: 6, componentCount: 2);
+
         int[] indices = ReadIndices(mesh, out _);
         if (indices.Length < 3)
         {
@@ -335,8 +338,48 @@ public sealed class RenderWare4File : IDisposable
         {
             MeshSectionIndex = mesh.MeshSectionIndex,
             Positions = positions,
+            Normals = normals,
+            TexCoords = texCoords,
             Indices = indices,
         };
+    }
+
+    /// <summary>
+    /// Extracts a float vector element (e.g. normal = usage code 2, texcoord0 = usage code 6) from
+    /// every vertex, when the element is stored as plain floats.
+    /// </summary>
+    private static float[] ReadFloatElements(
+        byte[] vertexData,
+        Rw4VertexDescription description,
+        int stride,
+        int vertexCount,
+        int usageCode,
+        int componentCount)
+    {
+        Rw4VertexElement? element = description.Elements.FirstOrDefault(e => e.TypeCode == usageCode);
+        // Only FLOAT1..FLOAT4 element types hold plain floats; block/encoded formats are skipped.
+        if (element is null || element.Type is < 0 or > 3)
+        {
+            return Array.Empty<float>();
+        }
+
+        int available = Math.Min(componentCount, element.Type + 1);
+        var values = new float[vertexCount * componentCount];
+        for (int i = 0; i < vertexCount; i++)
+        {
+            int baseOffset = (i * stride) + element.Offset;
+            if (baseOffset + (available * 4) > vertexData.Length)
+            {
+                break;
+            }
+
+            for (int c = 0; c < available; c++)
+            {
+                values[(i * componentCount) + c] = BitConverter.ToSingle(vertexData, baseOffset + (c * 4));
+            }
+        }
+
+        return values;
     }
 
     private int[] ReadIndices(Rw4Mesh mesh, out Rw4IndexBuffer? indexBuffer)
