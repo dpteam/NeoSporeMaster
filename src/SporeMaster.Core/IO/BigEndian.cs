@@ -66,6 +66,9 @@ public static class BigEndian
         return BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(b));
     }
 
+    public static double ReadF64LE(this Stream s) =>
+        BitConverter.Int64BitsToDouble(s.ReadI64());
+
     public static void WriteU32BE(this Stream s, uint value)
     {
         Span<byte> b = stackalloc byte[4];

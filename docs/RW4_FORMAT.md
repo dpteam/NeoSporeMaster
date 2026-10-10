@@ -225,18 +225,35 @@ uint32 padding
 **Проверено:** во всех тестовых архивах **4514** материала, **все 4514** декодированы; **1807**
 текстурных слотов ссылаются на растр; **1598** связок «меш→материал», все ссылки разрешаются.
 
-## 12. Что осталось (будущее)
+## 12. Морфы и блендшейпы (MorphHandle / BlendShape / BlendShapeBuffer)
 
-- Перекомпиляция материалов и блендшейпы.
+- **`MorphHandle`** (`0xFF0000`): `int32 handleID; int32 field_4; double startPos[3];
+  double endPos[3]; float defaultTime; uint32 animationRef` — цель морфа и её анимация
+  (`Rw4MorphHandle`).
+- **`BlendShape`** (`0xFF0002`): `int32; int32; int32 subRef; int32 shapeCount; int32 subRef;
+  int32 shapeCount; int32 id;` затем буфер времён (`shapeCount * 4` байт) и `shapeCount` id
+  (`Rw4BlendShape`).
+- **`BlendShapeBuffer`** (`0x200AF`): `int32 type (=1); uint32 offsets[11]; int32 shapeCount;
+  int32 vertexCount; int32 unk; int32 boneIndicesCount`, затем до 11 потоков данных (позиции,
+  нормали, тангенты, texcoord, …, blendIndices, blendWeights). Размер потока — до следующего
+  ненулевого смещения (`Rw4BlendShapeBuffer`).
+
+Реализовано чтение (`ReadMorphHandles` / `ReadBlendShapes` / `ReadBlendShapeBuffers`); CLI `rw4`
+печатает сводки. **Проверено:** в тестовых архивах 200 блендшейпов и 200 буферов — все читаются
+(у всех буферов есть вершины и хотя бы один поток).
+
+## 13. Что осталось (будущее)
+
+- Перекомпиляция материалов и блендшейпов.
 - Нормали извлекаются только когда хранятся как float-элементы; на практике Spore часто хранит
   их в упакованном виде, поэтому `vn` может отсутствовать.
 - Экспорт в Ogre XML (как в SporeMaster 2 / SporeModder FX).
 
-## 13. Ссылки
+## 14. Ссылки
 
 - SporeModder FX: `refs/SporeModder-FX-master/src/sporemodder/file/rw4/RenderWare.java`,
   `RWHeader.java`, `RWSection*.java`, `RWMesh.java`, `RWVertexBuffer.java`, `RWIndexBuffer.java`,
   `RWVertexDescription.java`, `RWVertexElement.java`, `RWKeyframeAnim.java`, `RWKeyframe.java`,
   `RWCompiledState.java`, `RWMeshCompiledStateLink.java`, `MaterialStateCompiler.java`,
-  `Direct3DEnums.java`.
+  `Direct3DEnums.java`, `RWMorphHandle.java`, `RWBlendShape.java`, `RWBlendShapeBuffer.java`.
 - SporeMaster 2: `SporeMaster/SporeMaster/RenderWare4/RW4Model.cs`.

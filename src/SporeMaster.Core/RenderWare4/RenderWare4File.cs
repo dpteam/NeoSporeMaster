@@ -497,6 +497,93 @@ public sealed class RenderWare4File : IDisposable
         return links;
     }
 
+    /// <summary>Reads every morph-handle section (type <c>0xFF0000</c>).</summary>
+    public IReadOnlyList<Rw4MorphHandle> ReadMorphHandles()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4MorphHandle>();
+        }
+
+        var handles = new List<Rw4MorphHandle>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.MorphHandle || section.Size < 68)
+            {
+                continue;
+            }
+
+            try
+            {
+                handles.Add(Rw4MorphHandle.Read(_stream, section.DataOffset));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 morph handle at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return handles;
+    }
+
+    /// <summary>Reads every blend-shape section (type <c>0xFF0002</c>).</summary>
+    public IReadOnlyList<Rw4BlendShape> ReadBlendShapes()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4BlendShape>();
+        }
+
+        var shapes = new List<Rw4BlendShape>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.BlendShape || section.Size < 32)
+            {
+                continue;
+            }
+
+            try
+            {
+                shapes.Add(Rw4BlendShape.Read(_stream, section.DataOffset, _length));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 blend shape at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return shapes;
+    }
+
+    /// <summary>Reads every blend-shape buffer section (type <c>0x200AF</c>).</summary>
+    public IReadOnlyList<Rw4BlendShapeBuffer> ReadBlendShapeBuffers()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4BlendShapeBuffer>();
+        }
+
+        var buffers = new List<Rw4BlendShapeBuffer>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.BlendShapeBuffer || section.Size < 8)
+            {
+                continue;
+            }
+
+            try
+            {
+                buffers.Add(Rw4BlendShapeBuffer.Read(_stream, section.DataOffset, section.Size, _length));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 blend-shape buffer at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return buffers;
+    }
+
     /// <summary>
     /// Reads the triangle geometry for every mesh in this resource. Best-effort: meshes whose
     /// buffers cannot be resolved or decoded are reported through <see cref="Diagnostics"/>.

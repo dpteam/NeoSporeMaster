@@ -833,6 +833,49 @@ public static class Commands
             output.Line($"Material links: {materialLinks.Count} mesh(es), {referenced} material reference(s).");
         }
 
+        IReadOnlyList<Core.RenderWare4.Rw4MorphHandle> morphs = rw4.ReadMorphHandles();
+        if (morphs.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Morph handles ({morphs.Count})");
+            var morphRows = morphs.Select((m, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                $"0x{m.HandleId:X8}",
+                m.DefaultTime.ToString("0.###", CultureInfo.InvariantCulture),
+            }).ToList();
+            output.Table(new[] { "#", "Handle", "Default time" }, morphRows);
+        }
+
+        IReadOnlyList<Core.RenderWare4.Rw4BlendShape> blendShapes = rw4.ReadBlendShapes();
+        if (blendShapes.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Blend shapes ({blendShapes.Count})");
+            var shapeRows = blendShapes.Select((s, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                $"0x{s.Id:X8}",
+                s.ShapeIds.Count.ToString(CultureInfo.InvariantCulture),
+            }).ToList();
+            output.Table(new[] { "#", "Id", "Shapes" }, shapeRows);
+        }
+
+        IReadOnlyList<Core.RenderWare4.Rw4BlendShapeBuffer> blendBuffers = rw4.ReadBlendShapeBuffers();
+        if (blendBuffers.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Blend-shape buffers ({blendBuffers.Count})");
+            var bufferRows = blendBuffers.Select((b, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                b.ShapeCount.ToString(CultureInfo.InvariantCulture),
+                b.VertexCount.ToString(CultureInfo.InvariantCulture),
+                b.Streams.Count(s => s is not null).ToString(CultureInfo.InvariantCulture),
+            }).ToList();
+            output.Table(new[] { "#", "Shapes", "Vertices", "Streams" }, bufferRows);
+        }
+
         // --export <file.obj>: dump decoded geometry.
         string? exportPath = cli.Get("export");
         if (exportPath is not null)

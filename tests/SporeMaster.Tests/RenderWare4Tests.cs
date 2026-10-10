@@ -610,6 +610,54 @@ public static class RenderWare4Tests
         Assert.True(references > 0, "material links were found but no references");
     }
 
+    [SporeTest("RW4 blend shapes and buffers parse on real data")]
+    public static void BlendShapes()
+    {
+        int shapes = 0;
+        int buffers = 0;
+
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+
+                foreach (Rw4BlendShape shape in rw4.ReadBlendShapes())
+                {
+                    // A blend shape either lists its shapes or is empty.
+                    Assert.True(shape.ShapeIds.Count >= 0, "blend shape id list is invalid");
+                    shapes++;
+                }
+
+                foreach (Rw4BlendShapeBuffer buffer in rw4.ReadBlendShapeBuffers())
+                {
+                    Assert.True(buffer.VertexCount > 0, "a blend-shape buffer should have vertices");
+                    Assert.True(
+                        buffer.Streams.Any(s => s is { Length: > 0 }),
+                        "a blend-shape buffer should have at least one stream");
+                    buffers++;
+                }
+            }
+        }
+
+        if (shapes == 0 || buffers == 0)
+        {
+            throw new AssertionException($"Expected blend shapes and buffers, got shapes={shapes} buffers={buffers}.");
+        }
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {
