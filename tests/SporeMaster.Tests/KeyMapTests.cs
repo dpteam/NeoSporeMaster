@@ -69,6 +69,25 @@ public static class KeyMapTests
         Assert.True(map.GetPath(0x1, 0x2, 0x3) is null);
     }
 
+    [SporeTest("key map exposes a type to extension map")]
+    public static void ExtensionMap()
+    {
+        KeyMap map = KeyMap.Parse(new[]
+        {
+            "{0x024a0e52 0x0 0x1} \"Config\\AppProperties.txt\"",
+            "{0x024a0e52 0x0 0x2} \"Config\\Options.txt\"",
+            "{0x2f4e681b 0x0 0x3} \"Arenas\\thing.rdx9\"",
+        });
+
+        Assert.Equal("txt", map.GetExtension(0x024A0E52));
+        Assert.Equal("rdx9", map.GetExtension(0x2F4E681B));
+        Assert.True(map.GetExtension(0xDEADBEEF) is null);
+
+        string table = map.BuildExtensionTable();
+        Assert.Contains(table, "0x024a0e52\ttxt");
+        Assert.Contains(table, "0x2f4e681b\trdx9");
+    }
+
     [SporeTest("real key map resolves many resources in a retail package")]
     public static void RealKeyMapResolvesPackage()
     {

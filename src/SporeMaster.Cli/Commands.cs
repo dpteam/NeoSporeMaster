@@ -1492,7 +1492,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 2)
         {
-            return UsageError(output, "keymap <KeyMap.txt> <names.txt> [--types <types.txt>]");
+            return UsageError(output, "keymap <KeyMap.txt> <names.txt> [--types <types.txt>] [--extensions <ext.txt>]");
         }
 
         string input = cli.Positional[0];
@@ -1520,6 +1520,13 @@ public static class Commands
             {
                 File.WriteAllText(typesPath, map.BuildTypeRegistry());
                 output.Line($"  wrote type registry:      {typesPath}");
+            }
+
+            string? extensionsPath = cli.Get("extensions");
+            if (extensionsPath is not null)
+            {
+                File.WriteAllText(extensionsPath, map.BuildExtensionTable());
+                output.Line($"  wrote extension table:    {extensionsPath}");
             }
         }
         catch (Exception ex)
@@ -1575,7 +1582,7 @@ public static class Commands
             foreach (DbpfEntry entry in package!.Entries)
             {
                 string? realPath = keyMap?.GetPath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
-                string relative = realPath ?? names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+                string relative = realPath ?? FallbackPath(names, keyMap, entry);
                 if (!selector.IsEmpty && !selector.Matches(entry.Key.TypeId, entry.Key.GroupId, relative))
                 {
                     continue;
@@ -1612,6 +1619,18 @@ public static class Commands
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// Fallback name for a resource without an exact key-map path: <c>group/name.ext</c>, preferring
+    /// the real extension for the type from the key map (e.g. <c>txt</c> for triggers).
+    /// </summary>
+    private static string FallbackPath(NameRegistrySet names, KeyMap? keyMap, DbpfEntry entry)
+    {
+        string extension = keyMap?.GetExtension(entry.Key.TypeId) ?? names.GetTypeName(entry.Key.TypeId);
+        string group = names.GetFileName(entry.Key.GroupId);
+        string name = names.GetFileName(entry.Key.InstanceId);
+        return $"{group}/{name}.{extension}";
     }
 
     public static int Verify(CommandLine cli, Output output)

@@ -92,6 +92,26 @@ public sealed class KeyMap
     public string? GetPath(uint typeId, uint groupId, uint instanceId) =>
         _paths.TryGetValue((typeId, groupId, instanceId), out string? path) ? path : null;
 
+    /// <summary>
+    /// Returns the real extension (without the dot) used for a resource type, or null when unknown.
+    /// For example the text type <c>0x024A0E52</c> resolves to <c>txt</c>.
+    /// </summary>
+    public string? GetExtension(uint typeId) =>
+        _typeNames.TryGetValue(typeId, out string? extension) ? extension : null;
+
+    /// <summary>Builds a <c>type-hash extension</c> table, one entry per type.</summary>
+    public string BuildExtensionTable()
+    {
+        var builder = new System.Text.StringBuilder();
+        builder.Append("# Type -> extension map derived from the game key map by SporeMaster 3\n");
+        foreach ((uint hash, string extension) in _typeNames.OrderBy(p => p.Key))
+        {
+            builder.Append($"0x{hash:x8}\t{extension}\n");
+        }
+
+        return builder.ToString();
+    }
+
     private static void AddName(Dictionary<uint, string> target, uint hash, string name, bool verified)
     {
         // Prefer a name that actually hashes to the id; otherwise keep the first seen.

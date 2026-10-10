@@ -199,7 +199,7 @@ dotnet run --project src/SporeMaster.Cli -- guess 0x73BF81A5
 dotnet run --project src/SporeMaster.Cli -- guess --package <архив.package> --save names.txt
 
 # Извлечь авторитетные имена из карты ключей игры
-dotnet run --project src/SporeMaster.Cli -- keymap <KeyMap.txt> names.txt --types types.txt
+dotnet run --project src/SporeMaster.Cli -- keymap <KeyMap.txt> names.txt --types types.txt --extensions ext.txt
 
 # Экспериментальная полная распаковка в игровой вид (реальные пути из карты ключей)
 dotnet run --project src/SporeMaster.Cli -- unpackdata <архив.package> <папка> --keymap <KeyMap.txt>
