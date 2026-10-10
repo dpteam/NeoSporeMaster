@@ -1,0 +1,92 @@
+# SporeMaster 3 — русская локализация интерфейса (CLI).
+# Формат: ключ = значение. Комментарии начинаются с '#'.
+# Документация ведётся на русском; интерфейс по умолчанию английский, русский — по --lang ru.
+
+app.name = SporeMaster 3
+app.description = Набор инструментов для архивов Spore (DBPF)
+
+# --- Общие ---
+common.ok = ОК
+common.error = Ошибка
+common.warning = Предупреждение
+common.done = Готово.
+common.notFound = Не найдено: {0}
+common.invalidArgument = Недопустимый аргумент: {0}
+common.fileNotFound = Файл не найден: {0}
+common.usage = Использование: {0}
+
+# --- Заголовки вывода ---
+header.file = Файл
+header.version = Версия DBPF
+header.type = Тип
+header.entries = Записей
+header.indexOffset = Смещение индекса
+header.indexSize = Размер индекса
+header.indexType = Тип индекса
+header.big = Большой архив (DBBF)
+header.encrypted = Зашифрованный контейнер (DBPP)
+
+# --- Команды CLI ---
+cmd.info.usage = info <package>
+cmd.info.summary = Показать информацию о заголовке DBPF архива.
+cmd.list.usage = list <package> [--type T] [--group G] [--name S] [--compressed] [--limit N] [--format csv|json] [--out FILE]
+cmd.list.summary = Список ресурсов внутри архива.
+cmd.extract.usage = extract <package> <type:group:instance> [--out FILE]
+cmd.extract.summary = Извлечь один ресурс по его ключу из трёх частей.
+cmd.unpack.usage = unpack <package> <output-dir> [--raw] [--clean-autolocales] [--group A,B] [--type T] [--name S]
+cmd.unpack.summary = Распаковать ресурсы (свойства -> .prop.xml); фильтр по папкам/типам/имени.
+cmd.unpackdata.usage = unpackdata <package> <output-dir> [--keymap KeyMap.txt] [--ddflist DDFList.txt] [--group A,B] [--type T] [--name S]
+cmd.unpackdata.summary = Экспериментальная распаковка в игровой вид Data по реальным путям из карты ключей (и DDFList).
+cmd.pack.usage = pack <input-dir> <package> [--version 2.0|3.0] [--compress] [--big]
+cmd.pack.summary = Собрать архив из папки (преобразует .prop.xml обратно в .prop).
+cmd.prop.usage = prop <input.prop|input.prop.xml> <output>
+cmd.prop.summary = Преобразовать свойства в XML или обратно в двоичный вид.
+cmd.propt.usage = propt <input.prop|input.prop_t> <output>
+cmd.propt.summary = Преобразовать свойства в текст ArgScript (.prop_t) или обратно.
+cmd.locale.usage = locale <file.locale>
+cmd.locale.summary = Показать записи таблицы локали.
+cmd.texture.usage = texture <input.raster|input.dds> <output>
+cmd.texture.summary = Преобразовать текстуру .raster в DDS или DDS обратно в .raster.
+cmd.bitmap.usage = bitmap <input.bitmap|input.png> <output>
+cmd.bitmap.summary = Преобразовать растровый bitmap-ресурс в PNG или PNG обратно в bitmap.
+cmd.guess.usage = guess <hash>... | --package <pkg> [--save names.txt] | --validate <KeyMap.txt> [--limit N]
+cmd.guess.summary = Восстановить имена по хешам или проверить гиссер по реальным картам ключей.
+cmd.search.usage = search <directory> <query> [--ext .prop.xml,.locale] [--limit N]
+cmd.search.summary = Поиск текста (без учёта регистра) по распакованным файлам.
+cmd.pctp.usage = pctp <input.pctp|input.pctp_t> <output>
+cmd.pctp.summary = Преобразовать файл part-capabilities в текст или обратно.
+cmd.tlsa.usage = tlsa <input.tlsa|input.tlsa_t> <output>
+cmd.tlsa.summary = Преобразовать файл TLSA (группы анимаций) в текст или обратно.
+cmd.gait.usage = gait <input.gait|input.gait_t> <output>
+cmd.gait.summary = Преобразовать файл GAIT (походка) в текст или обратно.
+cmd.cnv.usage = cnv <input.cnv> <output.cnv_t>
+cmd.cnv.summary = Выгрузить беседу в читаемый текст (импорт — в будущем).
+cmd.loottable.usage = loottable <input.loottable|input.loottable_t> <output>
+cmd.loottable.summary = Преобразовать таблицу добычи (cell) в текст или обратно.
+cmd.looktable.usage = looktable <input.look_table|input.look_table_t> <output>
+cmd.looktable.summary = Преобразовать таблицу «взгляда» (cell) в текст или обратно.
+cmd.keymap.usage = keymap <KeyMap.txt> <names.txt> [--types <types.txt>] [--extensions <ext.txt>]
+cmd.keymap.summary = Извлечь авторитетный реестр имён из карты ключей игры (+ таблицы типов/расширений).
+cmd.rw4.usage = rw4 <file.rw4> [--export file.obj]
+cmd.rw4.summary = Разобрать ресурс RenderWare 4 и при желании выгрузить меши в OBJ.
+cmd.verify.usage = verify <package>
+cmd.verify.summary = Прочитать и распаковать каждый ресурс, сообщая о проблемах.
+cmd.diff.usage = diff <a.package> <b.package> [--no-content] [--limit N]
+cmd.diff.summary = Сравнить два архива по ключу ресурса и содержимому (добавлено/удалено/изменено).
+cmd.strings.usage = strings <file> [--min N] [--ascii] [--unicode] [--filter S] [--limit N] [--save out.txt]
+cmd.strings.summary = Извлечь печатные строки (ASCII/UTF-16) из любого бинарника (EXE/DLL/PDB).
+cmd.pdb.usage = pdb <file.pdb> [--modules] [--symbols] [--strings] [--filter S] [--limit N] [--save names.txt]
+cmd.pdb.summary = Разобрать PDB (MSF): потоки, модули, имена символов и строковые литералы.
+cmd.anim.usage = anim <file.anim> [--channels] [--limit N]
+cmd.anim.summary = Разобрать анимацию Spore (.anim): id, длительность, события и каналы.
+cmd.hash.usage = hash <name>
+cmd.hash.summary = Вывести FNV-хеш имени.
+cmd.types.usage = types
+cmd.types.summary = Список известных типов ресурсов (из reg_type.txt).
+
+# --- Результаты ---
+result.extracted = Извлечено {0} ({1} байт).
+result.unpacked = Распаковано {0} ресурс(ов) в {1}.
+result.packed = Упаковано {0} ресурс(ов) в {1}.
+result.verified = Проверено {0} ресурс(ов), {1} проблем(ы).
+result.hash = {0} => 0x{1:X8}
