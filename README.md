@@ -240,6 +240,8 @@ dotnet run --project src/SporeMaster.Cli -- unpackdata <архив.package> <п�
 # Экспортировать список ресурсов и найти текст
 dotnet run --project src/SporeMaster.Cli -- list <архив.package> --format csv --out resources.csv
 dotnet run --project src/SporeMaster.Cli -- search <папка> "anim_dilation" --ext .prop.xml
+dotnet run --project src/SporeMaster.Cli -- search <папка> "re:property\s+\w+" --regex
+dotnet run --project src/SporeMaster.Cli -- search <папка> "0B0A2C" --hex
 
 # Конвертировать часть (part capabilities)
 dotnet run --project src/SporeMaster.Cli -- pctp <файл.pctp> <файл.pctp_t>

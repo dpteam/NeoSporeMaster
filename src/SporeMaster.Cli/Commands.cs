@@ -1460,7 +1460,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 2)
         {
-            return UsageError(output, "search <directory> <query> [--ext .prop.xml,.locale] [--limit N]");
+            return UsageError(output, "search <directory> <query> [--regex] [--hex] [--ext .prop.xml,.locale] [--limit N]");
         }
 
         string directory = cli.Positional[0];
@@ -1474,8 +1474,34 @@ public static class Commands
         string[]? extensions = cli.Get("ext")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         int limit = cli.GetInt("limit") ?? 500;
 
+        if (cli.Has("hex") || query.StartsWith("hex:", StringComparison.OrdinalIgnoreCase))
+        {
+            string hexQuery = query.StartsWith("hex:", StringComparison.OrdinalIgnoreCase) ? query[4..] : query;
+            byte[] needle = ParseHexBytes(hexQuery);
+            if (needle.Length == 0)
+            {
+                output.Error("--hex expects hex bytes, e.g. 0B0A2C.");
+                return 2;
+            }
+
+            List<(string Path, long Offset)> hits = SearchIndex.SearchHex(directory, extensions, needle, limit);
+            output.Table(new[] { "File", "Offset" }, hits.Select(h => new[]
+            {
+                Path.GetRelativePath(directory, h.Path),
+                $"0x{h.Offset:X}",
+            }).ToList());
+            output.Line();
+            output.Line($"{hits.Count} match(es).");
+            return hits.Count > 0 ? 0 : 1;
+        }
+
+        bool regexMode = cli.Has("regex") || query.StartsWith("re:", StringComparison.OrdinalIgnoreCase);
+        string pattern = query.StartsWith("re:", StringComparison.OrdinalIgnoreCase) ? query[3..] : query;
+
         SearchIndex index = SearchIndex.BuildFromDirectory(directory, extensions);
-        IReadOnlyList<SearchMatch> results = index.Search(query, limit);
+        IReadOnlyList<SearchMatch> results = regexMode
+            ? index.SearchRegex(pattern, limit)
+            : index.Search(query, limit);
 
         output.Line($"Indexed {index.FileCount} file(s)" + (index.Skipped.Count > 0 ? $" ({index.Skipped.Count} skipped)" : string.Empty) + ".");
         output.Table(new[] { "File", "Line", "Text" }, results.Select(m => new[]
@@ -1487,6 +1513,25 @@ public static class Commands
         output.Line();
         output.Line($"{results.Count} match(es).");
         return results.Count > 0 ? 0 : 1;
+    }
+
+    /// <summary>Parses a hex string (spaces and 0x allowed) into bytes; empty on failure.</summary>
+    private static byte[] ParseHexBytes(string value)
+    {
+        string cleaned = value.Replace(" ", string.Empty).Replace("0x", string.Empty, StringComparison.OrdinalIgnoreCase);
+        if (cleaned.Length == 0 || cleaned.Length % 2 != 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        try
+        {
+            return Convert.FromHexString(cleaned);
+        }
+        catch (FormatException)
+        {
+            return Array.Empty<byte>();
+        }
     }
 
     /// <summary>Converts a property file to/from ArgScript text: <c>propt &lt;in&gt; &lt;out&gt;</c>.</summary>

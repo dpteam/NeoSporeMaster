@@ -104,4 +104,29 @@ public static class SearchFilterTests
         Assert.True(result.Matches.Count > 0, "expected at least one text match");
         Assert.True(result.Scanned > 0, "expected some resources to be scanned");
     }
+
+    [SporeTest("search index supports regex and hex")]
+    public static void SearchRegexAndHex()
+    {
+        var index = new SporeMaster.Core.Search.SearchIndex();
+        index.AddText("a.txt", "property Foo 0x04754439 uint32\nother line\n");
+
+        Assert.Equal(1, index.SearchRegex(@"property\s+\w+").Count);
+        Assert.Equal(0, index.SearchRegex(@"^property$").Count);
+        Assert.Equal(1, index.Search("other").Count);
+
+        string temp = TestData.CreateTempDirectory();
+        try
+        {
+            File.WriteAllBytes(Path.Combine(temp, "b.bin"), new byte[] { 0x00, 0x0B, 0x0A, 0x2C, 0xFF });
+            List<(string Path, long Offset)> hits = SporeMaster.Core.Search.SearchIndex.SearchHex(
+                temp, null, new byte[] { 0x0B, 0x0A, 0x2C });
+            Assert.Equal(1, hits.Count);
+            Assert.Equal(1, hits[0].Offset);
+        }
+        finally
+        {
+            TestData.DeleteDirectory(temp);
+        }
+    }
 }

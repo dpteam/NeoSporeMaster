@@ -138,6 +138,113 @@ public sealed class SearchIndex
         return results;
     }
 
+    /// <summary>Finds all lines matching a regular expression (case-insensitive).</summary>
+    public IReadOnlyList<SearchMatch> SearchRegex(string pattern, int maxResults = 1000)
+    {
+        var results = new List<SearchMatch>();
+        if (string.IsNullOrEmpty(pattern) || maxResults <= 0)
+        {
+            return results;
+        }
+
+        System.Text.RegularExpressions.Regex regex;
+        try
+        {
+            regex = new System.Text.RegularExpressions.Regex(
+                pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500));
+        }
+        catch (ArgumentException)
+        {
+            return results;
+        }
+
+        foreach (Entry entry in _entries)
+        {
+            string[] lines = entry.Original.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                bool match;
+                try
+                {
+                    match = regex.IsMatch(lines[i]);
+                }
+                catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+                {
+                    match = false;
+                }
+
+                if (match)
+                {
+                    results.Add(new SearchMatch(entry.Path, i + 1, lines[i].TrimEnd('\r')));
+                    if (results.Count >= maxResults)
+                    {
+                        return results;
+                    }
+                }
+            }
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Scans files for a raw byte sequence (works on binary too), reporting file and offset.
+    /// Used by the CLI <c>search --hex</c> mode.
+    /// </summary>
+    public static List<(string Path, long Offset)> SearchHex(
+        string directory,
+        IEnumerable<string>? extensions,
+        byte[] needle,
+        int maxResults = 1000)
+    {
+        var results = new List<(string Path, long Offset)>();
+        if (!Directory.Exists(directory) || needle.Length == 0 || maxResults <= 0)
+        {
+            return results;
+        }
+
+        string[]? allowed = extensions?.Select(e => e.StartsWith('.') ? e : "." + e).ToArray();
+
+        foreach (string file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+        {
+            if (allowed is not null && allowed.Length > 0 &&
+                !allowed.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            byte[] data;
+            try
+            {
+                data = File.ReadAllBytes(file);
+            }
+            catch
+            {
+                continue;
+            }
+
+            int offset = 0;
+            while (offset <= data.Length - needle.Length)
+            {
+                int index = data.AsSpan(offset).IndexOf(needle);
+                if (index < 0)
+                {
+                    break;
+                }
+
+                results.Add((file, offset + index));
+                if (results.Count >= maxResults)
+                {
+                    return results;
+                }
+
+                offset += index + 1;
+            }
+        }
+
+        return results;
+    }
+
     private static bool LooksBinary(byte[] data)
     {
         int limit = Math.Min(data.Length, 1024);
