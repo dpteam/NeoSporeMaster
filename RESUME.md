@@ -1,0 +1,138 @@
+# RESUME.md — шпаргалка для возобновления работы (после сброса контекста)
+
+> Прочитай этот файл **первым**, если чат сбросился или контекст потерян. Здесь — только самое
+> важное: как собрать, как тестировать, где что лежит, что уже готово и что делать дальше.
+> Детали — в `README.md`, `AGENT.md`, `MEMORY.md`, `HISTORY.md`, `docs/*`.
+
+## 0. TL;DR
+
+**SporeMaster 3** — современный (.NET 9, только BCL, без NuGet) инструментарий для чтения/записи
+архивов Spore `.package` (DBPF), плюс GUI-проводник и CLI `spore`. Документация — по-русски,
+интерфейс — по-английски. Репозиторий: `E:\_DPT_Projects_E\_Harness\SporeMaster3`.
+
+## 1. Быстрый старт (команды)
+
+```powershell
+cd "E:\_DPT_Projects_E\_Harness\SporeMaster3"
+
+# Сборка (должна быть без ошибок)
+dotnet build SporeMaster3.sln -c Release -v q -nologo
+
+# Все тесты (свой раннер, без NuGet). Фильтр — подстрока имени.
+dotnet run --project tests/SporeMaster.Tests -c Release --filter "RW4"
+
+# CLI (exe "spore")
+dotnet run --project src/SporeMaster.Cli -- help
+dotnet run --project src/SporeMaster.Cli -- list <архив.package>
+
+# GUI (WPF, самопроверка без показа окна; отчёт в %TEMP%\sporemaster-gui-selftest.txt)
+dotnet run --project src/SporeMaster.Gui -- --selftest <архив.package>
+```
+
+Коммит: `git add -A; git -c user.name="SporeMaster3" -c user.email="sporemaster3@example.invalid" commit -m "..."`.
+При коммите PowerShell сыпет `warning: LF will be replaced by CRLF` — это норма, не ошибка.
+
+## 2. Карта репозитория
+
+```
+SporeMaster3.sln
+src/SporeMaster.Core      вся логика форматов (без UI)
+  Dbpf/       DBPF (read/write), RefPack, ResourceKey, ResourceTypeIds
+  Properties/ .prop (binary) + .prop.xml; PropertyScript (.prop_t)
+  Locale/     .locale + авто-локали
+  Textures/   .raster ⇄ DDS; Bitmaps/ .*Image ⇄ PNG (свой PNG-кодек)
+  RenderWare4/ контейнер, меши, геометрия, скелеты, скины, анимации, материалы, морфы, OBJ
+  Hashes|Names FNV, реестры reg_*, hash guesser, KeyMap
+  Pctp|Tlsa|Gait|Cnv|Cell(loottable|look_table)  конвертеры
+  Presentation/ PackageSession, ResourceItem, ExplorerModel, PreviewEngine, ResourceGlyph
+  Search/     полнотекстовый поиск
+  Diff/       сравнение архивов (ArchiveDiff)
+  Pdb/ Binary/ реверс-инжиниринг: MSF/PDB, MSVC-строки, strings из бинарников
+  lang/en.lang  строки CLI/интерфейса (английский)
+src/SporeMaster.Cli       exe "spore" (Program.cs диспетчер, Commands.cs)
+src/SporeMaster.Gui       WPF net9.0-windows, exe "SporeMaster", иконка SporeMaster3.ico
+tests/SporeMaster.Tests   собственный раннер [SporeTest], Assert, exit code
+data/                     reg_*.txt (embedded) + guess_left/right.txt (~20 МБ, рядом с exe)
+docs/*.md                 техническая документация (RU)
+refs/                     справочные материалы и реальные архивы (НЕ трогать/не коммитить крупное)
+```
+
+## 3. Незыблемые правила
+
+1. **.NET 9, только BCL.** Никаких NuGet (ни для тестов, ни для парсинга аргументов).
+2. **Отказоустойчивость**: Core — `DiagnosticSink` (Warn, продолжать); CLI — `try/catch` + код
+   выхода; GUI — `Guarded(...)` на каждый обработчик + глобальный `DispatcherUnhandledException`.
+   Исключения — только для «это вообще не наш формат».
+3. **GUI обязан собираться с `InvariantGlobalization=false`** — иначе WPF падает на
+   `XmlLanguage.GetSpecificCulture()` при отрисовке `GridView`.
+4. **Документация — RU, интерфейс — EN.** Видимые пользователю строки CLI — из `Localizer`
+   (`src/SporeMaster.Core/lang/en.lang`).
+5. **Проверяемость**: правки ядра сопровождаются headless-тестами. Тесты на реальных данных
+   должны **корректно пропускаться**, если данных нет.
+6. **Не выдумывать форматы вслепую** — сверять с `refs/` и реальными архивами. Если референс не
+   подтверждается на данных, формат не реализуем (например, `.structure`).
+7. Не трогаем `refs/` и легаси `SporeMaster/`; не коммитим `bin/`, `obj/`, крупные папки.
+
+## 4. Где что документируется (после каждой правки)
+
+- `HISTORY.md` — человекочитаемый список изменений (сверху свежее); обновлять **всегда**.
+- `MEMORY.md` — решения, «почему так», идеи заказчика, проверенные факты.
+- `README.md` — обзор, список возможностей и примеры команд.
+- `docs/ARCHITECTURE.md` — структура Core по папкам.
+- `docs/*_FORMAT.md` — заметки по конкретным форматам (PROP, CNV, GAIT, TLSA, PCTP, LOOKTABLE,
+  HASH_GUESSING, RW4_FORMAT, UNPACK_DATA, PDB_RESEARCH).
+- Комментарии в коде — английские `/// <summary>`.
+
+## 5. Снимок состояния (обновлять по мере продвижения)
+
+- Версия — около **3.33.0**; тесты — **113/113**; дерево git чистое.
+- Готово в Core: DBPF 2.0/3.0 (в т.ч. бета) read/write; RefPack (байт-в-байт); `.prop`+`.prop.xml`;
+  `.prop_t`; `.locale`+авто-локали; `.raster`⇄DDS; bitmap⇄PNG; RW4 (контейнер, меши, геометрия
+  pos/uv/normal + OBJ, скелеты, скины, ключевые анимации, **материалы** `CompiledState`, морфы/
+  блендшейпы); hash guesser + `guess --validate`; KeyMap; полнотекстовый поиск; `diff`; `pdb`,
+  `strings` (реверс-инжиниринг). CLI: `info list extract unpack unpackdata pack prop propt locale
+  texture bitmap guess search pctp tlsa gait cnv loottable looktable keymap rw4 verify diff strings
+  pdb hash types`.
+- GUI: проводник (дерево папок, список, превью, назад/вперёд/вверх, крошки, фильтр, сортировка,
+  плоский режим, контекстные меню, извлечение, **иконки по типам**, **панель сведений**).
+- Отложено (список ниже).
+
+## 6. Грабли и подводные камни (проверено болью)
+
+- **Смешанная эндианность** форматов: `.prop` — дескриптор+скаляры big-endian, композиты
+  little-endian; `.cnv` — счётчики/действия LE, длины/ключи/text-id BE; `.tlsa` — целиком BE
+  (магия `"tsla"`); заголовок bitmap — **big-endian** (частая ошибка!).
+- Идентификаторы **type/property — это константы EA** (не FNV). FNV хеширует группы/имена.
+  Например `loottable` = `0xD92AF091`, `trigger` = `0x024A0E52`.
+- **RW4-ссылки**: старшие 2 бита = тип ссылки (`0` — индекс секции, `1` — «нет объекта»,
+  `2` — подссылка). Значение `1<<22` встречается в реальных файлах — не считать ошибкой.
+- `unpack→pack→verify` **не байт-точно** через XML (паддинг/флаги). Не заявлять lossless-репак.
+- Распаковка по умолчанию **lossless**; `--clean-autolocales` — опционально.
+- В C# `"\x1aD"` — это `\x1aD` (жадный hex!); для байтов писать массив байт.
+- Реальные данные лежат в `refs/_PackageFilesBetaVer` (бета) и `refs/_PackageFilesFinalVer` (релиз);
+  крупные папки (`refs/SporeGames`, `refs/SporeUnpackedData`, `_PackageFiles*`) — в `.gitignore`.
+- `refs/SporeUnpackedData/**/KeyMap.txt` — карта «ключ → реальный путь» (авторитетные имена);
+  `*.trigger`/`.txt` (тип `0x024A0E52`) — **обычный текст** (это `Config/*.txt`).
+- `refs/SporeGames/SporeBeta190208/SporeApp.pdb` — MSF 7.00 с 429k символов; инструмент `pdb`.
+
+## 7. Что дальше (roadmap, сверху — приоритетнее; см. MEMORY.md §3)
+
+1. **Проверка репака оригиналов игры** — вывести требования игры к пакету из символов PDB
+   (`EA::ResourceMan::DatabasePackedFile`, `SP::CreatePackageSave`/`FinalizePackageSave`,
+   `PFHoleTable`), затем `unpack → pack → diff` и запуск игры (критерий — отсутствие дамп-файлов).
+2. **Улучшить `unpackdata`** — таблица «тип → расширение» (из `KeyMap`/распакованных данных),
+   учёт `*_DDFList.txt`, пометка текстовых типов.
+3. **GUI**: адресная строка с историей, drag&drop; полная **локализация RU+EN** (каркас
+   `Localizer` есть).
+4. **`.anim` (SPAnimation)** — крупный оставшийся cell-формат (сложный, ~100 КБ референса).
+5. **Деманглинг C++-имён** из PDB (чтобы читать `?…@@`), плюс дальнейшее исследование строк EXE.
+
+## 8. Полезные ориентиры в `refs/`
+
+- `refs/SporeModder-FX-master/` — основной референс форматов (Java).
+- `refs/SporeEdit`, `refs/CheckAll`, `refs/EAPackageBrowser-main`, `refs/_AlsoOnlyIfNeed` — прочие.
+- `refs/SporeUnpackedData/SporeBeta2008/Data/` — распакованные данные беты, `KeyMap.txt`,
+  `*_DDFList.txt`.
+- `refs/SporeUnpackedData/SporeHeroWiiPCLeftOvers/Data/` — leftovers (README.txt про DDFList).
+- `refs/SporeGames/` — полные игры (для финальных тестов репака).
+- Легаси `SporeMaster/` — исходники SporeMaster 2 для сверки (не трогать).
