@@ -99,6 +99,12 @@ public static class PreviewEngine
                 return ResourcePreview.AsText(builder.ToString(), "rw4");
             }
 
+            // Some resources are already standard images (e.g. the "png" type stores raw PNG data).
+            if (IsPng(data))
+            {
+                return ResourcePreview.AsImage(data);
+            }
+
             if (LooksLikeText(data))
             {
                 string text = TextCodec.Decode(data);
@@ -117,6 +123,9 @@ public static class PreviewEngine
             return ResourcePreview.AsText($"Preview unavailable: {ex.Message}\n\n{HexDump(data)}", "error");
         }
     }
+
+    private static bool IsPng(byte[] data) =>
+        data.Length >= 8 && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47;
 
     private static bool LooksLikeText(byte[] data)
     {

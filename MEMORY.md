@@ -78,7 +78,7 @@
 | GUI (WPF) — обозреватель архивов с превью + иконка | ✅ |
 | CLI (info/list/extract/unpack/pack/prop/propt/pctp/tlsa/gait/cnv/loottable/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (84, на реальных + синтетических данных) | ✅ |
+| Тесты (85, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---

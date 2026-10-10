@@ -1,4 +1,5 @@
 using SporeMaster.Core.Dbpf;
+using SporeMaster.Core.Imaging;
 using SporeMaster.Core.Names;
 using SporeMaster.Core.Presentation;
 using SporeMaster.Core.Properties;
@@ -62,6 +63,22 @@ public static class PresentationTests
         ResourcePreview preview = PreviewEngine.Build(item, data, names);
         Assert.Equal("hex", preview.Kind);
         Assert.Contains(preview.Text!, "00000000");
+    }
+
+    [SporeTest("preview shows raw PNG resources as images")]
+    public static void PreviewRawPng()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        var entry = new DbpfEntry { Key = new ResourceKey(0x2F7D0004, 0, 0) };
+        var item = new ResourceItem(entry, names);
+
+        // Encode a tiny image to a PNG and pretend it is the raw resource payload.
+        var image = new RgbaImage(2, 2);
+        byte[] png = PngCodec.Encode(image);
+
+        ResourcePreview preview = PreviewEngine.Build(item, png, names);
+        Assert.Equal("image", preview.Kind);
+        Assert.NotNull(preview.PngBytes);
     }
 
     [SporeTest("package session enumerates and reads a real package")]
