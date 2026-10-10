@@ -110,6 +110,19 @@ public static class PresentationTests
         Assert.Contains(preview.Text!, "Skeletons:");
     }
 
+    [SporeTest("resource glyphs are chosen per type")]
+    public static void ResourceGlyphs()
+    {
+        Assert.Equal("\U0001F4C4", ResourceGlyph.For("group/thing.prop", 0x00B1B104));
+        Assert.Equal("\U0001F9CA", ResourceGlyph.For("group/model.rw4", 0x2F4E681B));
+        Assert.Equal("\U0001F5BC", ResourceGlyph.For("group/tex.raster", 0x2F4E681C));
+        Assert.Equal("\U0001F310", ResourceGlyph.For("group/lang.locale", 0x02FAC0B6));
+        Assert.Equal("\U0001F4E6", ResourceGlyph.For("0x0B1B104/0x0.thing", 0xDEADBEEF));
+
+        // Unknown extension falls back to the type id.
+        Assert.Equal("\U0001F9CA", ResourceGlyph.For("0x2F4E681B/0x0", 0x2F4E681B));
+    }
+
     [SporeTest("explorer model groups resources into folders")]
     public static void ExplorerFolders()
     {

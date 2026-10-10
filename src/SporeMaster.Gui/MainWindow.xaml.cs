@@ -324,13 +324,14 @@ public partial class MainWindow : Window
     private void OnViewLargeIcons(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         var view = new GridView();
-        view.Columns.Add(new GridViewColumn { Header = "Name", DisplayMemberBinding = new System.Windows.Data.Binding("ShortName"), Width = 300 });
+        view.Columns.Add(new GridViewColumn { Header = "Name", DisplayMemberBinding = new System.Windows.Data.Binding("LargeName"), Width = 300 });
         ResourceList.View = view;
     });
 
     private GridView BuildDetailsView()
     {
         var view = new GridView();
+        view.Columns.Add(new GridViewColumn { Header = "", DisplayMemberBinding = new System.Windows.Data.Binding("Glyph"), Width = 26 });
         view.Columns.Add(new GridViewColumn { Header = "Name", DisplayMemberBinding = new System.Windows.Data.Binding("ShortName"), Width = 240 });
         view.Columns.Add(new GridViewColumn { Header = "Type", DisplayMemberBinding = new System.Windows.Data.Binding("TypeName"), Width = 110 });
         view.Columns.Add(new GridViewColumn { Header = "Size", DisplayMemberBinding = new System.Windows.Data.Binding("PackedSize"), Width = 80 });
@@ -366,6 +367,33 @@ public partial class MainWindow : Window
         if (ResourceList.SelectedItem is ResourceItem row)
         {
             ShowPreview(row);
+            UpdateDetailsPane(row);
+        }
+        else
+        {
+            DetailsPane.Visibility = Visibility.Collapsed;
+        }
+    });
+
+    /// <summary>Fills the Explorer-style details pane for the selected resource.</summary>
+    private void UpdateDetailsPane(ResourceItem row)
+    {
+        DetailsName.Text = $"{row.Glyph}  {row.ShortName}";
+        DetailsType.Text = row.TypeName;
+        DetailsKey.Text = row.Key;
+        DetailsSize.Text = $"{row.PackedSize} bytes packed, {row.MemSize} bytes in memory ({row.Compression}) — {row.Path}";
+        DetailsPane.Visibility = Visibility.Visible;
+    }
+
+    private void OnToggleDetailsPane(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        DetailsPane.Visibility = DetailsPane.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        if (DetailsPane.Visibility == Visibility.Visible && ResourceList.SelectedItem is ResourceItem row)
+        {
+            UpdateDetailsPane(row);
         }
     });
 
@@ -745,5 +773,12 @@ public partial class MainWindow : Window
         {
             return ex.Message;
         }
+    }
+
+    /// <summary>Fills the details pane for a row (as selection does) and returns the rendered text.</summary>
+    internal string DetailsForTest(ResourceItem row)
+    {
+        UpdateDetailsPane(row);
+        return $"{DetailsName.Text} | {DetailsType.Text} | {DetailsKey.Text} | {DetailsSize.Text}";
     }
 }

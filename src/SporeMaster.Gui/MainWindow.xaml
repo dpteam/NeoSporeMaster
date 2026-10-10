@@ -20,7 +20,8 @@
                 <MenuItem Header="_Refresh" Click="OnRefresh" />
                 <Separator />
                 <MenuItem Header="_Details" Click="OnViewDetails" IsCheckable="True" IsChecked="True" />
-                <MenuItem Header="_Large Icons" Click="OnViewLargeIcons" IsCheckable="True" />
+                <MenuItem Header="Large _Icons" Click="OnViewLargeIcons" IsCheckable="True" />
+                <MenuItem Header="Details _pane" Click="OnToggleDetailsPane" IsCheckable="True" IsChecked="True" />
             </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem Header="_Extract Selected..." Click="OnExtractSelected" />
@@ -64,6 +65,30 @@
             </StatusBarItem>
         </StatusBar>
 
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDD" BorderThickness="0,1,0,0"
+                Visibility="Collapsed" x:Name="DetailsPane">
+            <Grid Margin="8,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" Foreground="#666" Margin="0,0,4,2" />
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="DetailsName" TextTrimming="CharacterEllipsis" Margin="0,0,12,2" />
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="Type:" Foreground="#666" Margin="0,0,4,2" />
+                <TextBlock Grid.Row="0" Grid.Column="3" x:Name="DetailsType" TextTrimming="CharacterEllipsis" Margin="0,0,0,2" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Key:" Foreground="#666" Margin="0,0,4,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DetailsKey" FontFamily="Consolas" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Size:" Foreground="#666" Margin="0,0,4,0" />
+                <TextBlock Grid.Row="1" Grid.Column="3" x:Name="DetailsSize" TextTrimming="CharacterEllipsis" />
+            </Grid>
+        </Border>
+
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="TreeColumn" Width="260" MinWidth="160" />
@@ -97,6 +122,7 @@
                       VirtualizingStackPanel.VirtualizationMode="Recycling">
                 <ListView.View>
                     <GridView>
+                        <GridViewColumn Header="" Width="26" DisplayMemberBinding="{Binding Glyph}" />
                         <GridViewColumn Header="Name" Width="240" DisplayMemberBinding="{Binding ShortName}" />
                         <GridViewColumn Header="Type" Width="110" DisplayMemberBinding="{Binding TypeName}" />
                         <GridViewColumn Header="Size" Width="80" DisplayMemberBinding="{Binding PackedSize}" />

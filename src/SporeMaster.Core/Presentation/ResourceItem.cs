@@ -21,6 +21,7 @@ public sealed class ResourceItem
         MemSize = entry.MemSize;
         Path = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
         TypeName = names.GetTypeName(entry.Key.TypeId);
+        Glyph = ResourceGlyph.For(Path, entry.Key.TypeId);
     }
 
     public DbpfEntry Entry { get; }
@@ -63,6 +64,12 @@ public sealed class ResourceItem
     }
 
     public string TypeName { get; }
+
+    /// <summary>A small icon glyph for this resource (see <see cref="ResourceGlyph"/>).</summary>
+    public string Glyph { get; }
+
+    /// <summary>The name with its glyph prefixed, for the large-icon list view.</summary>
+    public string LargeName => $"{Glyph}  {ShortName}";
 
     public string Key => $"0x{TypeId:X8}:0x{GroupId:X8}:0x{InstanceId:X8}";
 

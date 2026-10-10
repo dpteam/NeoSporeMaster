@@ -85,6 +85,29 @@ internal static class SelfTest
                 {
                     report.AppendLine($"  - {failure}");
                 }
+
+                // Explorer-style details pane + per-type glyphs.
+                int missingGlyphs = rows.Count(r => string.IsNullOrEmpty(r.Glyph));
+                report.AppendLine($"Rows missing a glyph: {missingGlyphs}");
+
+                int detailsFailures = 0;
+                foreach (ResourceItem row in rows.Take(200))
+                {
+                    try
+                    {
+                        string details = window.DetailsForTest(row);
+                        if (string.IsNullOrWhiteSpace(details) || !details.Contains(row.Key, StringComparison.Ordinal))
+                        {
+                            detailsFailures++;
+                        }
+                    }
+                    catch
+                    {
+                        detailsFailures++;
+                    }
+                }
+
+                report.AppendLine($"Details pane failures: {detailsFailures}");
             }
             else
             {
