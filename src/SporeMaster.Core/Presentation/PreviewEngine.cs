@@ -89,11 +89,21 @@ public static class PreviewEngine
                 var builder = new StringBuilder();
                 builder.Append("RenderWare 4 resource\n");
                 builder.Append($"  Container: {Rw4SectionTypes.DescribeContainer(rw4.RawType)}\n");
-                builder.Append($"  Sections: {rw4.SectionCount}\n\n");
-                for (int i = 0; i < rw4.Sections.Count; i++)
+                builder.Append($"  Sections: {rw4.SectionCount}\n");
+
+                AppendRw4Summary(rw4, builder);
+
+                builder.Append('\n');
+                int shown = Math.Min(rw4.Sections.Count, 200);
+                for (int i = 0; i < shown; i++)
                 {
                     Rw4SectionInfo s = rw4.Sections[i];
                     builder.Append($"  [{i}] {Rw4SectionTypes.Describe(s.TypeCode)} @ 0x{s.DataOffset:X} size={s.Size} align={s.Alignment}\n");
+                }
+
+                if (rw4.Sections.Count > shown)
+                {
+                    builder.Append($"  … {rw4.Sections.Count - shown} more section(s)\n");
                 }
 
                 return ResourcePreview.AsText(builder.ToString(), "rw4");
@@ -121,6 +131,71 @@ public static class PreviewEngine
         catch (Exception ex)
         {
             return ResourcePreview.AsText($"Preview unavailable: {ex.Message}\n\n{HexDump(data)}", "error");
+        }
+    }
+
+    private static void AppendRw4Summary(RenderWare4File rw4, StringBuilder builder)
+    {
+        try
+        {
+            IReadOnlyList<Rw4Mesh> meshes = rw4.ReadMeshes();
+            if (meshes.Count > 0)
+            {
+                long triangles = meshes.Sum(m => (long)m.TriangleCount);
+                long vertices = meshes.Sum(m => (long)m.VertexCount);
+                builder.Append($"\n  Meshes: {meshes.Count} ({triangles} triangles, {vertices} vertices)\n");
+            }
+
+            IReadOnlyList<Rw4Skeleton> skeletons = rw4.ReadSkeletons();
+            if (skeletons.Count > 0)
+            {
+                builder.Append($"  Skeletons: {skeletons.Count} ({skeletons.Sum(s => s.Bones.Count)} bones)\n");
+            }
+
+            IReadOnlyList<Rw4SkinLinkage> skins = rw4.ReadSkins();
+            if (skins.Count > 0)
+            {
+                builder.Append($"  Skins: {skins.Count}\n");
+            }
+
+            IReadOnlyList<Rw4KeyframeAnim> animations = rw4.ReadKeyframeAnimations();
+            if (animations.Count > 0)
+            {
+                int channels = animations.Sum(a => a.Channels.Count);
+                int keyframes = animations.Sum(a => a.Channels.Sum(c => c.Keyframes.Count));
+                builder.Append($"  Keyframe animations: {animations.Count} ({channels} channels, {keyframes} keyframes)\n");
+            }
+
+            IReadOnlyList<Rw4Material> materials = rw4.ReadMaterials();
+            if (materials.Count > 0)
+            {
+                builder.Append($"  Materials: {materials.Count}\n");
+                foreach (Rw4Material material in materials.Take(8))
+                {
+                    builder.Append(
+                        $"    shader 0x{material.RendererId:X8}, " +
+                        $"{Direct3DStates.FormatPrimitiveType(material.PrimitiveType)}, " +
+                        $"states {material.RenderGroups.Sum(g => g.States.Count)}, " +
+                        $"textures {material.TextureSlots.Count}" +
+                        $"{(material.Decompiled ? string.Empty : " (undecoded)")}\n");
+                }
+            }
+
+            IReadOnlyList<Rw4MorphHandle> morphs = rw4.ReadMorphHandles();
+            if (morphs.Count > 0)
+            {
+                builder.Append($"  Morph handles: {morphs.Count}\n");
+            }
+
+            IReadOnlyList<Rw4BlendShape> shapes = rw4.ReadBlendShapes();
+            if (shapes.Count > 0)
+            {
+                builder.Append($"  Blend shapes: {shapes.Count}\n");
+            }
+        }
+        catch (Exception ex)
+        {
+            builder.Append($"\n  (RW4 summary unavailable: {ex.Message})\n");
         }
     }
 

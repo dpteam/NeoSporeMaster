@@ -81,6 +81,35 @@ public static class PresentationTests
         Assert.NotNull(preview.PngBytes);
     }
 
+    [SporeTest("preview summarises a RenderWare 4 model")]
+    public static void PreviewRenderWare4()
+    {
+        string? packagePath = TestData.FinalPackages.FirstOrDefault(p => p.EndsWith("CSA_Graphics.package"));
+        if (packagePath is null)
+        {
+            throw new AssertionException("CSA_Graphics.package is not available.");
+        }
+
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+
+        DbpfEntry? target = package.Entries.FirstOrDefault(e =>
+            e.Key.TypeId == 0x2F4E681B && e.Key.GroupId == 0x40606000 && e.Key.InstanceId == 0x315CCB89);
+        if (target is null)
+        {
+            throw new AssertionException("The expected model resource is missing.");
+        }
+
+        var item = new ResourceItem(target, names);
+        ResourcePreview preview = PreviewEngine.Build(item, package.ReadEntry(target), names);
+
+        Assert.Equal("rw4", preview.Kind);
+        Assert.Contains(preview.Text!, "RenderWare 4 resource");
+        Assert.Contains(preview.Text!, "Meshes:");
+        Assert.Contains(preview.Text!, "Materials:");
+        Assert.Contains(preview.Text!, "Skeletons:");
+    }
+
     [SporeTest("explorer model groups resources into folders")]
     public static void ExplorerFolders()
     {
