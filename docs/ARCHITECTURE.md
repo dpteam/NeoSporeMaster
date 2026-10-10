@@ -129,6 +129,13 @@ little-endian; флаги и stride сохраняются для байт-то�
 Сравнение двух архивов по ресурсному ключу и (опционально) по распакованным байтам:
 `added`/`removed`/`changed`/`same`. Не зависит от порядка записей, сжатия и паддинга; CLI `diff`.
 
+### `Pdb/*` и `Binary/StringsExtractor`
+Реверс-инжиниринг игры (см. `docs/PDB_RESEARCH.md`):
+- `MsfFile` — контейнер MSF 7.00 (PDB): суперблок, каталог потоков, чтение потоков;
+- `PdbFile` — инфо-поток, DBI, модули (пути сборки) и записи CodeView (символы);
+- `MsvcStringLiteral` — декодирование строковых символов `??_C@…` в читаемый текст;
+- `StringsExtractor` — печатные ASCII/UTF-16 строки из любого бинарника (EXE/DLL/PDB).
+
 ### `Pctp/*`
 - `PctpUnit` — файл part-capabilities (`.pctp`): бинарное чтение/запись и текст ArgScript
   (`.pctp_t`). Формат описан в `docs/PCTP_FORMAT.md`.

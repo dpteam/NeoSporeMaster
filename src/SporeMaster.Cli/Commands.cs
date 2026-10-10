@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using SporeMaster.Core.Bitmaps;
 using SporeMaster.Core.ArgScript;
+using SporeMaster.Core.Binary;
 using SporeMaster.Core.Cell;
 using SporeMaster.Core.Cnv;
 using SporeMaster.Core.Compression;
@@ -14,6 +15,7 @@ using SporeMaster.Core.Locale;
 using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
 using SporeMaster.Core.Pctp;
+using SporeMaster.Core.Pdb;
 using SporeMaster.Core.Properties;
 using SporeMaster.Core.RenderWare4;
 using SporeMaster.Core.Search;
@@ -1722,13 +1724,249 @@ public static class Commands
         }
     }
 
+    /// <summary>Extracts printable strings from any binary: <c>strings &lt;file&gt;</c>.</summary>
+    public static int Strings(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count == 0)
+        {
+            return UsageError(output, "strings <file> [--min N] [--ascii] [--unicode] [--filter SUBSTR] [--limit N] [--save out.txt]");
+        }
+
+        string path = cli.Positional[0];
+        if (!File.Exists(path))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", path));
+            return 1;
+        }
+
+        int minimum = cli.GetInt("min") ?? 4;
+        bool ascii = cli.Has("ascii");
+        bool unicode = cli.Has("unicode");
+        if (!ascii && !unicode)
+        {
+            ascii = unicode = true;
+        }
+
+        string? contains = cli.Get("filter");
+        int display = cli.GetInt("limit") ?? 100;
+
+        List<BinaryString> strings;
+        try
+        {
+            byte[] data = File.ReadAllBytes(path);
+            strings = StringsExtractor.Extract(data, minimum, ascii, unicode, contains, limit: 2_000_000);
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Failed to read: {ex.Message}");
+            return 1;
+        }
+
+        output.Line($"{strings.Count} string(s) (min length {minimum}{(contains is null ? string.Empty : $", filter '{contains}'")}).");
+
+        string? save = cli.Get("save");
+        if (!string.IsNullOrEmpty(save))
+        {
+            try
+            {
+                using var writer = new StreamWriter(save);
+                foreach (BinaryString s in strings)
+                {
+                    writer.WriteLine($"{s.Offset:X8}\t{(s.Unicode ? "u" : "a")}\t{s.Value}");
+                }
+
+                output.Success($"Wrote {strings.Count} string(s) to {save}.");
+            }
+            catch (Exception ex)
+            {
+                output.Error($"Failed to write {save}: {ex.Message}");
+                return 1;
+            }
+        }
+        else
+        {
+            foreach (BinaryString s in strings.Take(display))
+            {
+                output.Line($"  {s.Offset:X8}  {(s.Unicode ? "u" : "a")}  {Truncate(s.Value, 120)}");
+            }
+
+            if (strings.Count > display)
+            {
+                output.Line($"  … {strings.Count - display} more (use --save to dump all)");
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>Inspects a PDB file: <c>pdb &lt;file.pdb&gt;</c>.</summary>
+    public static int Pdb(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count == 0)
+        {
+            return UsageError(output, "pdb <file.pdb> [--modules] [--symbols] [--strings] [--filter S] [--limit N] [--save out.txt]");
+        }
+
+        string path = cli.Positional[0];
+        if (!File.Exists(path))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", path));
+            return 1;
+        }
+
+        try
+        {
+            using PdbFile pdb = PdbFile.Open(path);
+
+            output.Heading($"PDB: {Path.GetFileName(path)}");
+            output.Line($"  Page size:     {pdb.Container.PageSize}");
+            output.Line($"  Blocks:        {pdb.Container.BlockCount}");
+            output.Line($"  Streams:       {pdb.Container.StreamCount}");
+            output.Line($"  Info version:  {pdb.InfoVersion}");
+            output.Line($"  GUID:          {pdb.InfoGuid}");
+            output.Line($"  Age:           {pdb.InfoAge}");
+            output.Line($"  DBI version:   {pdb.DbiVersionHeader}, machine: 0x{pdb.DbiMachine:X4}");
+            output.Line($"  Symbol stream: {pdb.SymbolRecordStream}, global: {pdb.GlobalSymbolStream}, public: {pdb.PublicSymbolStream}");
+            output.Line($"  Modi substream: {pdb.ModiSubstreamSize} bytes");
+
+            IReadOnlyList<PdbModule> modules = pdb.ReadModules();
+            output.Line($"  Modules:       {modules.Count}");
+
+            bool showModules = cli.Has("modules");
+            bool showSymbols = cli.Has("symbols");
+            string? contains = cli.Get("filter");
+            int limit = cli.GetInt("limit") ?? 50;
+
+            if (showModules)
+            {
+                output.Line();
+                output.Heading("Modules");
+                foreach (PdbModule module in modules.Take(limit))
+                {
+                    output.Line($"  {module.Name}  <-  {module.ObjectFile}");
+                }
+
+                if (modules.Count > limit)
+                {
+                    output.Line($"  … {modules.Count - limit} more");
+                }
+            }
+
+            IReadOnlyList<PdbSymbol> symbols = pdb.ReadSymbols();
+            var byKind = symbols.GroupBy(s => s.KindName).OrderByDescending(g => g.Count()).ToList();
+            output.Line();
+            output.Heading($"Symbols ({symbols.Count})");
+            foreach (var group in byKind)
+            {
+                output.Line($"  {group.Key,-10} {group.Count()}");
+            }
+
+            if (cli.Has("strings"))
+            {
+                var literals = new List<string>();
+                foreach (PdbSymbol symbol in symbols)
+                {
+                    if (!MsvcStringLiteral.IsStringLiteral(symbol.Name))
+                    {
+                        continue;
+                    }
+
+                    if (MsvcStringLiteral.TryDecode(symbol.Name, out string decoded) && decoded.Length > 0
+                        && (contains is null || decoded.Contains(contains, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        literals.Add(decoded);
+                    }
+                }
+
+                output.Line();
+                output.Heading($"String literals ({literals.Count})");
+                string? literalSave = cli.Get("save");
+                if (!string.IsNullOrEmpty(literalSave))
+                {
+                    try
+                    {
+                        File.WriteAllLines(literalSave, literals);
+                        output.Success($"Wrote {literals.Count} decoded string literal(s) to {literalSave}.");
+                    }
+                    catch (Exception ex)
+                    {
+                        output.Error($"Failed to write {literalSave}: {ex.Message}");
+                        return 1;
+                    }
+                }
+                else
+                {
+                    foreach (string literal in literals.Take(limit))
+                    {
+                        output.Line($"  {Truncate(literal, 160)}");
+                    }
+
+                    if (literals.Count > limit)
+                    {
+                        output.Line($"  … {literals.Count - limit} more (use --save to dump all)");
+                    }
+                }
+
+                return 0;
+            }
+
+            IEnumerable<PdbSymbol> selected = symbols;
+            if (contains is not null)
+            {
+                selected = selected.Where(s => s.Name.Contains(contains, StringComparison.OrdinalIgnoreCase));
+            }
+
+            string? save = cli.Get("save");
+            if (!string.IsNullOrEmpty(save))
+            {
+                try
+                {
+                    using var writer = new StreamWriter(save);
+                    int written = 0;
+                    foreach (PdbSymbol symbol in selected)
+                    {
+                        writer.WriteLine(symbol.Name);
+                        written++;
+                    }
+
+                    output.Success($"Wrote {written} symbol name(s) to {save}.");
+                }
+                catch (Exception ex)
+                {
+                    output.Error($"Failed to write {save}: {ex.Message}");
+                    return 1;
+                }
+            }
+            else if (showSymbols || contains is not null)
+            {
+                output.Line();
+                output.Heading("Symbol names");
+                foreach (PdbSymbol symbol in selected.Take(limit))
+                {
+                    output.Line($"  [{symbol.KindName}] {symbol.Name}");
+                }
+            }
+
+            return 0;
+        }
+        catch (NotMsfException ex)
+        {
+            output.Error(ex.Message);
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Failed to read PDB: {ex.Message}");
+            return 1;
+        }
+    }
+
     public static int Hash(CommandLine cli, Output output)
     {
         if (cli.Positional.Count == 0)
         {
             return UsageError(output, "hash <name>");
         }
-
         foreach (string name in cli.Positional)
         {
             uint hash = Fnv.Hash(name);

@@ -48,6 +48,9 @@
 - **Конвертеры**: part-capabilities (`.pctp` ⇄ `.pctp_t`), анимационные группы (`.tlsa` ⇄
   `.tlsa_t`), походка (`.gait` ⇄ `.gait_t`), беседы (`.cnv` → `.cnv_t`, дамп), таблицы добычи
   (`.loottable` ⇄ `.loottable_t`) и «взгляда» (`.look_table` ⇄ `.look_table_t`).
+- **Реверс-инжиниринг игры** (`pdb`, `strings`) — чтение отладочных символов PDB (MSF): модули,
+  имена функций и **декодированные строковые литералы** MSVC; извлечение строк из EXE/DLL
+  (см. `docs/PDB_RESEARCH.md`).
 - **Хеши именования** — FNV-1 (как в SporeMaster 2 и SporeModder FX).
 - **Реестры имён** `reg_type`, `reg_file`, `reg_property`, `reg_simulator` — встроены в сборку.
 - **Устойчивость к ошибкам**: битые и обрезанные архивы не роняют программу, а дают диагностику.
@@ -220,6 +223,10 @@ dotnet run --project src/SporeMaster.Cli -- verify <архив.package>
 
 # Сравнить два архива (добавленные/удалённые/изменённые ресурсы)
 dotnet run --project src/SporeMaster.Cli -- diff <a.package> <b.package>
+
+# Реверс-инжиниринг: символы из PDB и строки из EXE/DLL
+dotnet run --project src/SporeMaster.Cli -- pdb <SporeApp.pdb> --strings --save literals.txt
+dotnet run --project src/SporeMaster.Cli -- strings <SporeApp.exe> --min 6 --filter Spore
 
 # Хеш имени и список известных типов
 dotnet run --project src/SporeMaster.Cli -- hash prop

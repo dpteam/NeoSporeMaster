@@ -2,6 +2,27 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.33.0] — реверс-инжиниринг: PDB и строки из EXE (2026-10-11)
+
+### Добавлено
+- **`pdb`** — разбор PDB (MSF 7.00): `SporeMaster.Core/Pdb/MsfFile.cs` (контейнер и потоки),
+  `PdbFile.cs` (инфо-поток, заголовок DBI, модули/пути сборки, записи CodeView) и
+  `MsvcStringLiteral.cs` (декодирование строковых символов `??_C@…` по алгоритму LLVM).
+  Опции: `--modules`, `--symbols`, `--strings`, `--filter`, `--limit`, `--save`.
+- **`strings`** — печатные ASCII/UTF-16 строки из произвольного бинарника
+  (`SporeMaster.Core/Binary/StringsExtractor.cs`): `--min`, `--ascii`/`--unicode`, `--filter`,
+  `--limit`, `--save`.
+- Тесты: синтетический MSF-контейнер, декодирование строковых литералов (в т.ч. отказ), строки
+  ASCII/UTF-16, проверка на реальном `SporeApp.pdb` при наличии — всего 113 тестов.
+- Документ `docs/PDB_RESEARCH.md`.
+
+### Найдено (SporeBeta190208/SporeApp.pdb)
+- **429 171 символ** (200102 `PUB32`, 71301 `LDATA32`, 4414 `GDATA32`, 4185 `UDT`, …), 2724
+  модуля/пути сборки, **33 718 декодированных строковых литералов**.
+- **Пакетная подсистема:** `EA::ResourceMan::DatabasePackedFile`, `Key`, `PFRecordBase`,
+  `PFRecordInfo`, `PFHoleTable`; `SP::CreatePackageSave`, `SP::FinalizePackageSave`,
+  `RegisterPackagesRecursively` — важно для проверки репака (идея заказчика №3).
+
 ## [3.32.0] — сравнение архивов (`diff`) (2026-10-11)
 
 ### Добавлено
