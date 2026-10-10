@@ -125,6 +125,27 @@ internal static class SelfTest
                 bool shown = window.DetailsPaneVisibleForTest();
                 report.AppendLine($"Details pane toggle: hidden={hidden}, shown again={shown}");
 
+                // Properties panel.
+                if (window.RowsForTest().Count > 0)
+                {
+                    ResourceItem first = window.RowsForTest()[0];
+                    string props = window.PropertiesTextForTest(first);
+                    bool hasKey = props.Contains(first.Key, StringComparison.Ordinal);
+                    bool hasPath = props.Contains(first.Path, StringComparison.Ordinal);
+                    window.SetPropertiesPaneForTest(true);
+                    bool visible = window.PropertiesPaneVisibleForTest();
+                    // Show the properties pane for a real row so it appears in the screenshot.
+                    if (window.VisibleRowsForTest().Count > 0)
+                    {
+                        window.ShowPropertiesForTest(window.VisibleRowsForTest()[0]);
+                        string propsShot = Path.Combine(Path.GetTempPath(), "sporemaster-gui-properties.png");
+                        window.CaptureWindowForTest(propsShot);
+                    }
+
+                    report.AppendLine($"Properties panel: hasKey={hasKey}, hasPath={hasPath}, visible={visible}");
+                    window.SetPropertiesPaneForTest(false);
+                }
+
                 // View menu: Details and Large Icons are mutually exclusive.
                 window.ApplyDetailsViewForTest();
                 (bool d1, bool l1) = window.ViewMenuStateForTest();

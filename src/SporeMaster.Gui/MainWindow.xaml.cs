@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     private bool _updatingAddress;
     private bool _syncingChecks;
     private bool _detailsPaneVisible = true;
+    private bool _propertiesPaneVisible;
 
     /// <summary>Content-search matches (set by Enter); null when the name filter is in effect.</summary>
     private List<ResourceItem>? _contentMatches;
@@ -867,6 +868,7 @@ public partial class MainWindow : Window
         {
             // Explorer-style aggregate info for a multiple selection; preview the focused item.
             UpdateDetailsPaneForSelection();
+            UpdatePropertiesPaneForSelection();
             if (ResourceList.SelectedItem is ResourceItem current)
             {
                 ShowPreview(current);
@@ -876,10 +878,12 @@ public partial class MainWindow : Window
         {
             ShowPreview(row);
             UpdateDetailsPane(row);
+            UpdatePropertiesPane(row);
         }
         else
         {
             DetailsPane.Visibility = Visibility.Collapsed;
+            PropertiesPane.Visibility = Visibility.Collapsed;
         }
     });
 
@@ -916,6 +920,59 @@ public partial class MainWindow : Window
             }
         }
     });
+
+    internal static string FormatKey(uint type, uint group, uint instance) =>
+        $"0x{type:X8}:0x{group:X8}:0x{instance:X8}";
+
+    /// <summary>Builds the property list for the properties pane.</summary>
+    private string BuildPropertiesText(ResourceItem row)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"File:       {_session?.FilePath}");
+        sb.AppendLine($"Version:    {_session?.Header?.Version}");
+        sb.AppendLine($"IndexType:  0x{_session?.IndexType:X2}");
+        sb.AppendLine($"Entries:    {_session?.Count}");
+        sb.AppendLine();
+        sb.AppendLine($"Path:       {row.Path}");
+        sb.AppendLine($"Type:       {row.TypeName} (0x{row.TypeId:X8})");
+        sb.AppendLine($"Group:      0x{row.GroupId:X8}  ({row.FolderName})");
+        sb.AppendLine($"Instance:   0x{row.InstanceId:X8}");
+        sb.AppendLine($"Key:        {row.Key}");
+        sb.AppendLine($"Index:      {row.Index}");
+        sb.AppendLine($"Compressed: {row.Compression}");
+        sb.AppendLine($"Packed:     {row.PackedSize} bytes");
+        sb.AppendLine($"Memory:     {row.MemSize} bytes");
+        return sb.ToString();
+    }
+
+    private void UpdatePropertiesPane(ResourceItem row)
+    {
+        PropertiesText.Text = BuildPropertiesText(row);
+        ApplyPropertiesPaneVisibility();
+    }
+
+    private void UpdatePropertiesPaneForSelection()
+    {
+        var rows = ResourceList.SelectedItems.Cast<ResourceItem>().ToList();
+        if (rows.Count > 0)
+        {
+            UpdatePropertiesPane(rows[0]);
+        }
+    }
+
+    private void OnTogglePropertiesPane(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        _propertiesPaneVisible = PropertiesPaneMenuItem.IsChecked;
+        ApplyPropertiesPaneVisibility();
+
+        if (_propertiesPaneVisible && ResourceList.SelectedItem is ResourceItem row)
+        {
+            UpdatePropertiesPane(row);
+        }
+    });
+
+    private void ApplyPropertiesPaneVisibility() =>
+        PropertiesPane.Visibility = _propertiesPaneVisible ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>Fills the Explorer-style details pane for the selected resource.</summary>
     private void UpdateDetailsPane(ResourceItem row)
@@ -1933,6 +1990,24 @@ public partial class MainWindow : Window
         RefreshList();
     }
 
+    /// <summary>Fills the properties pane for a row and returns the text (self-test).</summary>
+    internal string PropertiesTextForTest(ResourceItem row)
+    {
+        UpdatePropertiesPane(row);
+        return PropertiesText.Text;
+    }
+
+    internal void SetPropertiesPaneForTest(bool show)
+    {
+        PropertiesPaneMenuItem.IsChecked = show;
+        _propertiesPaneVisible = show;
+        ApplyPropertiesPaneVisibility();
+        if (show && ResourceList.SelectedItem is ResourceItem row)
+        {
+            UpdatePropertiesPane(row);
+        }
+    }
+
     /// <summary>Runs a content search for a query and returns the match count (self-test).</summary>
     internal int ContentSearchForTest(string query)
     {
@@ -2015,6 +2090,14 @@ public partial class MainWindow : Window
     }
 
     internal bool DetailsPaneVisibleForTest() => DetailsPane.Visibility == Visibility.Visible;
+
+    internal bool PropertiesPaneVisibleForTest() => PropertiesPane.Visibility == Visibility.Visible;
+
+    internal void ShowPropertiesForTest(ResourceItem row)
+    {
+        ResourceList.SelectedItem = row;
+        UpdatePropertiesPane(row);
+    }
 
     internal void SetSkeletonForTest(bool show)
     {

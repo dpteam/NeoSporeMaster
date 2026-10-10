@@ -23,6 +23,9 @@ public sealed class PackageSession : IDisposable
 
     public int Count => _package.Entries.Count;
 
+    /// <summary>The DBPF index type byte (see the DBPF notes).</summary>
+    public int IndexType => _package.IndexType;
+
     public string FilePath { get; private set; } = string.Empty;
 
     public DiagnosticSink Diagnostics => _package.Diagnostics;

@@ -29,6 +29,7 @@
                 <MenuItem x:Name="LargeIconsMenuItem" Header="{loc:Loc gui.menu.largeIcons}" Click="OnViewLargeIcons" IsCheckable="True" />
                 <MenuItem x:Name="DetailsPaneMenuItem" Header="{loc:Loc gui.menu.detailsPane}" Click="OnToggleDetailsPane" IsCheckable="True" IsChecked="True" />
                 <MenuItem x:Name="ShowSkeletonMenuItem" Header="{loc:Loc gui.menu.showSkeleton}" Click="OnToggleSkeleton" IsCheckable="True" />
+                <MenuItem x:Name="PropertiesPaneMenuItem" Header="{loc:Loc gui.menu.propertiesPane}" Click="OnTogglePropertiesPane" IsCheckable="True" />
                 <Separator />
                 <MenuItem Header="{loc:Loc gui.menu.language}">
                     <MenuItem x:Name="LanguageEnMenuItem" Header="English" IsCheckable="True" IsChecked="True" Click="OnLanguageEn" />
@@ -197,6 +198,17 @@
             <DockPanel Grid.Column="4">
                 <TextBlock x:Name="PreviewHeader" DockPanel.Dock="Top" Padding="6,4"
                            FontWeight="SemiBold" Text="{loc:Loc gui.preview}" Background="#F3F3F3" TextTrimming="CharacterEllipsis" />
+                <Border x:Name="PropertiesPane" DockPanel.Dock="Bottom" Visibility="Collapsed"
+                        Background="#F7F7F7" BorderBrush="#DDD" BorderThickness="0,1,0,0" Height="150">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="{loc:Loc gui.details.propsTitle}" Padding="6,3"
+                                   FontWeight="SemiBold" Background="#F3F3F3" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="PropertiesText" FontFamily="Consolas" FontSize="12"
+                                       Margin="6,4" TextWrapping="Wrap" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
                 <Grid>
                     <TextBox x:Name="PreviewText" IsReadOnly="True" AcceptsReturn="True"
                              FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
