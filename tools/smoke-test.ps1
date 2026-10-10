@@ -16,10 +16,14 @@
 #   powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 -NoLaunch   # repack + restore only
 #   powershell -ExecutionPolicy Bypass -File tools\smoke-test.ps1 -Auto -WaitSeconds 60   # unattended
 #
+# Launch arguments: "-w" (windowed) and "-devDirs" (portable: create UserData next to the game and
+# use the game's own Data folders). Override with -LaunchArgs if needed.
+#
 param(
     [string]$GameFolder = "refs\SporeGames\SporeRetail",
     [string]$Package = "Spore_Game.package",
     [string]$Exe = "SporeApp.exe",
+    [string]$LaunchArgs = "-w -devDirs",
     [switch]$NoLaunch,
     [switch]$Big,
     [switch]$NoCompress,
@@ -99,10 +103,11 @@ try {
         Write-Host "Launch the game manually to test, then re-run without -NoLaunch." -ForegroundColor Yellow
     }
     else {
-        # 4. launch the game
-        Write-Step "Launching $Exe (windowed). Reach the main menu / play a little, then come back here."
+        # 4. launch the game (windowed, portable: -w -devDirs)
+        Write-Step "Launching $Exe $LaunchArgs (reach the main menu / play a little, then come back here)."
         $gameExe = Join-Path $gameDir $Exe
-        $proc = Start-Process -FilePath $gameExe -WorkingDirectory $gameDir -ArgumentList "-w" -PassThru
+        $argList = $LaunchArgs.Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
+        $proc = Start-Process -FilePath $gameExe -WorkingDirectory $gameDir -ArgumentList $argList -PassThru
 
         if ($Auto) {
             Write-Step "Auto mode: waiting $WaitSeconds s for the game to start and settle."
