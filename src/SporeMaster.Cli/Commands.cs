@@ -777,6 +777,21 @@ public static class Commands
             output.Table(new[] { "#", "Bones", "Roots", "Id" }, skeletonRows);
         }
 
+        IReadOnlyList<Core.RenderWare4.Rw4SkinLinkage> skins = rw4.ReadSkins();
+        if (skins.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Skins ({skins.Count})");
+            var skinRows = skins.Select((s, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                s.Skeleton?.Bones.Count.ToString(CultureInfo.InvariantCulture) ?? "-",
+                s.MatrixBuffer?.Matrices.Count.ToString(CultureInfo.InvariantCulture) ?? "-",
+                s.AnimationSkin?.Poses.Count.ToString(CultureInfo.InvariantCulture) ?? "-",
+            }).ToList();
+            output.Table(new[] { "#", "Bones", "Matrices", "Poses" }, skinRows);
+        }
+
         // --export <file.obj>: dump decoded geometry.
         string? exportPath = cli.Get("export");
         if (exportPath is not null)

@@ -89,6 +89,8 @@ little-endian; флаги и stride сохраняются для байт-то�
 - `Rw4Mesh` / `Rw4Geometry` — меш и декодирование вершин/индексов (`Rw4VertexDescription`,
   `Rw4VertexBuffer`, `Rw4IndexBuffer`, `Rw4VertexElement`).
 - `Rw4Skeleton` — скелет: имена костей (хеши), флаги и иерархия (родители).
+- `Rw4Skin` — скин-секции: `Rw4SkinsInK` (связки), `Rw4SkinMatrixBuffer` (матрицы 3x4),
+  `Rw4AnimationSkin` (bind-позы костей), `Rw4Matrix3x4`.
 - `Rw4ObjExporter` — экспорт геометрии в OBJ.
   Формат описан в `docs/RW4_FORMAT.md`.
 

@@ -273,6 +273,59 @@ public sealed class RenderWare4File : IDisposable
     }
 
     /// <summary>
+    /// Reads the skin linkage sections of this resource: each entry pairs a "skins in K" section
+    /// with its skin matrix buffer, skeleton and animation skin (resolved by section index).
+    /// </summary>
+    public IReadOnlyList<Rw4SkinLinkage> ReadSkins()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4SkinLinkage>();
+        }
+
+        var links = new List<Rw4SkinLinkage>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.SkinInK || section.Size < 20)
+            {
+                continue;
+            }
+
+            try
+            {
+                Rw4SkinsInK link = Rw4SkinsInK.Read(_stream, section.DataOffset);
+                var linkage = new Rw4SkinLinkage { Link = link };
+
+                Rw4SectionInfo? matrixSection = GetSection(link.SkinMatrixBufferIndex);
+                if (matrixSection is { TypeCode: (int)Rw4SectionType.SkinMatrixBuffer })
+                {
+                    linkage.MatrixBuffer = Rw4SkinMatrixBuffer.Read(_stream, matrixSection.DataOffset, _length);
+                }
+
+                Rw4SectionInfo? skeletonSection = GetSection(link.SkeletonIndex);
+                if (skeletonSection is { TypeCode: (int)Rw4SectionType.Skeleton })
+                {
+                    linkage.Skeleton = Rw4Skeleton.Read(_stream, skeletonSection.DataOffset, _length);
+                }
+
+                Rw4SectionInfo? animSection = GetSection(link.AnimationSkinIndex);
+                if (animSection is { TypeCode: (int)Rw4SectionType.AnimationSkin })
+                {
+                    linkage.AnimationSkin = Rw4AnimationSkin.Read(_stream, animSection.DataOffset, _length);
+                }
+
+                links.Add(linkage);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 skin section at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return links;
+    }
+
+    /// <summary>
     /// Reads the triangle geometry for every mesh in this resource. Best-effort: meshes whose
     /// buffers cannot be resolved or decoded are reported through <see cref="Diagnostics"/>.
     /// </summary>

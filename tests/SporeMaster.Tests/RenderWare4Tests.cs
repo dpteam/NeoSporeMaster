@@ -326,6 +326,66 @@ public static class RenderWare4Tests
         }
     }
 
+    [SporeTest("RW4 skins link skeletons, matrix buffers and bind poses")]
+    public static void Skins()
+    {
+        int skins = 0;
+
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                foreach (Rw4SkinLinkage skin in rw4.ReadSkins())
+                {
+                    if (skin.Skeleton is not null)
+                    {
+                        Assert.True(skin.Skeleton.Bones.Count > 0, "a linked skeleton should have bones");
+                    }
+
+                    if (skin.MatrixBuffer is not null)
+                    {
+                        foreach (Rw4Matrix3x4 matrix in skin.MatrixBuffer.Matrices)
+                        {
+                            Assert.Equal(12, matrix.Values.Length);
+                        }
+                    }
+
+                    if (skin.AnimationSkin is not null && skin.Skeleton is not null)
+                    {
+                        // The number of bind poses usually matches (or is close to) the bone count.
+                        Assert.True(
+                            skin.AnimationSkin.Poses.Count <= skin.Skeleton.Bones.Count + 8,
+                            $"pose count {skin.AnimationSkin.Poses.Count} vs bones {skin.Skeleton.Bones.Count}");
+                    }
+
+                    skins++;
+                    if (skins >= 40)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (skins == 0)
+        {
+            throw new AssertionException("No RW4 skins found.");
+        }
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {
