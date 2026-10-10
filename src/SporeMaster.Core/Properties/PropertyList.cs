@@ -41,7 +41,8 @@ public sealed class PropertyList
     public int StripAutoLocaleReferences(uint autoTableId) =>
         StripAutoLocaleReferences(id => id == autoTableId);
 
-    private int StripAutoLocaleReferences(Func<uint, bool> isAutoLocale)
+    /// <summary>Clears references whose table id satisfies <paramref name="isAutoLocale"/>.</summary>
+    public int StripAutoLocaleReferences(Func<uint, bool> isAutoLocale)
     {
         int stripped = 0;
         foreach (Property property in _properties.Values)

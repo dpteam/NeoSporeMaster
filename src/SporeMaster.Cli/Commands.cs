@@ -10,6 +10,7 @@ using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
 using SporeMaster.Core.Properties;
 using SporeMaster.Core.RenderWare4;
+using SporeMaster.Core.Search;
 using SporeMaster.Core.Textures;
 
 namespace SporeMaster.Cli;
@@ -109,15 +110,115 @@ public static class Commands
                 }
             }
 
-            output.Table(
-                new[] { "#", "Type", "Group", "Instance", "C", "Packed", "Mem", "Path" },
-                rows);
-            output.Line();
-            output.Line($"{rows.Count} resource(s) shown.");
-            PrintDiagnostics(package, output);
+            string format = cli.Get("format") ?? string.Empty;
+            if (string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
+            {
+                string csvPath = cli.Get("out") ?? "resources.csv";
+                WriteCsv(csvPath, package!, names);
+                output.Success($"Wrote {package!.Entries.Count} row(s) to {csvPath}");
+            }
+            else if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                string jsonPath = cli.Get("out") ?? "resources.json";
+                File.WriteAllText(jsonPath, BuildJson(package!, names));
+                output.Success($"Wrote {package!.Entries.Count} record(s) to {jsonPath}");
+            }
+            else
+            {
+                output.Table(
+                    new[] { "#", "Type", "Group", "Instance", "C", "Packed", "Mem", "Path" },
+                    rows);
+                output.Line();
+                output.Line($"{rows.Count} resource(s) shown.");
+            }
+
+            PrintDiagnostics(package!, output);
         }
 
         return 0;
+    }
+
+    private static void WriteCsv(string path, DatabasePackedFile package, NameRegistrySet names)
+    {
+        using var writer = new StreamWriter(path, false, new UTF8Encoding(false));
+        writer.WriteLine("index,type,group,instance,compressed,packedSize,memSize,path");
+        foreach (DbpfEntry entry in package.Entries)
+        {
+            string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+            writer.WriteLine(string.Join(',',
+                entry.Index.ToString(CultureInfo.InvariantCulture),
+                $"0x{entry.Key.TypeId:X8}",
+                $"0x{entry.Key.GroupId:X8}",
+                $"0x{entry.Key.InstanceId:X8}",
+                entry.IsCompressed ? "1" : "0",
+                entry.PackedSize.ToString(CultureInfo.InvariantCulture),
+                entry.MemSize.ToString(CultureInfo.InvariantCulture),
+                CsvEscape(resolved)));
+        }
+    }
+
+    private static string CsvEscape(string value) =>
+        value.Contains(',') || value.Contains('"')
+            ? "\"" + value.Replace("\"", "\"\"") + "\""
+            : value;
+
+    private static string BuildJson(DatabasePackedFile package, NameRegistrySet names)
+    {
+        var builder = new StringBuilder();
+        builder.Append("[\n");
+        for (int i = 0; i < package.Entries.Count; i++)
+        {
+            DbpfEntry entry = package.Entries[i];
+            string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+            builder.Append("  {")
+                .Append("\"index\":").Append(entry.Index).Append(',')
+                .Append("\"type\":\"").Append($"0x{entry.Key.TypeId:X8}").Append("\",")
+                .Append("\"group\":\"").Append($"0x{entry.Key.GroupId:X8}").Append("\",")
+                .Append("\"instance\":\"").Append($"0x{entry.Key.InstanceId:X8}").Append("\",")
+                .Append("\"compressed\":").Append(entry.IsCompressed ? "true" : "false").Append(',')
+                .Append("\"packedSize\":").Append(entry.PackedSize).Append(',')
+                .Append("\"memSize\":").Append(entry.MemSize).Append(',')
+                .Append("\"path\":\"").Append(JsonEscape(resolved)).Append('"')
+                .Append('}');
+            if (i < package.Entries.Count - 1)
+            {
+                builder.Append(',');
+            }
+
+            builder.Append('\n');
+        }
+
+        builder.Append("]\n");
+        return builder.ToString();
+    }
+
+    private static string JsonEscape(string value)
+    {
+        var builder = new StringBuilder(value.Length + 8);
+        foreach (char c in value)
+        {
+            switch (c)
+            {
+                case '"': builder.Append("\\\""); break;
+                case '\\': builder.Append("\\\\"); break;
+                case '\n': builder.Append("\\n"); break;
+                case '\r': builder.Append("\\r"); break;
+                case '\t': builder.Append("\\t"); break;
+                default:
+                    if (c < 0x20)
+                    {
+                        builder.Append("\\u").Append(((int)c).ToString("x4"));
+                    }
+                    else
+                    {
+                        builder.Append(c);
+                    }
+
+                    break;
+            }
+        }
+
+        return builder.ToString();
     }
 
     public static int Extract(CommandLine cli, Output output)
@@ -170,7 +271,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 2)
         {
-            return UsageError(output, "unpack <package> <output-dir> [--raw]");
+            return UsageError(output, "unpack <package> <output-dir> [--raw] [--clean-autolocales]");
         }
 
         if (!TryOpen(cli, output, out DatabasePackedFile? package))
@@ -180,15 +281,52 @@ public static class Commands
 
         string outputDir = Path.GetFullPath(cli.Positional[1]);
         bool raw = cli.Has("raw");
+        bool cleanAutoLocales = cli.Has("clean-autolocales");
         NameRegistrySet names = OpenNames(cli);
         Directory.CreateDirectory(outputDir);
 
+        // Identify auto-generated locales (by content) so they can be rebuilt on packing.
+        var autoLocaleIds = new HashSet<uint>();
+        if (!raw)
+        {
+            foreach (DbpfEntry entry in package!.Entries)
+            {
+                if (entry.Key.TypeId != ResourceTypeIds.Locale)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string text = Encoding.UTF8.GetString(package.ReadEntry(entry));
+                    if (AutoLocale.IsAutoLocaleName(names.GetFileName(entry.Key.InstanceId)) ||
+                        AutoLocale.IsAutoLocaleContent(text))
+                    {
+                        autoLocaleIds.Add(entry.Key.InstanceId);
+                    }
+                }
+                catch
+                {
+                    // ignore unreadable locales
+                }
+            }
+        }
+
         int written = 0;
+        int skipped = 0;
         using (package)
         {
             foreach (DbpfEntry entry in package!.Entries)
             {
                 byte[] data = package.ReadEntry(entry);
+
+                if (cleanAutoLocales &&
+                    entry.Key.TypeId == ResourceTypeIds.Locale &&
+                    autoLocaleIds.Contains(entry.Key.InstanceId))
+                {
+                    skipped++;
+                    continue;
+                }
 
                 if (!raw && ResourceTypeIds.IsProperty(entry.Key.TypeId))
                 {
@@ -198,6 +336,11 @@ public static class Commands
                     WriteDirectory(propPath);
 
                     PropertyList list = PropertyList.Read(new MemoryStream(data));
+                    if (cleanAutoLocales && autoLocaleIds.Count > 0)
+                    {
+                        list.StripAutoLocaleReferences(id => autoLocaleIds.Contains(id));
+                    }
+
                     using FileStream xmlOut = File.Create(propPath);
                     list.WriteXml(xmlOut, names);
                 }
@@ -255,6 +398,11 @@ public static class Commands
             }
 
             output.Success(Localizer.Default.Get("result.unpacked", written, outputDir));
+            if (cleanAutoLocales && skipped > 0)
+            {
+                output.Line($"Cleaned {skipped} auto-generated locale(s).");
+            }
+
             PrintDiagnostics(package, output);
         }
 
@@ -827,6 +975,40 @@ public static class Commands
         }
 
         return anyFound > 0 ? 0 : 1;
+    }
+
+    /// <summary>Searches text files: <c>search &lt;dir&gt; &lt;query&gt; [--ext ...] [--limit N]</c>.</summary>
+    public static int Search(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "search <directory> <query> [--ext .prop.xml,.locale] [--limit N]");
+        }
+
+        string directory = cli.Positional[0];
+        string query = cli.Positional[1];
+        if (!Directory.Exists(directory))
+        {
+            output.Error($"Directory not found: {directory}");
+            return 1;
+        }
+
+        string[]? extensions = cli.Get("ext")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        int limit = cli.GetInt("limit") ?? 500;
+
+        SearchIndex index = SearchIndex.BuildFromDirectory(directory, extensions);
+        IReadOnlyList<SearchMatch> results = index.Search(query, limit);
+
+        output.Line($"Indexed {index.FileCount} file(s)" + (index.Skipped.Count > 0 ? $" ({index.Skipped.Count} skipped)" : string.Empty) + ".");
+        output.Table(new[] { "File", "Line", "Text" }, results.Select(m => new[]
+        {
+            Path.GetRelativePath(directory, m.Path),
+            m.LineNumber.ToString(CultureInfo.InvariantCulture),
+            Truncate(m.Line.Trim(), 100),
+        }).ToList());
+        output.Line();
+        output.Line($"{results.Count} match(es).");
+        return results.Count > 0 ? 0 : 1;
     }
 
     public static int Verify(CommandLine cli, Output output)
