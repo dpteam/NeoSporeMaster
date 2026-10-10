@@ -1546,7 +1546,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 2)
         {
-            return UsageError(output, "unpackdata <package> <output-dir> [--keymap KeyMap.txt] [--group A,B] [--type T] [--name S]");
+            return UsageError(output, "unpackdata <package> <output-dir> [--keymap KeyMap.txt] [--ddflist DDFList.txt] [--group A,B] [--type T] [--name S]");
         }
 
         if (!TryOpen(cli, output, out DatabasePackedFile? package))
@@ -1572,10 +1572,30 @@ public static class Commands
             output.Line($"Loaded key map with {keyMap.Entries.Count} entr(ies).");
         }
 
+        DdfList? ddfList = null;
+        string? ddfPath = cli.Get("ddflist");
+        if (!string.IsNullOrEmpty(ddfPath))
+        {
+            if (!File.Exists(ddfPath))
+            {
+                output.Error(Localizer.Default.Get("common.fileNotFound", ddfPath));
+                return 1;
+            }
+
+            ddfList = DdfList.ParseFile(ddfPath);
+            output.Line($"Loaded DDFList with {ddfList.Folders.Count} folder(s) ({ddfList.IncludeCount} include(s)).");
+
+            if (keyMap is null)
+            {
+                output.Warn("--ddflist needs --keymap: without real paths every resource is skipped.");
+            }
+        }
+
         Directory.CreateDirectory(outputDir);
         int keyed = 0;
         int fallback = 0;
         int written = 0;
+        int skippedByDdf = 0;
 
         using (package)
         {
@@ -1585,6 +1605,12 @@ public static class Commands
                 string relative = realPath ?? FallbackPath(names, keyMap, entry);
                 if (!selector.IsEmpty && !selector.Matches(entry.Key.TypeId, entry.Key.GroupId, relative))
                 {
+                    continue;
+                }
+
+                if (ddfList is not null && (realPath is null || !ddfList.Contains(realPath)))
+                {
+                    skippedByDdf++;
                     continue;
                 }
 
@@ -1615,6 +1641,11 @@ public static class Commands
             output.Success($"Unpacked {written} resource(s) to {outputDir}.");
             output.Line($"  named from key map: {keyed}");
             output.Line($"  fallback (group/name.ext): {fallback}");
+            if (ddfList is not null)
+            {
+                output.Line($"  skipped (not in DDFList / no real path): {skippedByDdf}");
+            }
+
             PrintDiagnostics(package, output);
         }
 

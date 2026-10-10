@@ -204,6 +204,8 @@ dotnet run --project src/SporeMaster.Cli -- keymap <KeyMap.txt> names.txt --type
 
 # Экспериментальная полная распаковка в игровой вид (реальные пути из карты ключей)
 dotnet run --project src/SporeMaster.Cli -- unpackdata <архив.package> <папка> --keymap <KeyMap.txt>
+# ...только каталоги выбранной сборки (DDFList) — с картой ключей
+dotnet run --project src/SporeMaster.Cli -- unpackdata <архив.package> <папка> --keymap <KeyMap.txt> --ddflist <Spore_DDFList.txt>
 
 # Экспортировать список ресурсов и найти текст
 dotnet run --project src/SporeMaster.Cli -- list <архив.package> --format csv --out resources.csv

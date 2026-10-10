@@ -45,8 +45,20 @@ dotnet run --project src/SporeMaster.Cli -- unpackdata <package> <output-dir> --
 
 В распакованном `Data` каталоги, входящие в сборку, описаны в файлах `*_DDFList.txt`
 (`#include` других списков). Они определяют, что видит игра/редактор в «unpacked» режиме и что
-попадает в сборку. В будущем это используется для выборочной/полной распаковки по секциям.
-См. `refs/SporeUnpackedData/SporeHeroWiiPCLeftOvers/Data/README.txt`.
+попадает в сборку. См. `refs/SporeUnpackedData/SporeHeroWiiPCLeftOvers/Data/README.txt`.
+
+**Реализовано:** `SporeMaster.Core/Names/DdfList.cs` разбирает список (строки-каталоги, `//`
+комментарии, `#include` относительно включающего файла) и умеет проверять, лежит ли реальный путь
+ресурса внутри перечисленных каталогов. В `unpackdata` опция `--ddflist <файл>` (вместе с
+`--keymap`) распаковывает **только** ресурсы из перечисленных папок сборки:
+
+```powershell
+dotnet run --project src/SporeMaster.Cli -- unpackdata <package> <out> \
+    --keymap KeyMap.txt --ddflist Spore_DDFList.txt
+```
+
+**Проверено:** `Spore_DDFList.txt` даёт 733 каталога (10 `#include`); `Spore_Game.package`
+сокращается до ресурсов сборки (6793 с реальными путями из карты ключей, остальные пропущены).
 
 ## 4.1. «Тип ресурса → расширение/папка» (наблюдение)
 
