@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="SporeMaster 3" Height="760" Width="1240"
         Icon="SporeMaster3.ico"
+        AllowDrop="True" Drop="OnFileDrop" DragOver="OnDragOver"
         WindowStartupLocation="CenterScreen">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
@@ -27,6 +28,10 @@
                 <MenuItem Header="_Extract Selected..." Click="OnExtractSelected" />
                 <MenuItem Header="Extract _All..." Click="OnExtractAll" />
                 <MenuItem Header="Extract _Folder..." Click="OnExtractFolder" />
+                <MenuItem Header="Extract Chec_ked Folders..." Click="OnExtractChecked" />
+                <Separator />
+                <MenuItem Header="Check all folders" Click="OnCheckAllFolders" />
+                <MenuItem Header="Uncheck all folders" Click="OnUncheckAllFolders" />
                 <Separator />
                 <MenuItem Header="Load recovered _names.txt..." Click="OnLoadNames" />
                 <MenuItem Header="Back to single list (flat view)" Click="OnFlatViewToggle" IsCheckable="True" />
@@ -44,6 +49,7 @@
                 <Separator />
                 <Button Content="Open" Click="OnOpenPackage" />
                 <Button Content="Extract" Click="OnExtractSelected" />
+                <Button Content="Extract Checked" Click="OnExtractChecked" />
             </ToolBar>
         </ToolBarTray>
 
@@ -105,6 +111,8 @@
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center"
+                                      Margin="0,0,4,0" Click="OnFolderCheckChanged" />
                             <TextBlock Text="📁 " />
                             <TextBlock Text="{Binding Name}" />
                             <TextBlock Text="{Binding CountText}" Foreground="#888" Margin="6,0,0,0" />

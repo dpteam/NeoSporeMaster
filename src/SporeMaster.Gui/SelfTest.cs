@@ -47,6 +47,16 @@ internal static class SelfTest
 
                 report.AppendLine($"Folder navigation: {foldersToVisit} folder(s) selected");
 
+                // Checked folders (multi-select for extraction).
+                if (window.FolderCount > 0)
+                {
+                    window.CheckFolderForTest(0, true);
+                    int checkedResources = window.CheckedResourceCountForTest();
+                    window.CheckFolderForTest(0, false);
+                    int afterUncheck = window.CheckedFolderCountForTest();
+                    report.AppendLine($"Checked folder 0: {checkedResources} resource(s); after uncheck: {afterUncheck} folder(s)");
+                }
+
                 // Exercise filtering.
                 window.SelectFolderForTest(0);
                 int before = window.VisibleRowsForTest().Count;

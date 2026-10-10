@@ -585,12 +585,119 @@ public partial class MainWindow : Window
             "Extract all", MessageBoxButton.OK, MessageBoxImage.Information);
     });
 
+    // ---- checked folders (multi-select) ----
+
+    /// <summary>All folders currently ticked in the tree.</summary>
+    private List<FolderNode> CheckedFolders() =>
+        _root is null ? new List<FolderNode>() : _root.Children.Where(c => c.IsChecked).ToList();
+
+    /// <summary>All resources inside the checked folders.</summary>
+    private List<ResourceItem> CheckedItems()
+    {
+        var items = new List<ResourceItem>();
+        foreach (FolderNode folder in CheckedFolders())
+        {
+            items.AddRange(folder.Items);
+        }
+
+        return items;
+    }
+
+    private void OnFolderCheckChanged(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        int checkedCount = CheckedFolders().Count;
+        StatusText.Text = checkedCount > 0
+            ? $"{checkedCount} folder(s) checked ({CheckedItems().Count} resource(s)) — use Tools → Extract Checked Folders."
+            : "No folders checked.";
+    });
+
+    private void OnCheckAllFolders(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_root is null)
+        {
+            return;
+        }
+
+        foreach (FolderNode folder in _root.Children)
+        {
+            folder.IsChecked = true;
+        }
+
+        StatusText.Text = $"{CheckedFolders().Count} folder(s) checked.";
+    });
+
+    private void OnUncheckAllFolders(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_root is null)
+        {
+            return;
+        }
+
+        foreach (FolderNode folder in _root.Children)
+        {
+            folder.IsChecked = false;
+        }
+
+        StatusText.Text = "No folders checked.";
+    });
+
+    private void OnExtractChecked(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_session is null)
+        {
+            MessageBox.Show(this, "Open a package first.", "No package");
+            return;
+        }
+
+        List<ResourceItem> items = CheckedItems();
+        if (items.Count == 0)
+        {
+            MessageBox.Show(this, "Tick one or more folders in the tree first.", "Nothing checked");
+            return;
+        }
+
+        var dialog = new OpenFolderDialog { Title = "Choose an output folder" };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        (int written, int failed) = ExtractItems(items, dialog.FolderName);
+        StatusText.Text = $"Extracted {written} resource(s) to {dialog.FolderName}" + (failed > 0 ? $" ({failed} failed)" : string.Empty);
+        MessageBox.Show(this, $"Extracted {written} resource(s) from {CheckedFolders().Count} folder(s)." + (failed > 0 ? $"\n{failed} failed (see status bar)." : string.Empty),
+            "Extract checked folders", MessageBoxButton.OK, MessageBoxImage.Information);
+    });
+
+    // ---- drag & drop ----
+
+    private void OnDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnFileDrop(object sender, DragEventArgs e) => Guarded(() =>
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] files)
+        {
+            return;
+        }
+
+        string? package = files.FirstOrDefault(f => f.EndsWith(".package", StringComparison.OrdinalIgnoreCase));
+        if (package is not null)
+        {
+            OpenPackage(package);
+        }
+        else if (files.Length > 0)
+        {
+            StatusText.Text = "Drop a .package file to open it.";
+        }
+    });
+
     private (int Written, int Failed) ExtractItems(IEnumerable<ResourceItem> items, string outputDir)
     {
         int written = 0;
-        int failed = 0;
-
-        foreach (ResourceItem row in items)
+        int failed = 0;        foreach (ResourceItem row in items)
         {
             try
             {
@@ -772,6 +879,18 @@ public partial class MainWindow : Window
         FilterBox.Text = filter;
         RefreshList();
     }
+
+    internal void CheckFolderForTest(int index, bool isChecked)
+    {
+        if (_root is not null && index >= 0 && index < _root.Children.Count)
+        {
+            _root.Children[index].IsChecked = isChecked;
+        }
+    }
+
+    internal int CheckedResourceCountForTest() => CheckedItems().Count;
+
+    internal int CheckedFolderCountForTest() => CheckedFolders().Count;
 
     internal ResourcePreview PreviewForTest(ResourceItem row)
     {
