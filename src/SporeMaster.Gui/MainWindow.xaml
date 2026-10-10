@@ -113,6 +113,17 @@
                       SelectedItemChanged="OnFolderSelected"
                       VirtualizingStackPanel.IsVirtualizing="True"
                       VirtualizingStackPanel.VirtualizationMode="Recycling">
+                <TreeView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Open" Click="OnFolderMenuOpen" />
+                        <Separator />
+                        <MenuItem Header="Check this folder" Click="OnFolderMenuCheck" />
+                        <MenuItem Header="Uncheck this folder" Click="OnFolderMenuUncheck" />
+                        <Separator />
+                        <MenuItem Header="Extract this folder..." Click="OnExtractFolder" />
+                        <MenuItem Header="Copy folder name" Click="OnFolderMenuCopyName" />
+                    </ContextMenu>
+                </TreeView.ContextMenu>
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">

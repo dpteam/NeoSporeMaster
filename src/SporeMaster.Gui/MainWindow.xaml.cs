@@ -776,6 +776,48 @@ public partial class MainWindow : Window
         SetAllFoldersChecked(false);
     });
 
+    // ---- folder tree context menu ----
+
+    private FolderNode? SelectedFolderNode() => FolderTree.SelectedItem as FolderNode;
+
+    private void OnFolderMenuOpen(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (SelectedFolderNode() is { } node)
+        {
+            SelectNode(node);
+        }
+    });
+
+    private void OnFolderMenuCheck(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (SelectedFolderNode() is { IsRoot: false } node)
+        {
+            node.IsChecked = true;
+            UpdateRootCheckState();
+            UpdateCheckStatus();
+        }
+    });
+
+    private void OnFolderMenuUncheck(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (SelectedFolderNode() is { IsRoot: false } node)
+        {
+            node.IsChecked = false;
+            UpdateRootCheckState();
+            UpdateCheckStatus();
+        }
+    });
+
+    private void OnFolderMenuCopyName(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (SelectedFolderNode() is { } node)
+        {
+            string name = node.IsRoot && _session is not null ? Path.GetFileName(_session.FilePath) : node.Name;
+            Clipboard.SetText(name);
+            StatusText.Text = $"Copied folder name: {name}";
+        }
+    });
+
     private void SetAllFoldersChecked(bool value)
     {
         if (_root is null)
