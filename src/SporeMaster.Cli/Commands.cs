@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using SporeMaster.Core.Bitmaps;
 using SporeMaster.Core.ArgScript;
+using SporeMaster.Core.Anim;
 using SporeMaster.Core.Binary;
 using SporeMaster.Core.Cell;
 using SporeMaster.Core.Cnv;
@@ -1957,6 +1958,76 @@ public static class Commands
         catch (Exception ex)
         {
             output.Error($"Failed to read PDB: {ex.Message}");
+            return 1;
+        }
+    }
+
+    /// <summary>Inspects a Spore animation: <c>anim &lt;file.anim&gt;</c>.</summary>
+    public static int Anim(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count == 0)
+        {
+            return UsageError(output, "anim <file.anim> [--channels] [--limit N]");
+        }
+
+        string path = cli.Positional[0];
+        if (!File.Exists(path))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", path));
+            return 1;
+        }
+
+        try
+        {
+            SpAnimation anim = SpAnimation.Open(path);
+            output.Heading($"Animation: {Path.GetFileName(path)}");
+            output.Line($"  Version:   {anim.Version}");
+            output.Line($"  File size: {anim.FileSize}");
+            output.Line($"  Id:        0x{anim.Id:X8}");
+            output.Line($"  Length:    {anim.Length.ToString("0.###", CultureInfo.InvariantCulture)} s");
+            output.Line($"  Channels:  {anim.Channels.Count}");
+            output.Line($"  Events:    {anim.Events.Count}");
+
+            if (anim.Events.Count > 0)
+            {
+                string names = string.Join(", ", anim.Events.Where(e => e.Length > 0).Take(10));
+                if (names.Length > 0)
+                {
+                    output.Line($"    {names}");
+                }
+            }
+
+            if (cli.Has("channels"))
+            {
+                int limit = cli.GetInt("limit") ?? 100;
+                output.Line();
+                output.Heading("Channels");
+                var rows = anim.Channels.Take(limit).Select((c, i) => new[]
+                {
+                    i.ToString(CultureInfo.InvariantCulture),
+                    c.Name,
+                    c.KeyframeCount.ToString(CultureInfo.InvariantCulture),
+                    c.ComponentCount.ToString(CultureInfo.InvariantCulture),
+                    $"0x{c.BindFlags:X}",
+                }).ToList();
+                output.Table(new[] { "#", "Name", "Keys", "Comps", "Bind" }, rows);
+            }
+
+            foreach (var diagnostic in anim.Diagnostics.Items)
+            {
+                output.Warn(diagnostic.Message);
+            }
+
+            return 0;
+        }
+        catch (NotAnimationException ex)
+        {
+            output.Error(ex.Message);
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Failed to read animation: {ex.Message}");
             return 1;
         }
     }

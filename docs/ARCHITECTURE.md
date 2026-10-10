@@ -140,6 +140,10 @@ little-endian; флаги и stride сохраняются для байт-то�
 - `PctpUnit` — файл part-capabilities (`.pctp`): бинарное чтение/запись и текст ArgScript
   (`.pctp_t`). Формат описан в `docs/PCTP_FORMAT.md`.
 
+### `Anim/*`
+- `SpAnimation` — анимация Spore (`.anim`, тип `0xEE17C6AD`): чтение заголовка, событий (имена) и
+  каналов (имя кости, число кадров/компонент). Формат описан в `docs/ANIM_FORMAT.md`.
+
 ### `Tlsa/*`
 - `TlsaUnit` — таблицы анимационных групп (`.tlsa`): бинарное чтение/запись (байт-точно) и
   текст ArgScript (`.tlsa_t`). Формат описан в `docs/TLSA_FORMAT.md`.

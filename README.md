@@ -48,6 +48,8 @@
 - **Конвертеры**: part-capabilities (`.pctp` ⇄ `.pctp_t`), анимационные группы (`.tlsa` ⇄
   `.tlsa_t`), походка (`.gait` ⇄ `.gait_t`), беседы (`.cnv` → `.cnv_t`, дамп), таблицы добычи
   (`.loottable` ⇄ `.loottable_t`) и «взгляда» (`.look_table` ⇄ `.look_table_t`).
+- **Анимации `.anim`** (`anim`) — разбор заголовка, событий и каналов (имена костей, число
+  кадров), см. `docs/ANIM_FORMAT.md`.
 - **Реверс-инжиниринг игры** (`pdb`, `strings`) — чтение отладочных символов PDB (MSF): модули,
   имена функций и **декодированные строковые литералы** MSVC; извлечение строк из EXE/DLL
   (см. `docs/PDB_RESEARCH.md`).
@@ -224,6 +226,9 @@ dotnet run --project src/SporeMaster.Cli -- verify <архив.package>
 
 # Сравнить два архива (добавленные/удалённые/изменённые ресурсы)
 dotnet run --project src/SporeMaster.Cli -- diff <a.package> <b.package>
+
+# Разобрать анимацию (.anim): каналы, события, длительность
+dotnet run --project src/SporeMaster.Cli -- anim <файл.anim> --channels
 
 # Реверс-инжиниринг: символы из PDB и строки из EXE/DLL
 dotnet run --project src/SporeMaster.Cli -- pdb <SporeApp.pdb> --strings --save literals.txt

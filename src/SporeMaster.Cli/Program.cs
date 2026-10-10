@@ -76,6 +76,7 @@ public static class Program
             "diff" => Commands.Diff(cli, output),
             "strings" => Commands.Strings(cli, output),
             "pdb" => Commands.Pdb(cli, output),
+            "anim" => Commands.Anim(cli, output),
             "hash" => Commands.Hash(cli, output),
             "types" => Commands.Types(cli, output),
             _ => UnknownCommand(cli.Command, output),
@@ -122,6 +123,7 @@ public static class Program
         output.Line($"  {loc["cmd.diff.usage"],-58} {loc["cmd.diff.summary"]}");
         output.Line($"  {loc["cmd.strings.usage"],-58} {loc["cmd.strings.summary"]}");
         output.Line($"  {loc["cmd.pdb.usage"],-58} {loc["cmd.pdb.summary"]}");
+        output.Line($"  {loc["cmd.anim.usage"],-58} {loc["cmd.anim.summary"]}");
         output.Line($"  {loc["cmd.hash.usage"],-58} {loc["cmd.hash.summary"]}");
         output.Line($"  {loc["cmd.types.usage"],-58} {loc["cmd.types.summary"]}");
         output.Line();

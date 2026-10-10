@@ -85,14 +85,14 @@ refs/                     справочные материалы и реаль�
 
 ## 5. Снимок состояния (обновлять по мере продвижения)
 
-- Версия — около **3.33.0**; тесты — **113/113**; дерево git чистое.
+- Версия — около **3.35.0**; тесты — **117/117**; дерево git чистое.
 - Готово в Core: DBPF 2.0/3.0 (в т.ч. бета) read/write; RefPack (байт-в-байт); `.prop`+`.prop.xml`;
   `.prop_t`; `.locale`+авто-локали; `.raster`⇄DDS; bitmap⇄PNG; RW4 (контейнер, меши, геометрия
   pos/uv/normal + OBJ, скелеты, скины, ключевые анимации, **материалы** `CompiledState`, морфы/
-  блендшейпы); hash guesser + `guess --validate`; KeyMap; полнотекстовый поиск; `diff`; `pdb`,
-  `strings` (реверс-инжиниринг). CLI: `info list extract unpack unpackdata pack prop propt locale
-  texture bitmap guess search pctp tlsa gait cnv loottable looktable keymap rw4 verify diff strings
-  pdb hash types`.
+  блендшейпы); `.anim` (структурное чтение каналов/событий); hash guesser + `guess --validate`;
+  KeyMap; полнотекстовый поиск; `diff`; `pdb`, `strings` (реверс-инжиниринг). CLI: `info list extract
+  unpack unpackdata pack prop propt locale texture bitmap guess search pctp tlsa gait cnv loottable
+  looktable keymap rw4 anim verify diff strings pdb hash types`.
 - GUI: проводник (дерево папок, список, превью, назад/вперёд/вверх, крошки, фильтр, сортировка,
   плоский режим, контекстные меню, извлечение, **иконки по типам**, **панель сведений**).
 - Отложено (список ниже).
@@ -124,7 +124,8 @@ refs/                     справочные материалы и реаль�
    учёт `*_DDFList.txt`, пометка текстовых типов.
 3. **GUI**: адресная строка с историей, drag&drop; полная **локализация RU+EN** (каркас
    `Localizer` есть).
-4. **`.anim` (SPAnimation)** — крупный оставшийся cell-формат (сложный, ~100 КБ референса).
+4. **`.anim` (SPAnimation)** — **структурное чтение готово** (`anim`: заголовок, события, каналы);
+   осталось: полное декодирование ключевых кадров и интерполяторов.
 5. **Деманглинг C++-имён** из PDB (чтобы читать `?…@@`), плюс дальнейшее исследование строк EXE.
 
 ## 8. Полезные ориентиры в `refs/`
