@@ -56,6 +56,8 @@
   (`.loottable` ⇄ `.loottable_t`) и «взгляда» (`.look_table` ⇄ `.look_table_t`).
 - **Анимации `.anim`** (`anim`) — разбор заголовка, событий и каналов (имена костей, число
   кадров) и **текстовый дамп** (`.anim_t`); см. `docs/ANIM_FORMAT.md`.
+- **Экспорт моделей** (`export-models`) — пакетная выгрузка всех декодируемых RW4-моделей архива в
+  OBJ (+`.mtl`+текстуры) или Ogre XML.
 - **Реверс-инжиниринг игры** (`pdb`, `strings`) — чтение отладочных символов PDB (MSF): модули,
   имена функций и **декодированные строковые литералы** MSVC; извлечение строк из EXE/DLL
   (см. `docs/PDB_RESEARCH.md`).
@@ -205,6 +207,9 @@ dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4>
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export <файл.obj>            # + .mtl и текстуры
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export-ogre <файл.mesh.xml>  # + .material
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4> --export-textures <папка>
+
+# Выгрузить ВСЕ декодируемые модели RW4 из архива (OBJ+MTL или Ogre XML) с текстурами
+dotnet run --project src/SporeMaster.Cli -- export-models <архив.package> <папка> --format obj|ogre
 
 # Конвертировать растровый ресурс (bitmap ⇄ PNG, определяется автоматически)
 dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage> <файл.32bitImage.png>

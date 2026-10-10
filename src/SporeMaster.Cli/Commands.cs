@@ -1020,6 +1020,100 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Exports every decodable RW4 model from a package: <c>export-models &lt;package&gt; &lt;dir&gt;</c>.</summary>
+    public static int ExportModels(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "export-models <package> <output-dir> [--format obj|ogre] [--raw-names]");
+        }
+
+        if (!TryOpen(cli, output, out DatabasePackedFile? package))
+        {
+            return 1;
+        }
+
+        string outputDir = Path.GetFullPath(cli.Positional[1]);
+        NameRegistrySet names = OpenNames(cli);
+        string format = (cli.Get("format") ?? "obj").ToLowerInvariant();
+        bool rawNames = cli.Has("raw-names");
+        Directory.CreateDirectory(outputDir);
+
+        int exported = 0;
+        int skipped = 0;
+        int failed = 0;
+
+        using (package)
+        {
+            foreach (DbpfEntry entry in package!.Entries)
+            {
+                if (entry.Key.TypeId != ResourceTypeIds.Rw4)
+                {
+                    continue;
+                }
+
+                byte[] data;
+                try
+                {
+                    data = package.ReadEntry(entry);
+                }
+                catch (Exception ex)
+                {
+                    output.Warn($"{entry.Key}: read failed ({ex.Message})");
+                    failed++;
+                    continue;
+                }
+
+                try
+                {
+                    using Core.RenderWare4.RenderWare4File rw4 = Core.RenderWare4.RenderWare4File.Read(new MemoryStream(data));
+                    IReadOnlyList<Core.RenderWare4.Rw4MeshGeometry> geometry = rw4.ReadGeometry();
+                    if (geometry.Count == 0)
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    string stem = rawNames
+                        ? $"{entry.Key.TypeId:X8}_{entry.Key.GroupId:X8}_{entry.Key.InstanceId:X8}"
+                        : SanitizePath(names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId)).Replace('/', '_');
+                    string modelDir = Path.Combine(outputDir, stem);
+                    Directory.CreateDirectory(modelDir);
+                    string texturesDir = Path.Combine(modelDir, stem + "_textures");
+
+                    Rw4ExportMaterials prepared = PrepareRw4Export(rw4, modelDir, stem, texturesDir, output);
+
+                    if (format == "ogre")
+                    {
+                        string meshPath = Path.Combine(modelDir, stem + ".mesh.xml");
+                        Core.RenderWare4.Rw4OgreExporter.Export(meshPath, geometry, geometry, prepared.PickMaterial, prepared.Materials);
+                    }
+                    else
+                    {
+                        string objPath = Path.Combine(modelDir, stem + ".obj");
+                        Core.RenderWare4.Rw4ObjExporter.Export(geometry, objPath, stem + ".mtl", prepared.PickMaterial, prepared.Materials);
+                    }
+
+                    exported++;
+                }
+                catch (Exception ex)
+                {
+                    output.Warn($"{entry.Key}: export failed ({ex.Message})");
+                    failed++;
+                }
+            }
+
+            output.Success($"Exported {exported} model(s) to {outputDir}.");
+            output.Line($"  skipped (no static geometry): {skipped}");
+            if (failed > 0)
+            {
+                output.Line($"  failed: {failed}");
+            }
+        }
+
+        return 0;
+    }
+
     /// <summary>Prepared material/texture data for an RW4 export (OBJ or Ogre).</summary>
     private sealed record Rw4ExportMaterials(
         List<(string Name, string? DiffuseTexture)> Materials,
