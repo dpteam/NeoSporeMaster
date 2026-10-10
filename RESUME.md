@@ -132,8 +132,8 @@ refs/                     справочные материалы и реаль�
    - **lossless-перепаковка** (`roundtrip`) подтверждена на `BP2_Data` 184/184, бета `CellGame`
      442/442, `CSA_Graphics` 5822/5822, `Spore_Game` 11676/11676, `CSA_Main` 8431/8431 и Retail
      (`Spore_Game` 11529/11529, `Spore_Pack_03` 266/266);
-   - **смоук-тест в игре** (`tools/smoke-test.ps1 -Auto`): репак Retail `Spore_Game` → игра
-     завершилась с кодом 0, **дампов нет** → PASS;
+   - **смоук-тест в игре** (`tools/smoke-test.ps1 -Auto`, запуск `-w -devDirs`): репак Retail
+     `Spore_Game` → игра **работала 60 с (не вылетела)**, **дампов нет** → PASS;
    - **требования игры к пакету** разобраны по PDB: `docs/PACKAGE_REQUIREMENTS.md`.
 2. **Улучшить распаковку/`unpackdata`** — выборочно — **сделано** (`--group/--type/--name`, 3.36.0);
    таблица «тип → расширение» из `KeyMap` — **сделано** (3.40.0); **`DDFList`** — **сделано**

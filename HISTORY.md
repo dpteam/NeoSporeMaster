@@ -6,9 +6,10 @@
 
 ### Проверено (смоук-тест в игре)
 - `tools/smoke-test.ps1 -Auto`: `SporeRetail/Data/Spore_Game.package` → lossless-репак (11529/11529)
-  → запуск `SporeApp.exe -w` → игра завершилась **с кодом 0**, **новых `*.mdmp`/`*exception*.txt`
-  нет** → **PASS**, оригинал восстановлен.
-- Скрипт получил режим **`-Auto -WaitSeconds N`** (автономно, без нажатия Enter).
+  → запуск `SporeApp.exe -w -devDirs` → **игра работала 60 с (не вылетела)**, **новых
+  `*.mdmp`/`*exception*.txt` нет** → **PASS**, оригинал восстановлен.
+- Скрипт получил режим **`-Auto -WaitSeconds N`** (автономно); запуск с **`-w -devDirs`** (без
+  `-devDirs` игра вылетает со своей ошибкой ~2001 — не наш репак).
 
 ### Добавлено (требования игры по PDB)
 - Документ **`docs/PACKAGE_REQUIREMENTS.md`**: по символам `EA::ResourceMan` разобрано, как игра
