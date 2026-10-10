@@ -6,6 +6,13 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (контин.):** свойств-типы **совпадают** со SporeModder (все 25: `unknown 0x00` …
+  `bbox 0x39`), включая `transform 0x38`; наши `.prop` round-trip. `transform` в `.prop.xml` у нас
+  задаётся через `flags/pos/vx/vy/vz` (базис), у SporeModder — `offset/scale/rotateXYZ`; оба
+  round-trip. Идея: добавить TRS-форму (`-offset/-scale/-rotateXYZ`) для дружелюбия — **остаётся**.
+- **2026-10-11 (продолжение):** GUI self-test **OK** на `BP2_Data`, `CSA_Graphics`, `Spore_Game`,
+  `BoosterPack_01`, `Other` (бета), `CellGame` (бета) — 0 ошибок. `spore help` содержит **все**
+  команды (плюс алиас `ls`).
 - **2026-10-11:** `verify` на всех 15 архивах → 0 проблем (39817 ресурсов); `roundtrip` lossless на
   всех релизных и бета-архивах; инвентарь форматов и приоритеты (таблица типов); подписи форматов
   (`HTRA`, XML `.crt`, Pure Data `.pfx`, бета `.cell`/`.structure` ≠ SporeModder); тест-наборы
@@ -205,9 +212,17 @@ SporeModder поле `offset` (6-е int) обязано быть `28`, а в р�
 
 **Второе расхождение (тоже проверено):** реальный `.cell` (бета `Cell_StabberMed.cell`, 400 байт)
 **НЕ совпадает** с `CellFile` SporeModder: файл начинается не с `type` (маленькое enum-число), а с
-чего-то вроде `float` + **UTF-16 имени** (`Stabber…`). Итог: **бета-версии cell-форматов отличаются**
-от релизных, на которые ориентирован SporeModder. Поэтому cell-форматы начинать **с беты** (реальные
-данные), а не переносить код SporeModder.
+чего-то вроде `float` + **UTF-16 имени** (`Stabber…`). `globals` (196 байт) тоже начинается с хеша,
+а не с маленького `gameMode` — **не совпадает**. Итог: **часть** бета-cell-форматов отличается от
+релиза, на который ориентирован SporeModder.
+
+**Что у беты СОВПАДАЕТ со SporeModder (проверено):**
+- **`populate`** (`0xda141c1b`): `scale=4, maskTexture=0, count=20, offset=16 (0x10)` — как и ждёт
+  `CellPopulateFile` (offset обязан быть `0x10`). ✅
+- **`world`** (`0x9b8e862f`): `populateCount=2, populateOffset=16, advectCount=1, advectOffset=40` —
+  совпадает с `CellWorldFile`. ✅
+
+Вывод: cell-форматы разбирать **поштучно по реальным данным** (не «все с нуля» и не «всё по SporeModder»).
 
 ## 6. Репак/игра
 
