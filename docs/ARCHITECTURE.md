@@ -96,6 +96,7 @@ little-endian; флаги и stride сохраняются для байт-то�
 - `Rw4Animation` — ключевые анимации: `Rw4KeyframeAnim` (каналы и кадры), `Rw4AnimationSet`
   (таблица «id → секция»), `Rw4Keyframe`, `Rw4AnimationChannel`.
 - `Rw4Raster` — метаданные встроенной текстуры (формат, размер, мипы, ссылка на данные).
+- `Rw4AnimationSampler` — сэмплирование ключевых анимаций во времени (для поз/будущего проигрывания).
 - `Rw4Material` — материалы: `Rw4Material` (декомпиляция `CompiledState`), `Rw4MaterialLink`
   (`MeshCompiledStateLink`), `Rw4TextureSlotMaterial`, `Rw4RenderGroup`, `Rw4ShaderData`.
 - `Rw4BlendShape` — морфы: `Rw4MorphHandle`, `Rw4BlendShape`, `Rw4BlendShapeBuffer`.

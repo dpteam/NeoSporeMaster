@@ -846,6 +846,58 @@ public static class RenderWare4Tests
         }
     }
 
+    [SporeTest("RW4 keyframe animation sampler interpolates channels")]
+    public static void AnimationSampler()
+    {
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                IReadOnlyList<Rw4KeyframeAnim> animations = rw4.ReadKeyframeAnimations();
+                if (animations.Count == 0)
+                {
+                    continue;
+                }
+
+                Rw4KeyframeAnim anim = animations[0];
+                if (anim.Channels.Count == 0)
+                {
+                    continue;
+                }
+
+                List<Rw4SampledChannel> pose = Rw4AnimationSampler.Sample(anim, anim.Length * 0.5f);
+                Assert.True(pose.Count > 0, "expected a sampled pose");
+                foreach (Rw4SampledChannel channel in pose)
+                {
+                    float lengthSq = (channel.Rotation[0] * channel.Rotation[0]) + (channel.Rotation[1] * channel.Rotation[1])
+                        + (channel.Rotation[2] * channel.Rotation[2]) + (channel.Rotation[3] * channel.Rotation[3]);
+                    Assert.True(Math.Abs(lengthSq - 1f) < 0.05f, $"rotation should be a unit quaternion (got {lengthSq})");
+                    foreach (float v in channel.Location)
+                    {
+                        Assert.True(!float.IsNaN(v) && !float.IsInfinity(v), "location must be finite");
+                    }
+                }
+
+                return;
+            }
+        }
+
+        Console.WriteLine("No RW4 keyframe animation found; skipping sampler check.");
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

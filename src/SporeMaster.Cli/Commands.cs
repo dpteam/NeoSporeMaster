@@ -747,7 +747,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 1)
         {
-            return UsageError(output, "rw4 <file.rw4> [--export file.obj] [--export-ogre file.mesh.xml] [--export-textures DIR]");
+            return UsageError(output, "rw4 <file.rw4> [--export file.obj] [--export-ogre file.mesh.xml] [--export-textures DIR] [--pose SECONDS]");
         }
 
         string input = cli.Positional[0];
@@ -1023,6 +1023,35 @@ public static class Commands
             }
 
             output.Success($"Exported {written} texture(s) to {textureDir}.");
+        }
+
+        // --pose <seconds>: sample the first keyframe animation and print the channel transforms.
+        string? poseArg = cli.Get("pose");
+        if (poseArg is not null)
+        {
+            if (!float.TryParse(poseArg, System.Globalization.NumberStyles.Float, CultureInfo.InvariantCulture, out float poseTime))
+            {
+                poseTime = 0;
+            }
+
+            IReadOnlyList<Core.RenderWare4.Rw4KeyframeAnim> poseAnims = rw4.ReadKeyframeAnimations();
+            if (poseAnims.Count == 0)
+            {
+                output.Warn("No keyframe animation was found.");
+            }
+            else
+            {
+                IReadOnlyList<Core.RenderWare4.Rw4SampledChannel> pose = Core.RenderWare4.Rw4AnimationSampler.Sample(poseAnims[0], poseTime);
+                output.Line();
+                output.Heading($"Pose at {poseTime:0.###} s ({pose.Count} channel(s))");
+                var poseRows = pose.Take(50).Select(c => new[]
+                {
+                    $"0x{c.ChannelId:X8}",
+                    $"{c.Location[0]:0.###} {c.Location[1]:0.###} {c.Location[2]:0.###}",
+                    $"{c.Rotation[0]:0.###} {c.Rotation[1]:0.###} {c.Rotation[2]:0.###} {c.Rotation[3]:0.###}",
+                }).ToList();
+                output.Table(new[] { "Channel", "Location (xyz)", "Rotation (xyzw)" }, poseRows);
+            }
         }
 
         foreach (var diagnostic in rw4.Diagnostics.Items)
