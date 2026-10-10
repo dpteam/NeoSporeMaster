@@ -159,6 +159,56 @@ public static class PresentationTests
         Assert.True(empty.Matches(0x00B1B104, 0x99999999, "x/y.z"));
     }
 
+    [SporeTest("preview summarises a Spore animation")]
+    public static void PreviewAnimation()
+    {
+        string? packagePath = TestData.FinalPackages.FirstOrDefault(p => p.EndsWith("CSA_Main.package"));
+        if (packagePath is null)
+        {
+            throw new AssertionException("CSA_Main.package is not available.");
+        }
+
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+
+        DbpfEntry? target = package.Entries.FirstOrDefault(e => e.Key.TypeId == 0xEE17C6AD && e.Key.InstanceId == 0x178D84B4);
+        if (target is null)
+        {
+            throw new AssertionException("The expected animation resource is missing.");
+        }
+
+        var item = new ResourceItem(target, names);
+        ResourcePreview preview = PreviewEngine.Build(item, package.ReadEntry(target), names);
+
+        Assert.Equal("anim", preview.Kind);
+        Assert.Contains(preview.Text!, "Spore animation");
+        Assert.Contains(preview.Text!, "Channels:");
+    }
+
+    [SporeTest("preview shows trigger resources as text")]
+    public static void PreviewTriggerText()
+    {
+        string? packagePath = TestData.FinalPackages.FirstOrDefault(p => p.EndsWith("Spore_Game.package"));
+        if (packagePath is null)
+        {
+            throw new AssertionException("Spore_Game.package is not available.");
+        }
+
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+
+        DbpfEntry? target = package.Entries.FirstOrDefault(e => e.Key.TypeId == 0x024A0E52);
+        if (target is null)
+        {
+            throw new AssertionException("No trigger resource found.");
+        }
+
+        var item = new ResourceItem(target, names);
+        ResourcePreview preview = PreviewEngine.Build(item, package.ReadEntry(target), names);
+
+        Assert.Equal("text", preview.Kind);
+    }
+
     [SporeTest("explorer model groups resources into folders")]
     public static void ExplorerFolders()
     {

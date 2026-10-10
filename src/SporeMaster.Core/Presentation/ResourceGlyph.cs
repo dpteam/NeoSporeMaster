@@ -18,8 +18,13 @@ public static class ResourceGlyph
                 case ".prop":
                 case ".prop_t":
                     return "\U0001F4C4"; // 📄 page
+                case ".trigger":
+                    return "\U0001F4C4"; // 📄 plain-text trigger
                 case ".rw4":
                     return "\U0001F9CA"; // 🧊 3D model
+                case ".animation":
+                case ".anim":
+                    return "\U0001F39E"; // 🎞 animation
                 case ".raster":
                 case ".png":
                 case ".bitImage":
@@ -60,6 +65,16 @@ public static class ResourceGlyph
         if (Dbpf.ResourceTypeIds.IsRenderWare4(typeId))
         {
             return "\U0001F9CA";
+        }
+
+        if (Dbpf.ResourceTypeIds.IsAnimation(typeId))
+        {
+            return "\U0001F39E";
+        }
+
+        if (Dbpf.ResourceTypeIds.IsTrigger(typeId))
+        {
+            return "\U0001F4C4";
         }
 
         if (typeId == Dbpf.ResourceTypeIds.Locale)

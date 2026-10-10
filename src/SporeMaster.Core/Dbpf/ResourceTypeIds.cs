@@ -13,6 +13,12 @@ public static class ResourceTypeIds
     public const uint Raster = 0x2F4E681C;
     public const uint Rw4 = 0x2F4E681B;
 
+    /// <summary>Spore animation resource (<c>.anim</c>).</summary>
+    public const uint Animation = 0xEE17C6AD;
+
+    /// <summary>Spore trigger/text resource (stored as plain text, e.g. <c>Config/*.txt</c>).</summary>
+    public const uint Trigger = 0x024A0E52;
+
     private static readonly uint[] PropTypes =
     {
         Prop, SoundProp, SubmixProp, ModeProp, ChildrenProp,
@@ -28,6 +34,12 @@ public static class ResourceTypeIds
 
     /// <summary>True when the type id denotes a RenderWare 4 resource.</summary>
     public static bool IsRenderWare4(uint typeId) => typeId == Rw4;
+
+    /// <summary>True when the type id denotes a Spore animation.</summary>
+    public static bool IsAnimation(uint typeId) => typeId == Animation;
+
+    /// <summary>True when the type id denotes a plain-text trigger resource.</summary>
+    public static bool IsTrigger(uint typeId) => typeId == Trigger;
 
     /// <summary>True when the type id denotes a raw bitmap resource convertible to PNG.</summary>
     public static bool IsBitmap(uint typeId) => Bitmaps.SporeBitmapTypes.IsSupported(typeId);

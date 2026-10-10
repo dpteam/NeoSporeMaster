@@ -96,7 +96,7 @@
 | GUI (WPF) — обозреватель в стиле Проводника + превью + иконка | ✅ |
 | CLI (info/list/extract/unpack/pack/prop/propt/pctp/tlsa/gait/cnv/loottable/locale/texture/bitmap/guess/search/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (118, на реальных + синтетических данных) | ✅ |
+| Тесты (120, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---

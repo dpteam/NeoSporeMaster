@@ -1,4 +1,5 @@
 using System.Text;
+using SporeMaster.Core.Anim;
 using SporeMaster.Core.Bitmaps;
 using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Imaging;
@@ -107,6 +108,48 @@ public static class PreviewEngine
                 }
 
                 return ResourcePreview.AsText(builder.ToString(), "rw4");
+            }
+
+            if (ResourceTypeIds.IsAnimation(type))
+            {
+                SpAnimation anim = SpAnimation.Read(new MemoryStream(data));
+                var builder = new StringBuilder();
+                builder.Append("Spore animation\n");
+                builder.Append($"  Version: {anim.Version}\n");
+                builder.Append($"  Id:      0x{anim.Id:X8}\n");
+                builder.Append($"  Length:  {anim.Length:0.###} s\n");
+                builder.Append($"  Channels: {anim.Channels.Count}\n");
+                builder.Append($"  Events:   {anim.Events.Count}\n");
+
+                int shown = Math.Min(anim.Channels.Count, 100);
+                if (shown > 0)
+                {
+                    builder.Append('\n');
+                    for (int i = 0; i < shown; i++)
+                    {
+                        SpAnimationChannel channel = anim.Channels[i];
+                        builder.Append($"  [{i}] {channel.Name}  keys={channel.KeyframeCount} comps={channel.ComponentCount}\n");
+                    }
+
+                    if (anim.Channels.Count > shown)
+                    {
+                        builder.Append($"  … {anim.Channels.Count - shown} more channel(s)\n");
+                    }
+                }
+
+                return ResourcePreview.AsText(builder.ToString(), "anim");
+            }
+
+            // Triggers are stored as plain text (e.g. Config/*.txt) even though their type name is not ".txt".
+            if (ResourceTypeIds.IsTrigger(type) && LooksLikeText(data))
+            {
+                string triggerText = TextCodec.Decode(data);
+                if (triggerText.Length > MaxTextChars)
+                {
+                    triggerText = triggerText[..MaxTextChars] + "\n… (truncated)";
+                }
+
+                return ResourcePreview.AsText(triggerText, "text");
             }
 
             // Some resources are already standard images (e.g. the "png" type stores raw PNG data).
