@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="SporeMaster.NameEditor" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="700" Height="434" xmlns:sporemaster="clr-namespace:SporeMaster;assembly=SporeMaster" IsVisibleChanged="UserControl_IsVisibleChanged">
+  <FrameworkElement.Resources>
+    <ResourceDictionary>
+      <Style x:Key="GroupBoxExpanderToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type ToggleButton}">
+              <Grid SnapsToDevicePixels="False" Background="#00FFFFFF">
+                <Ellipse Name="circle" HorizontalAlignment="Center" VerticalAlignment="Center" Width="15" Height="15" Fill="{DynamicResource ButtonNormalBackgroundFill}" Stroke="#FFA9A9A9" />
+                <Ellipse Name="shadow" Visibility="Hidden" HorizontalAlignment="Center" VerticalAlignment="Center" Width="13" Height="13" Fill="{DynamicResource ExpanderShadowFill}" />
+                <Path Name="arrow" SnapsToDevicePixels="False" VerticalAlignment="Center" HorizontalAlignment="Center" Stroke="#666" StrokeThickness="2" Data="M1,1 L4,4 L7,1" />
+              </Grid>
+              <ControlTemplate.Triggers>
+                <Trigger Property="ToggleButton.IsChecked" Value="true">
+                  <Setter TargetName="arrow" Property="Path.Data" Value="M1,4 L4,1 L7,4" />
+                </Trigger>
+                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                  <Setter TargetName="circle" Property="Shape.Stroke" Value="#666" />
+                  <Setter TargetName="arrow" Property="Shape.Stroke" Value="#222" />
+                  <Setter TargetName="shadow" Property="Visibility" Value="Visible" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+      <SolidColorBrush x:Key="GroupBoxBorderBrush" Color="#D0D0BF" />
+      <SolidColorBrush x:Key="GroupBoxHeaderBrush" Color="#0046D5" />
+      <BorderGapMaskConverter x:Key="BorderGapMaskConverter" />
+      <Style x:Key="GroupBoxExpander" TargetType="{x:Type Expander}">
+        <Setter Property="BorderBrush" Value="{StaticResource GroupBoxBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Expander}">
+              <Grid SnapsToDevicePixels="True">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="6" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="6" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+                  <RowDefinition Height="6" />
+                </Grid.RowDefinitions>
+                <Border CornerRadius="4" Grid.Row="1" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="4" BorderThickness="{TemplateBinding Control.BorderThickness}" BorderBrush="#00FFFFFF" Background="{TemplateBinding Control.Background}" />
+                <Border Name="Header" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Padding="3,0,3,0">
+                  <Grid SnapsToDevicePixels="False" Background="#00FFFFFF" Column="1" Row="0" RowSpan="2">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition />
+                      <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <ToggleButton Name="HeaderToggle" Grid.Column="0" MinHeight="0" MinWidth="0" Style="{StaticResource GroupBoxExpanderToggleButtonStyle}" IsChecked="{Binding Path=IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                    <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="3,0,0,0" TextElement.Foreground="{StaticResource GroupBoxHeaderBrush}" />
+                  </Grid>
+                </Border>
+                <ContentPresenter Name="ExpandSite" Visibility="Collapsed" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="{TemplateBinding Control.Padding}" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" />
+                <Border Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="4" BorderThickness="{TemplateBinding Control.BorderThickness}" BorderBrush="{TemplateBinding Control.BorderBrush}" CornerRadius="4">
+                  <UIElement.OpacityMask>
+                    <MultiBinding ConverterParameter="7" Converter="{StaticResource BorderGapMaskConverter}">
+                      <Binding Path="ActualWidth" ElementName="Header" />
+                      <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}" />
+                      <Binding Path="ActualHeight" RelativeSource="{RelativeSource Self}" />
+                    </MultiBinding>
+                  </UIElement.OpacityMask>
+                </Border>
+              </Grid>
+              <ControlTemplate.Triggers>
+                <Trigger Property="Expander.IsExpanded" Value="True">
+                  <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Property="Foreground" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+    </ResourceDictionary>
+  </FrameworkElement.Resources>
+  <Grid>
+    <TextBlock Name="textBlock1" Margin="6,6,6,0" VerticalAlignment="Top" Height="50" TextWrapping="Wrap">Spore packages don't actually store the names of files, folders, or even properties, but just "hashes" - hexadecimal numbers derived from names. SporeMaster helps you to find the original name for a hash or to choose an arbitrary alias (ending with ~) to represent it in unpacked files. Choose names and aliases carefully!</TextBlock>
+    <GroupBox Header="Enter Name" Margin="6,62,6,0" Height="138" VerticalAlignment="Top">
+      <Grid Margin="6,6,6,6">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="300*" />
+          <ColumnDefinition Name="HashColumn" Width="200*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="25" />
+          <RowDefinition Height="25" />
+          <RowDefinition Height="25" />
+          <RowDefinition Height="30" />
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Height="21" HorizontalAlignment="Left" Margin="0,3,0,0" VerticalAlignment="Top" Width="46">Name</TextBlock>
+        <TextBox Name="AliasName" Grid.Row="0" Height="23" Margin="40,0,6,0" VerticalAlignment="Top" TextChanged="AliasName_TextChanged" />
+        <TextBlock Grid.Row="1" HorizontalAlignment="Left" Width="64">Hashes to:</TextBlock>
+        <TextBlock Name="AliasNameHashesTo" Grid.Row="1" Margin="70,0,0,0" />
+        <Button Name="SaveName" Grid.Row="3" Height="23" Width="119" IsEnabled="False" HorizontalAlignment="Left" Click="SaveName_Click">Save this name</Button>
+        <TextBlock Name="AliasNameStatus" Grid.Row="2">
+          <Hyperlink Name="AliasNameStatusLink" Click="AliasNameStatusLink_Click" />
+        </TextBlock>
+        <TextBlock Grid.Row="0" Grid.Column="1" Margin="0,3,0,0" Height="21.08" VerticalAlignment="Top" HorizontalAlignment="Left" Width="63">Hash</TextBlock>
+        <TextBox Name="AliasHash" Grid.Row="0" Grid.Column="1" Height="23" Margin="35,0,0,0" VerticalAlignment="Top" TextChanged="AliasHash_TextChanged" />
+        <TextBlock Name="AliasHashStatus" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top">
+          <Hyperlink Name="AliasHashStatusLink" Click="AliasHashStatusLink_Click" />
+        </TextBlock>
+        <Button Name="SaveAlias" Grid.Row="3" Grid.Column="1" Height="23" IsEnabled="False" HorizontalAlignment="Left" Width="127" Click="SaveAlias_Click">Save an alias</Button>
+      </Grid>
+    </GroupBox>
+    <Expander Name="GuessPanel" Style="{StaticResource GroupBoxExpander}" Header="Guess Names" Margin="6,206,6,0" IsExpanded="{Binding Path=Enabled, Mode=TwoWay}">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="170" />
+          <ColumnDefinition Width="517*" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Height="21" Margin="6,8,33,0" VerticalAlignment="Top">Target Hash</TextBlock>
+        <TextBlock Height="21" Margin="6,37,33,0" VerticalAlignment="Top">Prefix</TextBlock>
+        <TextBlock Height="21" Margin="6,66,33,0" VerticalAlignment="Top">Suffix</TextBlock>
+        <TextBlock HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6,96,0,0" Width="47" Height="15.96">Contains</TextBlock>
+        <TextBox Name="GuessSuffix" HorizontalAlignment="Left" Margin="46,64,0,0" VerticalAlignment="Top" Width="120" Grid.ColumnSpan="2" Height="21.96" Text="{Binding Suffix, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox Name="GuessPrefix" Height="23" HorizontalAlignment="Left" Margin="46,35,0,0" VerticalAlignment="Top" Width="120" Grid.ColumnSpan="2" Text="{Binding Prefix}" />
+        <TextBox Name="GuessHash" Height="23" HorizontalAlignment="Left" Margin="76,6,0,0" VerticalAlignment="Top" Width="90" Grid.ColumnSpan="2" TextChanged="GuessHash_TextChanged" />
+        <TextBox Name="GuessContains" HorizontalAlignment="Left" Margin="59,93,0,0" VerticalAlignment="Top" Width="107" Grid.ColumnSpan="2" Height="21.96" Text="{Binding Contains, UpdateSourceTrigger=PropertyChanged}" />
+        <ListBox Name="GuessResults" Margin="6,6,6,6" DisplayMemberPath="Text" Grid.Column="1" ItemsSource="{Binding Results}" SelectionChanged="GuessResults_SelectionChanged" />
+      </Grid>
+    </Expander>
+  </Grid>
+</UserControl>

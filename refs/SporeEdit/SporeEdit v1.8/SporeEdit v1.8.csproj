@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <AssemblyName>SporeEdit v1.8</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>True</UseWindowsForms>
+    <TargetFramework>net35</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>Preview</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="Gibbed.Spore.Package">
+      <HintPath>..\..\..\..\SporeEdit\Gibbed.Spore.Package.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="Gibbed.Spore.Helpers">
+      <HintPath>..\..\..\..\SporeEdit\Gibbed.Spore.Helpers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="Gibbed.Spore.Properties">
+      <HintPath>..\..\..\..\SporeEdit\Gibbed.Spore.Properties.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

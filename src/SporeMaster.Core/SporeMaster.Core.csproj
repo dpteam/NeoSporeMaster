@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>SporeMaster.Core</RootNamespace>
+    <AssemblyName>SporeMaster.Core</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      SporeModder FX name/hash registries, shipped as embedded resources so the
+      library and the CLI stay self-contained (no files next to the executable).
+      Path: <repo>/data/*.txt
+    -->
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\..\data\**\*.txt"
+                      Link="data\%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)lang\**\*.lang"
+                      Link="lang\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

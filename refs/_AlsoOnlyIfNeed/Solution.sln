@@ -1,0 +1,39 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SporeMaster", "SporeMaster\SporeMaster.csproj", "{00C28DF4-F5D1-43B6-B951-8A2FDE1B3206}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "3DTools", "3DTools\3DTools.csproj", "{FB5A7B49-E0D9-473F-A44A-EC6168A82A42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VTreeView", "VTreeView\VTreeView.csproj", "{D310F26E-7B22-454F-93FE-9D04A11FA9DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ICSharpCode.TextEditor", "ICSharpCode.TextEditor\ICSharpCode.TextEditor.csproj", "{42D1BF75-CA9B-495D-8104-8EEFB8A574AC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AnyCPU = Debug|AnyCPU
+		Release|AnyCPU = Release|AnyCPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{00C28DF4-F5D1-43B6-B951-8A2FDE1B3206}.Debug|AnyCPU.ActiveCfg = Debug|AnyCPU
+		{00C28DF4-F5D1-43B6-B951-8A2FDE1B3206}.Debug|AnyCPU.Build.0 = Debug|AnyCPU
+		{00C28DF4-F5D1-43B6-B951-8A2FDE1B3206}.Release|AnyCPU.ActiveCfg = Release|AnyCPU
+		{00C28DF4-F5D1-43B6-B951-8A2FDE1B3206}.Release|AnyCPU.Build.0 = Release|AnyCPU
+		{FB5A7B49-E0D9-473F-A44A-EC6168A82A42}.Debug|AnyCPU.ActiveCfg = Debug|AnyCPU
+		{FB5A7B49-E0D9-473F-A44A-EC6168A82A42}.Debug|AnyCPU.Build.0 = Debug|AnyCPU
+		{FB5A7B49-E0D9-473F-A44A-EC6168A82A42}.Release|AnyCPU.ActiveCfg = Release|AnyCPU
+		{FB5A7B49-E0D9-473F-A44A-EC6168A82A42}.Release|AnyCPU.Build.0 = Release|AnyCPU
+		{D310F26E-7B22-454F-93FE-9D04A11FA9DB}.Debug|AnyCPU.ActiveCfg = Debug|AnyCPU
+		{D310F26E-7B22-454F-93FE-9D04A11FA9DB}.Debug|AnyCPU.Build.0 = Debug|AnyCPU
+		{D310F26E-7B22-454F-93FE-9D04A11FA9DB}.Release|AnyCPU.ActiveCfg = Release|AnyCPU
+		{D310F26E-7B22-454F-93FE-9D04A11FA9DB}.Release|AnyCPU.Build.0 = Release|AnyCPU
+		{42D1BF75-CA9B-495D-8104-8EEFB8A574AC}.Debug|AnyCPU.ActiveCfg = Debug|AnyCPU
+		{42D1BF75-CA9B-495D-8104-8EEFB8A574AC}.Debug|AnyCPU.Build.0 = Debug|AnyCPU
+		{42D1BF75-CA9B-495D-8104-8EEFB8A574AC}.Release|AnyCPU.ActiveCfg = Release|AnyCPU
+		{42D1BF75-CA9B-495D-8104-8EEFB8A574AC}.Release|AnyCPU.Build.0 = Release|AnyCPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

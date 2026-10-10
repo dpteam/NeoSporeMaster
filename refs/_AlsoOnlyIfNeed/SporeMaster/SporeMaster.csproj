@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>SporeMaster</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>True</UseWPF>
+    <UseWindowsForms>True</UseWindowsForms>
+    <TargetFramework>net35</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <ApplicationDefinition Remove="SporeMaster\App.xaml" />
+    <ApplicationDefinition Include="SporeMaster\App.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="app.xaml" />
+    <Page Remove="aboutsporemaster.xaml" />
+    <Page Remove="SporeMaster\EditorImage.xaml" />
+    <Page Remove="SporeMaster\EditorModel.xaml" />
+    <Page Remove="SporeMaster\EditorText.xaml" />
+    <Page Remove="SporeMaster\FilesEditor.xaml" />
+    <Page Remove="SporeMaster\MainWindow.xaml" />
+    <Page Remove="SporeMaster\NameEditor.xaml" />
+    <Page Remove="SporeMaster\PleaseWait.xaml" />
+    <Page Include="aboutsporemaster.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="aboutsporemaster.xaml" />
+    <Page Include="SporeMaster\EditorImage.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="editorimage.xaml" />
+    <Page Include="SporeMaster\EditorModel.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="editormodel.xaml" />
+    <Page Include="SporeMaster\EditorText.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="editortext.xaml" />
+    <Page Include="SporeMaster\FilesEditor.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="fileseditor.xaml" />
+    <Page Include="SporeMaster\MainWindow.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="mainwindow.xaml" />
+    <Page Include="SporeMaster\NameEditor.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="nameeditor.xaml" />
+    <Page Include="SporeMaster\PleaseWait.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="pleasewait.xaml" />
+    <Resource Remove="icons\defragmentation.png" />
+    <Resource Remove="icons\find.png" />
+    <Resource Remove="icons\folder-close.png" />
+    <Resource Remove="icons\folder.png" />
+    <Resource Remove="icons\symbol-construction.png" />
+    <Resource Include="icons\defragmentation.png" LogicalName="icons/defragmentation.png" />
+    <Resource Include="icons\find.png" LogicalName="icons/find.png" />
+    <Resource Include="icons\folder-close.png" LogicalName="icons/folder-close.png" />
+    <Resource Include="icons\folder.png" LogicalName="icons/folder.png" />
+    <Resource Include="icons\symbol-construction.png" LogicalName="icons/symbol-construction.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <ProjectReference Include="..\VTreeView\VTreeView.csproj" />
+    <ProjectReference Include="..\ICSharpCode.TextEditor\ICSharpCode.TextEditor.csproj" />
+    <ProjectReference Include="..\3DTools\3DTools.csproj" />
+  </ItemGroup>
+</Project>

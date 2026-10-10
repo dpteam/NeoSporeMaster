@@ -1,0 +1,54 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+
+# Rider / VS
+*.sln.iml
+
+# NuGet
+*.nupkg
+packages/
+project.lock.json
+project.assets.json
+
+# Test / tool output
+TestResults/
+[Tt]est[Rr]esults/
+*.trx
+artifacts/
+out/
+dist/
+tmp/
+temp/
+
+# OS cruft
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Legacy build artifacts (the old SporeMaster 2 source tree)
+SporeMaster/**/bin/
+SporeMaster/**/obj/
+SporeMaster/**/*.pdb
+SporeMaster/**/*.dll
+SporeMaster/**/*.exe
+SporeMaster/**/*.vshost.*
+SporeMaster/**/*.manifest
+
+# Local scratch
+scratch/
+*.log
+
+# Large binary test packages (kept on disk under refs/, too big for git).
+# Tests that use them are skipped automatically when the folders are absent.
+refs/_PackageFilesBetaVer/
+refs/_PackageFilesFinalVer/

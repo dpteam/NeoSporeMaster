@@ -1,0 +1,68 @@
+namespace Gibbed.Spore.Package
+{
+	public static class Types
+	{
+		public static string GetExtensionFromId(uint id)
+		{
+			return id switch
+			{
+				11645188u => "prop", 
+				15121637u => "gmdl", 
+				18450871u => "plt", 
+				28124182u => "creature_traits", 
+				28124183u => "building_traits", 
+				28124184u => "vehicle_traits", 
+				29439450u => "gmsh", 
+				29607091u => "trait_pill", 
+				38335014u => "css", 
+				38407762u => "trigger", 
+				38941272u => "formation", 
+				41704687u => "ttf", 
+				47565231u => "summary", 
+				47565232u => "summary_pill", 
+				49987766u => "locale", 
+				51109603u => "pollen_metadata", 
+				58115034u => "hm", 
+				74592923u => "htra", 
+				106063543u => "xhtml", 
+				793667612u => "raster", 
+				796721154u => "jpeg", 
+				796721156u => "png", 
+				796721157u => "bmp", 
+				796721158u => "tga", 
+				796721159u => "gif", 
+				1256942534u => "tlsa", 
+				2082056826u => "pctp", 
+				3479970232u => "xml", 
+				4022182911u => "layout", 
+				311764532u => "dat", 
+				446279787u => "bem", 
+				513390118u => "bat", 
+				526622104u => "xls", 
+				597278293u => "bld", 
+				610804372u => "vcl", 
+				621799842u => "spui", 
+				635371794u => "gait", 
+				728542047u => "txt", 
+				731352134u => "crt", 
+				929579223u => "vp6", 
+				932683633u => "cfg", 
+				1014453038u => "psd", 
+				1014894435u => "mcl", 
+				1033349348u => "cll", 
+				1067198645u => "ani", 
+				1133470535u => "flr", 
+				1149954018u => "hkx", 
+				1198168263u => "ufo", 
+				1232562105u => "pfx", 
+				1551159691u => "density", 
+				1635194308u => "py", 
+				1635194329u => "pd", 
+				2609808943u => "world", 
+				3752697681u => "cell", 
+				3994535597u => "animation", 
+				_ => null, 
+			};
+		}
+	}
+}

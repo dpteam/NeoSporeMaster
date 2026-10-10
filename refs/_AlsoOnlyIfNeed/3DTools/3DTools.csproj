@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>3DTools</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <UseWPF>True</UseWPF>
+    <TargetFramework>net30</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <Page Remove="_3DTools\Trackport3D.xaml" />
+    <Page Include="_3DTools\Trackport3D.xaml" Generator="MSBuild:Compile" SubType="Designer" LogicalName="trackport3d.xaml" />
+    <Resource Remove="readme.txt" />
+    <Resource Include="readme.txt" LogicalName="readme.txt" />
+  </ItemGroup>
+  <ItemGroup />
+</Project>

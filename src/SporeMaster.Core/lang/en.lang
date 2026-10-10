@@ -1,0 +1,53 @@
+# SporeMaster 3 — локализация приложения (EN по умолчанию).
+# Формат: ключ = значение. Комментарии начинаются с '#', строки-продолжения отсутствуют.
+# ВАЖНО: документация ведётся на русском языке (см. README.md), а интерфейс программы — на английском.
+# Полная локализация приложения на русский вынесена в список идей (MEMORY.md).
+
+app.name = SporeMaster 3
+app.description = Spore package (DBPF) toolkit
+
+# --- Общие ---
+common.ok = OK
+common.error = Error
+common.warning = Warning
+common.done = Done.
+common.notFound = Not found: {0}
+common.invalidArgument = Invalid argument: {0}
+common.fileNotFound = File not found: {0}
+common.usage = Usage: {0}
+
+# --- Заголовки вывода ---
+header.file = File
+header.version = DBPF version
+header.type = Type
+header.entries = Entries
+header.indexOffset = Index offset
+header.indexSize = Index size
+header.indexType = Index type
+header.big = Big package (DBBF)
+header.encrypted = Encrypted container (DBPP)
+
+# --- Команды CLI ---
+cmd.info.usage = info <package>
+cmd.info.summary = Print DBPF header information for a package.
+cmd.list.usage = list <package> [--type T] [--group G] [--name S] [--compressed] [--limit N]
+cmd.list.summary = List resources inside a package.
+cmd.extract.usage = extract <package> <type:group:instance> [--out FILE]
+cmd.extract.summary = Extract a single resource by its 3-part key.
+cmd.unpack.usage = unpack <package> <output-dir> [--raw]
+cmd.unpack.summary = Unpack every resource into named folders.
+cmd.pack.usage = pack <input-dir> <package> [--version 2.0|3.0] [--compress] [--big]
+cmd.pack.summary = Build a package from a folder layout.
+cmd.verify.usage = verify <package>
+cmd.verify.summary = Read and decompress every resource, reporting problems.
+cmd.hash.usage = hash <name>
+cmd.hash.summary = Print the FNV hash of a name.
+cmd.types.usage = types
+cmd.types.summary = List known resource types (from reg_type.txt).
+
+# --- Результаты ---
+result.extracted = Extracted {0} ({1} bytes).
+result.unpacked = Unpacked {0} resource(s) to {1}.
+result.packed = Packed {0} resource(s) into {1}.
+result.verified = Verified {0} resource(s), {1} problem(s).
+result.hash = {0} => 0x{1:X8}
