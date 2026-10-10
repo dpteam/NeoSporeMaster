@@ -70,6 +70,7 @@ public static class Program
             "cnv" => Commands.Cnv(cli, output),
             "loottable" => Commands.LootTable(cli, output),
             "looktable" => Commands.LookTable(cli, output),
+            "cellworld" => Commands.CellWorld(cli, output),
             "keymap" => Commands.KeyMapCommand(cli, output),
             "rw4" => Commands.Rw4(cli, output),
             "export-models" => Commands.ExportModels(cli, output),
@@ -119,6 +120,7 @@ public static class Program
         output.Line($"  {loc["cmd.cnv.usage"],-58} {loc["cmd.cnv.summary"]}");
         output.Line($"  {loc["cmd.loottable.usage"],-58} {loc["cmd.loottable.summary"]}");
         output.Line($"  {loc["cmd.looktable.usage"],-58} {loc["cmd.looktable.summary"]}");
+        output.Line($"  {loc["cmd.cellworld.usage"],-58} {loc["cmd.cellworld.summary"]}");
         output.Line($"  {loc["cmd.keymap.usage"],-58} {loc["cmd.keymap.summary"]}");
         output.Line($"  {loc["cmd.rw4.usage"],-58} {loc["cmd.rw4.summary"]}");
         output.Line($"  {loc["cmd.export-models.usage"],-58} {loc["cmd.export-models.summary"]}");

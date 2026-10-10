@@ -10,6 +10,8 @@
   `bbox 0x39`), включая `transform 0x38`; наши `.prop` round-trip. `transform` в `.prop.xml` у нас
   задаётся через `flags/pos/vx/vy/vz` (базис), у SporeModder — `offset/scale/rotateXYZ`; оба
   round-trip. Идея: добавить TRS-форму (`-offset/-scale/-rotateXYZ`) для дружелюбия — **остаётся**.
+- **2026-10-11 (реализовано по итогам ревизии):** `world` (`0x9b8e862f`) — чтение/запись **байт-точно**
+  + дамп (`cellworld`); `populate` (`0xda141c1b`) — следующий кандидат (тоже совпадает со SporeModder).
 - **2026-10-11 (продолжение):** GUI self-test **OK** на `BP2_Data`, `CSA_Graphics`, `Spore_Game`,
   `BoosterPack_01`, `Other` (бета), `CellGame` (бета) — 0 ошибок. `spore help` содержит **все**
   команды (плюс алиас `ls`).
@@ -55,7 +57,7 @@
 
 ## 4. Тесты
 
-- [ ] Все зелёные (сейчас 148). Есть ли непокрытые ветки (ошибки/граничные случаи)?
+- [ ] Все зелёные (сейчас 150). Есть ли непокрытые ветки (ошибки/граничные случаи)?
 - [ ] Тесты на реальных данных **пропускаются корректно**, если данных нет.
 
 ## 5. Документация
@@ -100,7 +102,7 @@
 
 ### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
 Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `rw4`, `anim`, `pctp`,
-`tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`), `argscript`.
+`tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`, **`world`**), `argscript`.
 
 **Проверка типов (сверено с конвертерами SporeModder FX): совпадают** —
 `pctp` `0x7c19aa7a`, `gait` `0x25df0112`, `tlsa` `0x4aeb6bc6`, `cnv` `0x55ada24`,
@@ -189,7 +191,7 @@
 | `4b9ef6dc` | `structure` | CellStructure | нет (референс не совпал!) |
 | `612b3191` | `backgroundMap` | CellBackgroundMap | нет |
 | `754be343` | `powers` | CellPowers | нет |
-| `9b8e862f` | `world` | CellWorld | нет |
+| `9b8e862f` | `world` | CellWorld | **есть** (dump, байт-точно) |
 | `da141c1b` | `populate` | CellPopulate | нет |
 | `dba35ae2` | `look_algorithm` | CellLookAlgorithm | нет |
 | `f9c3d770` | `random_creature` | CellRandomCreature | нет |

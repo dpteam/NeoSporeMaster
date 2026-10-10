@@ -1897,6 +1897,39 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Converts a cell world file: <c>cellworld &lt;in.world&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int CellWorld(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "cellworld <input.world> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            CellWorldFile world = CellWorldFile.Read(input0);
+            File.WriteAllText(outputPath, world.ToText());
+            output.Success(
+                $"Wrote world text ({world.PopulateEntries.Count} populate, {world.AdvectEntries.Count} advect): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Cell world conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Extracts a names registry from a game key map: <c>keymap &lt;KeyMap.txt&gt; &lt;names.txt&gt;</c>.</summary>
     public static int KeyMapCommand(CommandLine cli, Output output)
     {

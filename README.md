@@ -56,7 +56,8 @@
   папок (групп), отдельные типы или подстроку имени вместо всего архива.
 - **Конвертеры**: part-capabilities (`.pctp` ⇄ `.pctp_t`), анимационные группы (`.tlsa` ⇄
   `.tlsa_t`), походка (`.gait` ⇄ `.gait_t`), беседы (`.cnv` → `.cnv_t`, дамп), таблицы добычи
-  (`.loottable` ⇄ `.loottable_t`) и «взгляда» (`.look_table` ⇄ `.look_table_t`).
+  (`.loottable` ⇄ `.loottable_t`) и «взгляда» (`.look_table` ⇄ `.look_table_t`); плюс `.world`
+  (cell world — дамп, чтение/запись байт-точно).
 - **Локали**: `locale` — просмотр, экспорт в **CSV/TSV** и импорт обратно (для переводчиков).
 - **Анимации `.anim`** (`anim`) — разбор заголовка, событий и каналов (имена костей, число
   кадров) и **текстовый дамп** (`.anim_t`); см. `docs/ANIM_FORMAT.md`.
@@ -267,6 +268,9 @@ dotnet run --project src/SporeMaster.Cli -- loottable <файл.loottable> <фа
 
 # Конвертировать таблицу «взгляда» клетки (look table)
 dotnet run --project src/SporeMaster.Cli -- looktable <файл.look_table> <файл.look_table_t>
+
+# Дамп файла cell world (populate/advect)
+dotnet run --project src/SporeMaster.Cli -- cellworld <файл.world> <файл.txt>
 
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales
