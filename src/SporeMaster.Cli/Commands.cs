@@ -2089,10 +2089,15 @@ public static class Commands
                     i.ToString(CultureInfo.InvariantCulture),
                     c.Name,
                     c.KeyframeCount.ToString(CultureInfo.InvariantCulture),
-                    c.ComponentCount.ToString(CultureInfo.InvariantCulture),
+                    c.Components.Count.ToString(CultureInfo.InvariantCulture),
+                    string.Join(",", c.Components.Select(comp => comp.Type.ToString())),
                     $"0x{c.BindFlags:X}",
                 }).ToList();
-                output.Table(new[] { "#", "Name", "Keys", "Comps", "Bind" }, rows);
+                output.Table(new[] { "#", "Name", "Keys", "Comps", "Component types", "Bind" }, rows);
+
+                int decoded = anim.Channels.Sum(c => c.Components.Sum(comp => comp.Keyframes.Count));
+                output.Line();
+                output.Line($"Decoded keyframes: {decoded}");
             }
 
             foreach (var diagnostic in anim.Diagnostics.Items)

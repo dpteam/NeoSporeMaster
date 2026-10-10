@@ -121,6 +121,11 @@ public static class PreviewEngine
                 builder.Append($"  Channels: {anim.Channels.Count}\n");
                 builder.Append($"  Events:   {anim.Events.Count}\n");
 
+                int totalComponents = anim.Channels.Sum(c => c.Components.Count);
+                int totalKeyframes = anim.Channels.Sum(c => c.Components.Sum(comp => comp.Keyframes.Count));
+                builder.Append($"  Components: {totalComponents}\n");
+                builder.Append($"  Keyframes:  {totalKeyframes}\n");
+
                 int shown = Math.Min(anim.Channels.Count, 100);
                 if (shown > 0)
                 {

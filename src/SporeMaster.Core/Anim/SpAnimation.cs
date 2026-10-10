@@ -31,16 +31,57 @@ public sealed class SpAnimationChannel
 
     /// <summary>Number of components (position/rotation/info) in this channel.</summary>
     public int ComponentCount { get; set; }
+
+    /// <summary>The decoded components (each holds its keyframe values).</summary>
+    public List<SpAnimationComponent> Components { get; } = new();
+}
+
+/// <summary>The kind of an animation component (the low nibble of its flags).</summary>
+public enum SpAnimationComponentType
+{
+    Info = 0,
+    Position = 1,
+    Rotation = 2,
+    Rigblock = 3,
+}
+
+/// <summary>The decoded values of one animation keyframe (interpretation depends on the component type).</summary>
+public sealed class SpAnimationKeyframe
+{
+    /// <summary>Primitive values: position XYZ + weight, rotation XYZW + weight, or rigblock value + weight.</summary>
+    public float[] Values { get; init; } = Array.Empty<float>();
+
+    /// <summary>Frame time (only meaningful for <see cref="SpAnimationComponentType.Info"/>).</summary>
+    public int Time { get; set; }
+}
+
+/// <summary>
+/// One animation component: a 32-byte descriptor (flags, id, keyframe offset/stride, index) plus the
+/// keyframes it points to. The component type is <c>flags &amp; 0xF</c>.
+/// </summary>
+public sealed class SpAnimationComponent
+{
+    public int Flags { get; set; }
+
+    public SpAnimationComponentType Type => (SpAnimationComponentType)(Flags & 0xF);
+
+    public int Id { get; set; }
+
+    public int Index { get; set; }
+
+    public int KeyframeStride { get; set; }
+
+    public List<SpAnimationKeyframe> Keyframes { get; } = new();
 }
 
 /// <summary>
 /// A Spore animation resource (type <c>0xEE17C6AD</c>), magic <c>0x4D494E41</c> ("ANIM").
 /// </summary>
 /// <remarks>
-/// This reads the resource header, the event table and the channel table (name, keyframe and
-/// component counts). Fully decoding the per-component keyframes and interpolators is future work —
-/// see <c>docs/ANIM_FORMAT.md</c>. The format is pointer-based: header fields are fixed offsets and
-/// the channel/event tables are referenced from the file start.
+/// Reads the resource header, the event table, the channel table (name, keyframe/component counts)
+/// and the per-component keyframes (position/rotation/info/rigblock). The format is pointer-based:
+/// header fields live at fixed offsets and the channel/event/component tables are referenced from the
+/// file start. See <c>docs/ANIM_FORMAT.md</c>.
 /// </remarks>
 public sealed class SpAnimation
 {
@@ -187,7 +228,7 @@ public sealed class SpAnimation
                     continue;
                 }
 
-                Channels.Add(ReadChannel(stream, channelOffset));
+                Channels.Add(ReadChannel(stream, channelOffset, fileLength));
             }
             catch (Exception ex)
             {
@@ -196,7 +237,7 @@ public sealed class SpAnimation
         }
     }
 
-    private SpAnimationChannel ReadChannel(Stream stream, long offset)
+    private SpAnimationChannel ReadChannel(Stream stream, long offset, long fileLength)
     {
         stream.Seek(offset, SeekOrigin.Begin);
         uint magic = stream.ReadU32();
@@ -217,10 +258,12 @@ public sealed class SpAnimation
         int bindFlags = stream.ReadI32();
         stream.Seek(offset + 0xD4, SeekOrigin.Begin);
         int keyframeCount = stream.ReadI32();
+        long keyframePtr = stream.ReadU32();
         stream.Seek(offset + 0xDC, SeekOrigin.Begin);
         int componentCount = stream.ReadI32();
+        long componentPtr = stream.ReadU32();
 
-        return new SpAnimationChannel
+        var channel = new SpAnimationChannel
         {
             Name = name,
             MovementFlags = movementFlags,
@@ -230,6 +273,116 @@ public sealed class SpAnimation
             KeyframeCount = keyframeCount,
             ComponentCount = componentCount,
         };
+
+        ReadComponents(stream, channel, componentPtr, keyframePtr, keyframeCount, fileLength);
+        return channel;
+    }
+
+    /// <summary>Reads the 32-byte component descriptors and their keyframes.</summary>
+    private void ReadComponents(
+        Stream stream,
+        SpAnimationChannel channel,
+        long componentPtr,
+        long keyframePtr,
+        int keyframeCount,
+        long fileLength)
+    {
+        if (componentPtr <= 0 || keyframePtr <= 0 || keyframeCount < 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < channel.ComponentCount; i++)
+        {
+            long descriptor = componentPtr + i * 32;
+            if (descriptor + 32 > fileLength)
+            {
+                break;
+            }
+
+            try
+            {
+                stream.Seek(descriptor, SeekOrigin.Begin);
+                var component = new SpAnimationComponent
+                {
+                    Flags = stream.ReadI32(),
+                    Id = stream.ReadI32(),
+                    Index = 0,
+                    KeyframeStride = 0,
+                };
+
+                int keyframeOffset = stream.ReadI32();
+                component.KeyframeStride = stream.ReadI32();
+                component.Index = stream.ReadI32();
+
+                if (component.KeyframeStride != 0)
+                {
+                    for (int k = 0; k < keyframeCount; k++)
+                    {
+                        long position = keyframePtr + (long)component.KeyframeStride * k + keyframeOffset;
+                        if (position < 0 || position + KeyframePrefixSize(component.Type) > fileLength)
+                        {
+                            break;
+                        }
+
+                        stream.Seek(position, SeekOrigin.Begin);
+                        component.Keyframes.Add(ReadKeyframe(stream, component.Type));
+                    }
+                }
+
+                channel.Components.Add(component);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"Animation component {i} could not be read: {ex.Message}");
+                break;
+            }
+        }
+    }
+
+    /// <summary>The number of leading bytes that carry a keyframe's primitive values.</summary>
+    private static int KeyframePrefixSize(SpAnimationComponentType type) => type switch
+    {
+        SpAnimationComponentType.Position => 16,   // xyz + weight
+        SpAnimationComponentType.Rotation => 20,   // xyzw + weight
+        SpAnimationComponentType.Rigblock => 8,    // value + weight
+        SpAnimationComponentType.Info => 16,       // time + skip + event index + flags
+        _ => 0,
+    };
+
+    private static SpAnimationKeyframe ReadKeyframe(Stream stream, SpAnimationComponentType type)
+    {
+        switch (type)
+        {
+            case SpAnimationComponentType.Position:
+            case SpAnimationComponentType.Rotation:
+            case SpAnimationComponentType.Rigblock:
+            {
+                float[] values = new float[type switch
+                {
+                    SpAnimationComponentType.Position => 4,
+                    SpAnimationComponentType.Rotation => 5,
+                    _ => 2,
+                }];
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] = stream.ReadF32LE();
+                }
+
+                return new SpAnimationKeyframe { Values = values };
+            }
+
+            case SpAnimationComponentType.Info:
+            default:
+            {
+                int time = stream.ReadI32();
+                stream.ReadU32(); // skip
+                stream.ReadU16(); // eventStartIndex
+                stream.ReadU16(); // padding
+                stream.ReadI32(); // flags
+                return new SpAnimationKeyframe { Time = time };
+            }
+        }
     }
 
     private static string ReadCString(Stream stream, long offset)

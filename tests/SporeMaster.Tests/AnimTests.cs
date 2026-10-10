@@ -48,6 +48,8 @@ public static class AnimTests
         int animations = 0;
         int channels = 0;
         int namedChannels = 0;
+        int components = 0;
+        int keyframes = 0;
 
         foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
         {
@@ -71,6 +73,22 @@ public static class AnimTests
                         if (channel.Name.Length > 0)
                         {
                             namedChannels++;
+                        }
+
+                        foreach (SpAnimationComponent component in channel.Components)
+                        {
+                            components++;
+                            foreach (SpAnimationKeyframe keyframe in component.Keyframes)
+                            {
+                                foreach (float value in keyframe.Values)
+                                {
+                                    Assert.True(
+                                        !float.IsNaN(value) && !float.IsInfinity(value),
+                                        "keyframe value must be finite");
+                                }
+
+                                keyframes++;
+                            }
                         }
                     }
 
@@ -99,6 +117,8 @@ public static class AnimTests
 
         Assert.True(channels > 0, "animations were found but no channels");
         Assert.True(namedChannels > 0, "channels were found but none were named");
+        Assert.True(components > 0, "channels were found but no components decoded");
+        Assert.True(keyframes > 0, "components were found but no keyframes decoded");
     }
 
     /// <summary>Builds a minimal animation: header + one channel table + one channel + one event.</summary>
