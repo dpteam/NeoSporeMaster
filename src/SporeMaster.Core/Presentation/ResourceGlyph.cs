@@ -42,7 +42,24 @@ public static class ResourceGlyph
                 case ".loottable":
                 case ".look_table":
                 case ".xml":
+                case ".crt":
                     return "\U0001F4D1"; // 📑 structured data
+                case ".txt":
+                case ".arth":
+                case ".tim":
+                    return "\U0001F4C4"; // 📄 text
+                case ".css":
+                case ".html":
+                case ".js":
+                    return "\U0001F310"; // 🌐 web/UI content
+                case ".ttf":
+                    return "\U0001F524"; // 🔤 font
+                case ".avi":
+                case ".vp6":
+                    return "\U0001F3AC"; // 🎬 video
+                case ".snr":
+                case ".sns":
+                    return "\U0001F50A"; // 🔊 audio
             }
         }
 
