@@ -838,6 +838,22 @@ public static class Commands
             output.Table(new[] { "#", "Skeleton", "Channels", "Keyframes", "Length" }, animRows);
         }
 
+        IReadOnlyList<Core.RenderWare4.Rw4Raster> rasters = rw4.ReadRasters();
+        if (rasters.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Rasters ({rasters.Count})");
+            var rasterRows = rasters.Select((r, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                r.FormatName,
+                $"{r.Width}x{r.Height}",
+                r.MipmapLevels.ToString(CultureInfo.InvariantCulture),
+                r.DataSectionIndex.ToString(CultureInfo.InvariantCulture),
+            }).ToList();
+            output.Table(new[] { "#", "Format", "Size", "Mips", "Data" }, rasterRows);
+        }
+
         IReadOnlyList<Core.RenderWare4.Rw4Material> materials = rw4.ReadMaterials();
         if (materials.Count > 0)
         {

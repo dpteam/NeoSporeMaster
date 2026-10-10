@@ -426,6 +426,35 @@ public sealed class RenderWare4File : IDisposable
         return sets;
     }
 
+    /// <summary>Reads every raster section (type <c>0x20003</c>): embedded texture metadata.</summary>
+    public IReadOnlyList<Rw4Raster> ReadRasters()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4Raster>();
+        }
+
+        var rasters = new List<Rw4Raster>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.Raster || section.Size < 32)
+            {
+                continue;
+            }
+
+            try
+            {
+                rasters.Add(Rw4Raster.Read(_stream, section.DataOffset));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 raster section at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return rasters;
+    }
+
     /// <summary>
     /// Reads every compiled material state (section type <c>0x2000B</c>). Each is decoded into a
     /// <see cref="Rw4Material"/>; undecodable sections keep their raw bytes.

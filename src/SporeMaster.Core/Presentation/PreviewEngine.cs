@@ -240,6 +240,16 @@ public static class PreviewEngine
             {
                 builder.Append($"  Blend shapes: {shapes.Count}\n");
             }
+
+            IReadOnlyList<Rw4Raster> rasters = rw4.ReadRasters();
+            if (rasters.Count > 0)
+            {
+                builder.Append($"  Textures: {rasters.Count}\n");
+                foreach (Rw4Raster raster in rasters.Take(6))
+                {
+                    builder.Append($"    {raster.Width}x{raster.Height} {raster.FormatName}, {raster.MipmapLevels} mip(s)\n");
+                }
+            }
         }
         catch (Exception ex)
         {

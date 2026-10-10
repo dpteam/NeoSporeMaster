@@ -658,6 +658,49 @@ public static class RenderWare4Tests
         }
     }
 
+    [SporeTest("RW4 rasters expose texture metadata")]
+    public static void Rasters()
+    {
+        int rasters = 0;
+
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                if (rw4.RawType != (uint)Rw4ContainerType.Texture)
+                {
+                    continue;
+                }
+
+                foreach (Rw4Raster raster in rw4.ReadRasters())
+                {
+                    Assert.True(raster.Width > 0 && raster.Height > 0, "raster must have a size");
+                    Assert.True(raster.MipmapLevels >= 1, "raster must have at least one mip level");
+                    Assert.True(raster.FormatName.Length > 0, "raster must have a format name");
+                    rasters++;
+                }
+            }
+        }
+
+        if (rasters == 0)
+        {
+            throw new AssertionException("No RW4 raster sections found.");
+        }
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

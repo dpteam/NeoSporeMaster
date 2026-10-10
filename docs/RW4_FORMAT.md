@@ -225,7 +225,29 @@ uint32 padding
 **Проверено:** во всех тестовых архивах **4514** материала, **все 4514** декодированы; **1807**
 текстурных слотов ссылаются на растр; **1598** связок «меш→материал», все ссылки разрешаются.
 
-## 12. Морфы и блендшейпы (MorphHandle / BlendShape / BlendShapeBuffer)
+## 12. Растр (RWRaster)
+
+Секция растра (`0x20003`) — метаданные встроенной текстуры:
+
+| Смещение | Тип | Поле |
+|---------:|-----|------|
+| `0x00` | int32 | `textureFormat` (D3DFMT или FourCC `DXT1/3/5`) |
+| `0x04` | uint16 | `textureFlags` (0x1000 — кубическая текстура) |
+| `0x06` | uint16 | `volumeDepth` |
+| `0x08` | int32 | `dxBaseTexture` (указатель рантайма) |
+| `0x0C` | uint16 | `width` |
+| `0x0E` | uint16 | `height` |
+| `0x10` | byte | `field_10` |
+| `0x11` | byte | `mipmapLevels` |
+| `0x12` | 2 байта | резерв |
+| `0x14` | int32 | `field_14` |
+| `0x18` | int32 | `field_18` |
+| `0x1C` | int32 | ссылка на `BaseResource` (пиксельные данные) |
+
+Реализовано чтение (`ReadRasters`); CLI `rw4` печатает сводку по растрам (формат, размер, мипы).
+**Проверено:** например `ce_weapon_club_01__diffuse.rw4` — **DXT5 128×128, 8 мипов**.
+
+## 13. Морфы и блендшейпы (MorphHandle / BlendShape / BlendShapeBuffer)
 
 - **`MorphHandle`** (`0xFF0000`): `int32 handleID; int32 field_4; double startPos[3];
   double endPos[3]; float defaultTime; uint32 animationRef` — цель морфа и её анимация
@@ -242,14 +264,14 @@ uint32 padding
 печатает сводки. **Проверено:** в тестовых архивах 200 блендшейпов и 200 буферов — все читаются
 (у всех буферов есть вершины и хотя бы один поток).
 
-## 13. Что осталось (будущее)
+## 14. Что осталось (будущее)
 
 - Перекомпиляция материалов и блендшейпов.
 - Нормали извлекаются только когда хранятся как float-элементы; на практике Spore часто хранит
   их в упакованном виде, поэтому `vn` может отсутствовать.
 - Экспорт в Ogre XML (как в SporeMaster 2 / SporeModder FX).
 
-## 14. Ссылки
+## 15. Ссылки
 
 - SporeModder FX: `refs/SporeModder-FX-master/src/sporemodder/file/rw4/RenderWare.java`,
   `RWHeader.java`, `RWSection*.java`, `RWMesh.java`, `RWVertexBuffer.java`, `RWIndexBuffer.java`,
