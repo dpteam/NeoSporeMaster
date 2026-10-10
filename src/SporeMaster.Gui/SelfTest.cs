@@ -197,11 +197,17 @@ internal static class SelfTest
                     report.AppendLine("Key map not found; skipped key-map load.");
                 }
 
-                // Exercise filtering.
-                window.SelectFolderForTest(0);
+                // Exercise filtering over the whole package (root scope).
+                window.NavigateAddressForTest("all");
                 int before = window.VisibleRowsForTest().Count;
                 window.ApplyFilterForTest("prop");
                 report.AppendLine($"Filter 'prop': {before} -> {window.VisibleRowsForTest().Count} visible");
+                window.ApplyFilterForTest("*.rw4");
+                report.AppendLine($"Wildcard '*.rw4': {window.VisibleRowsForTest().Count} visible");
+                window.ApplyFilterForTest(@"re:\.prop$");
+                report.AppendLine($"Regex '\\.prop$': {window.VisibleRowsForTest().Count} visible");
+                int contentMatches = window.ContentSearchForTest("hex:00000000");
+                report.AppendLine($"Content search 'hex:00000000': {contentMatches} match(es)");
                 window.ApplyFilterForTest(string.Empty);
 
                 window.UpdateLayout();

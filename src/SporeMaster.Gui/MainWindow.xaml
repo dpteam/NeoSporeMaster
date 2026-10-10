@@ -81,9 +81,9 @@
                           KeyDown="OnAddressKeyDown" SelectionChanged="OnAddressSelected" />
                 <TextBlock x:Name="Breadcrumb" VerticalAlignment="Center" FontWeight="SemiBold" Margin="10,0,0,0"
                            TextTrimming="CharacterEllipsis" />
-                <TextBlock DockPanel.Dock="Right" Text="{loc:Loc gui.search}" VerticalAlignment="Center" Margin="8,0,4,0" />
                 <TextBox x:Name="FilterBox" DockPanel.Dock="Right" Width="280" TextChanged="OnFilterChanged"
-                         ToolTip="{loc:Loc gui.filterTip}" />
+                         KeyDown="OnFilterKeyDown" ToolTip="{loc:Loc gui.filterTip}" />
+                <TextBlock DockPanel.Dock="Right" Text="{loc:Loc gui.search}" VerticalAlignment="Center" Margin="8,0,4,0" />
             </DockPanel>
         </Border>
 

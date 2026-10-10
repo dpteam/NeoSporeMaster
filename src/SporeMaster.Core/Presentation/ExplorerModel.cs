@@ -79,15 +79,20 @@ public static class ExplorerModel
         return slash > 0 ? item.Path[..slash] : Fnv.ToHex(item.GroupId);
     }
 
-    /// <summary>Filters items by a case-insensitive query over the path, type name and key.</summary>
+    /// <summary>
+    /// Filters items by a query over the path, type name and key. Supports plain substrings,
+    /// wildcards (<c>*</c>/<c>?</c>) and regex (<c>re:</c>). A content clause
+    /// (<c>text:</c>/<c>hex:</c>) is ignored here (use <see cref="ResourceContentSearch"/>).
+    /// </summary>
     public static List<ResourceItem> Filter(IEnumerable<ResourceItem> items, string? query)
     {
-        if (string.IsNullOrWhiteSpace(query))
+        NameFilter filter = NameFilter.Compile(ContentQuery.Parse(query).NamePart);
+        if (filter.IsEmpty)
         {
             return items.ToList();
         }
 
-        return items.Where(i => i.Matches(query)).ToList();
+        return items.Where(i => i.Matches(filter)).ToList();
     }
 
     /// <summary>Sorts items for the given column, ascending or descending.</summary>

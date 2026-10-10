@@ -39,6 +39,9 @@ public partial class MainWindow : Window
     private bool _syncingChecks;
     private bool _detailsPaneVisible = true;
 
+    /// <summary>Content-search matches (set by Enter); null when the name filter is in effect.</summary>
+    private List<ResourceItem>? _contentMatches;
+
     /// <summary>Paths of packages opened before the current one (so nested packages can be left again).</summary>
     private readonly List<string> _packageStack = new();
 
@@ -543,6 +546,7 @@ public partial class MainWindow : Window
         }
 
         _current = node;
+        _contentMatches = null;
 
         if (record)
         {
@@ -678,7 +682,62 @@ public partial class MainWindow : Window
 
     // ---- filtering / sorting / listing ----
 
-    private void OnFilterChanged(object sender, RoutedEventArgs e) => Guarded(RefreshList);
+    private void OnFilterChanged(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        // Any change to a content clause invalidates previously computed content matches.
+        _contentMatches = null;
+        RefreshList();
+    });
+
+    private void OnFilterKeyDown(object sender, KeyEventArgs e) => Guarded(() =>
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        ContentQuery content = ContentQuery.Parse(FilterBox.Text);
+        if (!content.HasContent)
+        {
+            return;
+        }
+
+        RunContentSearch(content);
+        e.Handled = true;
+    });
+
+    /// <summary>Runs a bounded content search over the current scope and shows the matches.</summary>
+    private void RunContentSearch(ContentQuery content)
+    {
+        if (_session is null)
+        {
+            return;
+        }
+
+        IEnumerable<ResourceItem> source = _flatView ? _items : _current?.Items ?? _items;
+        NameFilter nameFilter = NameFilter.Compile(content.NamePart);
+
+        ResourceContentSearch.Result result = ResourceContentSearch.Search(
+            source,
+            item =>
+            {
+                try
+                {
+                    return _session.Read(item.Entry);
+                }
+                catch
+                {
+                    return null;
+                }
+            },
+            nameFilter,
+            content);
+
+        _contentMatches = result.Matches;
+        RefreshList();
+        StatusText.Text = $"Content search ({content.Describe()}): {result.Matches.Count} match(es), scanned {result.Scanned}" +
+            (result.Truncated ? " (limit reached)" : string.Empty) + ".";
+    }
 
     private void RefreshList()
     {
@@ -686,11 +745,27 @@ public partial class MainWindow : Window
             ? _items
             : _current?.Items ?? _items;
 
-        List<ResourceItem> filtered = ExplorerModel.Filter(source, FilterBox?.Text);
+        ContentQuery content = ContentQuery.Parse(FilterBox?.Text);
+        List<ResourceItem> filtered;
+        if (content.HasContent)
+        {
+            // Content search runs on Enter; until then show the name-filtered set.
+            filtered = _contentMatches ?? ExplorerModel.Filter(source, FilterBox?.Text);
+        }
+        else
+        {
+            filtered = ExplorerModel.Filter(source, FilterBox?.Text);
+        }
+
         List<ResourceItem> sorted = ExplorerModel.Sort(filtered, _sort, _sortDescending);
 
         ResourceList.ItemsSource = sorted;
         CountText.Text = $"{sorted.Count} / {source.Count()}";
+
+        if (content.HasContent && _contentMatches is null)
+        {
+            StatusText.Text = "Press Enter to search contents (text:/hex:).";
+        }
     }
 
     private void OnColumnHeaderClick(object sender, RoutedEventArgs e) => Guarded(() =>
@@ -1856,6 +1931,19 @@ public partial class MainWindow : Window
     {
         FilterBox.Text = filter;
         RefreshList();
+    }
+
+    /// <summary>Runs a content search for a query and returns the match count (self-test).</summary>
+    internal int ContentSearchForTest(string query)
+    {
+        FilterBox.Text = query;
+        ContentQuery content = ContentQuery.Parse(query);
+        if (content.HasContent)
+        {
+            RunContentSearch(content);
+        }
+
+        return _contentMatches?.Count ?? 0;
     }
 
     /// <summary>Shows the preview for a row and captures the preview pane to a PNG (for verification).</summary>

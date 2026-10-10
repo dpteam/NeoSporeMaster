@@ -75,16 +75,20 @@ public sealed class ResourceItem
 
     public string Compression => Compressed ? "RefPack" : "-";
 
-    /// <summary>Case-insensitive match against the path, type and key.</summary>
-    public bool Matches(string filter)
+    /// <summary>Case-insensitive match against the path, type and key (substring).</summary>
+    public bool Matches(string filter) => Matches(NameFilter.Compile(filter));
+
+    /// <summary>
+    /// Matches a compiled <see cref="NameFilter"/> against the path, type name and key. Wildcard and
+    /// regex filters are applied per field (so <c>*.rw4</c> matches a path ending in <c>.rw4</c>).
+    /// </summary>
+    public bool Matches(NameFilter filter)
     {
-        if (string.IsNullOrWhiteSpace(filter))
+        if (filter.IsEmpty)
         {
             return true;
         }
 
-        return Path.Contains(filter, StringComparison.OrdinalIgnoreCase)
-            || TypeName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-            || Key.Contains(filter, StringComparison.OrdinalIgnoreCase);
+        return filter.Matches(Path) || filter.Matches(TypeName) || filter.Matches(Key);
     }
 }
