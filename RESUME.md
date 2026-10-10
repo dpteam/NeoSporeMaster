@@ -86,10 +86,10 @@ refs/                     справочные материалы и реаль�
 
 ## 5. Снимок состояния (обновлять по мере продвижения)
 
-- Версия — около **3.81.0**; тесты — **154/154**; дерево git чистое.
+- Версия — около **3.82.0**; тесты — **160/160**; дерево git чистое.
 - Готово в Core: DBPF 2.0/3.0/DBBF (read/write, бета и релиз); RefPack (байт-в-байт);
   `.prop`+`.prop.xml`+`.prop_t` (все 25 типов свойств); `.locale`+авто-локали+**CSV/TSV**;
-  `.raster`⇄DDS; bitmap⇄PNG (свой PNG-кодек + DXT-декодер); **RW4** (контейнер, меши, геометрия
+  `.raster`⇄DDS; bitmap⇄PNG (свой PNG-кодек + DXT-декодер); **TGA** и **`.cur`/ICO**→PNG; **RW4** (контейнер, меши, геометрия
   pos/uv/normal, скелеты, скины, ключевые анимации, материалы `CompiledState`, морфы/блендшейпы,
   растры + экспорт **DDS/OBJ+MTL/Ogre XML**, сэмплер анимаций, позёр скелета); `.anim` (чтение +
   текст); конвертеры `.pctp/.tlsa/.gait/.cnv(дамп)/.loottable/.look_table` и **cell `world`**
@@ -101,7 +101,7 @@ refs/                     справочные материалы и реаль�
   **слайдер анимации**)/`.anim`/trigger/hex, экспорт всех моделей, сравнение архивов, загрузка
   names/KeyMap, **переключение языка RU/EN**, self-test со скриншотами.
 - CLI-команды (полный список): `info list(ls) extract unpack unpackdata pack prop propt locale texture
-  bitmap guess search pctp tlsa gait cnv loottable looktable cellworld keymap rw4 export-models verify
+  bitmap image guess search pctp tlsa gait cnv loottable looktable cellworld keymap rw4 export-models verify
   roundtrip diff strings pdb anim hash types` (+ `--lang en|ru`, `--help`, `--version`).
 - Отложено (см. раздел 7 и `docs/FINAL_REVIEW.md`).
 

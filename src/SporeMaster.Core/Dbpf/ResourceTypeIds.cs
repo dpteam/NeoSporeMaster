@@ -19,6 +19,12 @@ public static class ResourceTypeIds
     /// <summary>Spore trigger/text resource (stored as plain text, e.g. <c>Config/*.txt</c>).</summary>
     public const uint Trigger = 0x024A0E52;
 
+    /// <summary>Truevision TGA image (<c>.tga</c>).</summary>
+    public const uint Tga = 0x2F7D0006;
+
+    /// <summary>Windows icon/cursor (<c>.cur</c>); may also be a RIFF AVI animated cursor.</summary>
+    public const uint Cursor = 0x02393756;
+
     private static readonly uint[] PropTypes =
     {
         Prop, SoundProp, SubmixProp, ModeProp, ChildrenProp,
@@ -43,4 +49,7 @@ public static class ResourceTypeIds
 
     /// <summary>True when the type id denotes a raw bitmap resource convertible to PNG.</summary>
     public static bool IsBitmap(uint typeId) => Bitmaps.SporeBitmapTypes.IsSupported(typeId);
+
+    /// <summary>True when the type id denotes a TGA image or a Windows icon/cursor.</summary>
+    public static bool IsTgaOrCursor(uint typeId) => typeId == Tga || typeId == Cursor;
 }

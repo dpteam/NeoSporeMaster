@@ -62,6 +62,7 @@ public static class Program
             "locale" => Commands.Locale(cli, output),
             "texture" => Commands.Texture(cli, output),
             "bitmap" => Commands.Bitmap(cli, output),
+            "image" => Commands.Image(cli, output),
             "guess" => Commands.Guess(cli, output),
             "search" => Commands.Search(cli, output),
             "pctp" => Commands.Pctp(cli, output),
@@ -112,6 +113,7 @@ public static class Program
         output.Line($"  {loc["cmd.locale.usage"],-58} {loc["cmd.locale.summary"]}");
         output.Line($"  {loc["cmd.texture.usage"],-58} {loc["cmd.texture.summary"]}");
         output.Line($"  {loc["cmd.bitmap.usage"],-58} {loc["cmd.bitmap.summary"]}");
+        output.Line($"  {loc["cmd.image.usage"],-58} {loc["cmd.image.summary"]}");
         output.Line($"  {loc["cmd.guess.usage"],-58} {loc["cmd.guess.summary"]}");
         output.Line($"  {loc["cmd.search.usage"],-58} {loc["cmd.search.summary"]}");
         output.Line($"  {loc["cmd.pctp.usage"],-58} {loc["cmd.pctp.summary"]}");

@@ -80,6 +80,22 @@ public static class PreviewEngine
                 return ResourcePreview.AsImage(png);
             }
 
+            // TGA images and Windows icon/cursor resources decode to PNG. (Some "cur" resources are
+            // RIFF AVI animated cursors, which we do not decode — fall back to the hex view.)
+            if (ResourceTypeIds.IsTgaOrCursor(type))
+            {
+                try
+                {
+                    RgbaImage image = ImageFormats.Decode(data);
+                    return ResourcePreview.AsImage(PngCodec.Encode(image));
+                }
+                catch (Exception ex)
+                {
+                    return ResourcePreview.AsText(
+                        $"Image could not be decoded ({ex.Message}).\n\n{HexDump(data)}", "hex");
+                }
+            }
+
             if (ResourceTypeIds.IsTexture(type))
             {
                 RasterTexture raster = RasterTexture.Read(new MemoryStream(data));

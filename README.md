@@ -35,6 +35,7 @@
   **текстур-растров** (формат, размер, мипы).
 - **Bitmap (`.bitImage`/`8bitImage`/`32bitImage`/`48bitImage` ⇄ PNG)** — конвертация «сырых»
   растровых ресурсов Spore в PNG и обратно. PNG-кодек написан нами (только BCL+zlib).
+- **TGA и значки/курсоры Windows** (`tga`, `cur`/ICO ⇄ PNG) — декодирование в PNG и превью в GUI.
 - **Восстановление имён по хешам** — «hash guesser» с обращением FNV и словарями фрагментов
   (`data/guess_left.txt`, `data/guess_right.txt`); пакетный режим восстанавливает все
   неизвестные хеши архива и сохраняет их в `names.txt` для повторного использования.
@@ -230,6 +231,10 @@ dotnet run --project src/SporeMaster.Cli -- export-models <архив.package> <
 # Конвертировать растровый ресурс (bitmap ⇄ PNG, определяется автоматически)
 dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage> <файл.32bitImage.png>
 dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage.png> <файл.32bitImage>
+
+# Конвертировать картинку TGA или значок/курсор Windows (.cur/.ico) в PNG
+dotnet run --project src/SporeMaster.Cli -- image <файл.tga> <файл.png>
+dotnet run --project src/SporeMaster.Cli -- image <файл.cur> <файл.png>
 
 # Восстановить имя по хешу
 dotnet run --project src/SporeMaster.Cli -- guess 0x73BF81A5

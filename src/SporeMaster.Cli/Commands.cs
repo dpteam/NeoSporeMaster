@@ -1350,6 +1350,47 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Converts a TGA/CUR/ICO image to PNG: <c>image &lt;input.(tga|cur|ico)&gt; &lt;output.png&gt;</c>.</summary>
+    public static int Image(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "image <input.(tga|cur|ico|png)> <output.png> [--index N]");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        int index = -1;
+        string? indexText = cli.Get("index");
+        if (!string.IsNullOrEmpty(indexText) && (!int.TryParse(indexText, out index) || index < 0))
+        {
+            output.Error($"Invalid --index '{indexText}'.");
+            return 1;
+        }
+
+        try
+        {
+            byte[] data = File.ReadAllBytes(input);
+            RgbaImage image = ImageFormats.Decode(data, index);
+            using FileStream pngOut = File.Create(outputPath);
+            PngCodec.Encode(image, pngOut);
+            output.Success($"Wrote PNG ({image.Width}x{image.Height}): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Image conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Determines the bitmap type from a file's extension (e.g. <c>foo.32bitImage.png</c>).</summary>
     private static uint ResolveBitmapType(string path)
     {
