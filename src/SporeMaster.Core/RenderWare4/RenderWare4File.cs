@@ -435,8 +435,9 @@ public sealed class RenderWare4File : IDisposable
         }
 
         var rasters = new List<Rw4Raster>();
-        foreach (Rw4SectionInfo section in Sections)
+        for (int i = 0; i < Sections.Count; i++)
         {
+            Rw4SectionInfo section = Sections[i];
             if (section.TypeCode != (int)Rw4SectionType.Raster || section.Size < 32)
             {
                 continue;
@@ -444,7 +445,9 @@ public sealed class RenderWare4File : IDisposable
 
             try
             {
-                rasters.Add(Rw4Raster.Read(_stream, section.DataOffset));
+                Rw4Raster raster = Rw4Raster.Read(_stream, section.DataOffset);
+                raster.SectionIndex = i;
+                rasters.Add(raster);
             }
             catch (Exception ex)
             {
@@ -482,14 +485,17 @@ public sealed class RenderWare4File : IDisposable
         }
 
         var materials = new List<Rw4Material>();
-        foreach (Rw4SectionInfo section in Sections)
+        for (int i = 0; i < Sections.Count; i++)
         {
+            Rw4SectionInfo section = Sections[i];
             if (section.TypeCode != (int)Rw4SectionType.CompiledState || section.Size <= 0)
             {
                 continue;
             }
 
-            materials.Add(Rw4Material.Read(_stream, section.DataOffset, section.Size, _length));
+            Rw4Material material = Rw4Material.Read(_stream, section.DataOffset, section.Size, _length);
+            material.SectionIndex = i;
+            materials.Add(material);
         }
 
         return materials;

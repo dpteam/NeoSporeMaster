@@ -751,6 +751,50 @@ public static class RenderWare4Tests
         throw new AssertionException("No RW4 texture with pixel data was found.");
     }
 
+    [SporeTest("OBJ export emits a material library")]
+    public static void ObjMaterialLibrary()
+    {
+        string metal = Rw4ObjExporter.ExportMtl(new[] { ("mat0", "tex0.dds"), ("mat1", (string?)null) });
+        Assert.Contains(metal, "newmtl mat0");
+        Assert.Contains(metal, "map_Kd tex0.dds");
+        Assert.Contains(metal, "newmtl mat1");
+
+        // Find a real model with geometry and check the OBJ references the library and a material.
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                IReadOnlyList<Rw4MeshGeometry> geometry = rw4.ReadGeometry();
+                if (geometry.Count == 0)
+                {
+                    continue;
+                }
+
+                string obj = Rw4ObjExporter.Export(geometry, "model.mtl", _ => "mat0");
+                Assert.Contains(obj, "mtllib model.mtl");
+                Assert.Contains(obj, "usemtl mat0");
+                Assert.Contains(obj, "v ");
+                Assert.Contains(obj, "f ");
+                return;
+            }
+        }
+
+        throw new AssertionException("No RW4 geometry was found to export.");
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

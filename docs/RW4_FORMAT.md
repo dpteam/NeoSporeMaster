@@ -250,6 +250,17 @@ uint32 padding
 **Проверено:** например `ce_weapon_club_01__diffuse.rw4` — **DXT5 128×128, 8 мипов** (выгруженный
 DDS читается обратно с теми же размерами/форматом).
 
+## 12a. Экспорт OBJ + MTL
+
+`rw4 <файл> --export <файл.obj>` выгружает меши, а также:
+- **`.mtl`** — по одному `newmtl` на скомпилированное состояние (`CompiledState`), с `map_Kd` на
+  текстуру (первый текстурный слот материала);
+- **текстуры в DDS** — рядом, в папку `<имя>_textures/`;
+- в OBJ — `mtllib` и `usemtl` на каждый меш (по связке `MeshCompiledStateLink`).
+
+**Проверено:** на модели `ce_sense_ear_top_01-symmetric.rw4` выгружается 1 меш (344 вершины,
+612 треугольников), 1 материал и 1 текстура; OBJ ссылается на `model.mtl`, MTL — на `map_Kd`.
+
 ## 13. Морфы и блендшейпы (MorphHandle / BlendShape / BlendShapeBuffer)
 
 - **`MorphHandle`** (`0xFF0000`): `int32 handleID; int32 field_4; double startPos[3];

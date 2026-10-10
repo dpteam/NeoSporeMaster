@@ -9,6 +9,9 @@ namespace SporeMaster.Core.RenderWare4;
 /// </summary>
 public sealed class Rw4Raster
 {
+    /// <summary>Section index of this raster inside the resource.</summary>
+    public int SectionIndex { get; set; } = -1;
+
     /// <summary>Direct3D texture format (a <c>D3DFMT_*</c> constant or a DXT four-character code).</summary>
     public int TextureFormat { get; set; }
 

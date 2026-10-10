@@ -72,6 +72,9 @@ public sealed class Rw4Material
     /// <summary>The raw section bytes, exactly as stored.</summary>
     public byte[] Raw { get; set; } = Array.Empty<byte>();
 
+    /// <summary>Section index of this compiled state inside the resource.</summary>
+    public int SectionIndex { get; set; } = -1;
+
     /// <summary>True when the whole section was decoded successfully.</summary>
     public bool Decompiled { get; set; }
 
