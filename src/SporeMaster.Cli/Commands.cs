@@ -3,6 +3,7 @@ using System.Text;
 using SporeMaster.Core.Compression;
 using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Hashing;
+using SporeMaster.Core.Locale;
 using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
 using SporeMaster.Core.Properties;
@@ -191,6 +192,7 @@ public static class Commands
                         outputDir,
                         SanitizePath(names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId) + ".xml"));
                     WriteDirectory(propPath);
+
                     PropertyList list = PropertyList.Read(new MemoryStream(data));
                     using FileStream xmlOut = File.Create(propPath);
                     list.WriteXml(xmlOut, names);
@@ -247,7 +249,8 @@ public static class Commands
             string relative = Path.GetRelativePath(inputDir, file);
             bool isPropXml = relative.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
 
-            if (!TryResolveInput(relative, names, stripXml: isPropXml, out uint typeId, out uint groupId, out uint instanceId))
+            if (!TryResolveInput(relative, names, stripXml: isPropXml,
+                    out uint typeId, out uint groupId, out uint instanceId, out string groupName, out string instanceName))
             {
                 output.Warn($"Skipping '{relative}': cannot derive a resource key (expected group/name.ext).");
                 continue;
@@ -255,11 +258,16 @@ public static class Commands
 
             if (isPropXml && ResourceTypeIds.IsProperty(typeId))
             {
+                LocaleTable? autoLocale;
                 byte[] binary;
                 try
                 {
                     using FileStream xmlIn = File.OpenRead(file);
                     PropertyList list = PropertyList.ReadXml(xmlIn, names);
+
+                    // Generate the auto locale from placeholder texts, then embed the ids.
+                    autoLocale = AutoLocale.Generate(list, AutoLocale.GetName(groupName, instanceName), names);
+
                     using var buffer = new MemoryStream();
                     list.Write(buffer);
                     binary = buffer.ToArray();
@@ -271,6 +279,14 @@ public static class Commands
                 }
 
                 items.Add(new DbpfWriteItem(new ResourceKey(typeId, groupId, instanceId), binary));
+
+                if (autoLocale is not null)
+                {
+                    uint localeInstance = names.GetFileHash(AutoLocale.GetName(groupName, instanceName));
+                    items.Add(new DbpfWriteItem(
+                        new ResourceKey(ResourceTypeIds.Locale, AutoLocale.LocaleGroup, localeInstance),
+                        Encoding.UTF8.GetBytes(autoLocale.Serialize())));
+                }
             }
             else
             {
@@ -339,6 +355,46 @@ public static class Commands
 
         return 0;
     }
+
+    /// <summary>Lists the entries of a locale table: <c>locale &lt;file.locale&gt;</c>.</summary>
+    public static int Locale(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 1)
+        {
+            return UsageError(output, "locale <file.locale>");
+        }
+
+        string input = cli.Positional[0];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        LocaleTable table;
+        try
+        {
+            using FileStream stream = File.OpenRead(input);
+            table = LocaleTable.Read(stream);
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Failed to parse locale table: {ex.Message}");
+            return 1;
+        }
+
+        var rows = table.Entries
+            .Select(e => new[] { Fnv.ToHex(e.InstanceId), Truncate(e.Text, 72) })
+            .ToList();
+
+        output.Table(new[] { "Instance", "Text" }, rows);
+        output.Line();
+        output.Line($"{table.Count} entr(ies) in '{input}'.");
+        return 0;
+    }
+
+    private static string Truncate(string value, int max) =>
+        value.Length <= max ? value : value[..max] + "…";
 
     public static int Verify(CommandLine cli, Output output)
     {
@@ -522,9 +578,12 @@ public static class Commands
         bool stripXml,
         out uint typeId,
         out uint groupId,
-        out uint instanceId)
+        out uint instanceId,
+        out string groupName,
+        out string instanceName)
     {
         typeId = groupId = instanceId = 0;
+        groupName = instanceName = string.Empty;
         string normalized = relative.Replace('\\', '/');
         int slash = normalized.IndexOf('/');
         if (slash < 0)
@@ -545,8 +604,10 @@ public static class Commands
             return false;
         }
 
-        groupId = names.GetFileHash(group);
-        instanceId = names.GetFileHash(rest[..dot]);
+        groupName = group;
+        instanceName = rest[..dot];
+        groupId = names.GetFileHash(groupName);
+        instanceId = names.GetFileHash(instanceName);
         typeId = names.GetTypeHash(rest[(dot + 1)..]);
         return true;
     }

@@ -105,6 +105,17 @@ public sealed class TextProperty : Property
 
     public override void Clear() => _values.Clear();
 
+    /// <summary>Appends a localized text entry.</summary>
+    public void Add(LocalizedText value)
+    {
+        _values.Add(value);
+        IsArray = true;
+    }
+
+    /// <summary>Appends a localized text entry.</summary>
+    public void Add(uint tableId, uint instanceId, string text) =>
+        Add(new LocalizedText { TableId = tableId, InstanceId = instanceId, Text = text });
+
     public override void ReadElement(Stream s, bool isArray)
     {
         uint tableId = s.ReadU32();

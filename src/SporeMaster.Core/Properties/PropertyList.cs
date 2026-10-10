@@ -29,6 +29,42 @@ public sealed class PropertyList
 
     public bool Remove(uint id) => _properties.Remove(id);
 
+    /// <summary>
+    /// Clears references to auto-generated locales (undoing <c>AutoLocale.Generate</c>), so the
+    /// texts can be regenerated when the property is packed again. Mirrors SporeMaster 2's
+    /// <c>stripGeneratedLocaleReferences</c>.
+    /// </summary>
+    public int StripAutoLocaleReferences(NameRegistrySet names) =>
+        StripAutoLocaleReferences(id => Locale.AutoLocale.IsAutoLocale(names, id));
+
+    /// <summary>Clears references whose table id equals a known auto-locale id.</summary>
+    public int StripAutoLocaleReferences(uint autoTableId) =>
+        StripAutoLocaleReferences(id => id == autoTableId);
+
+    private int StripAutoLocaleReferences(Func<uint, bool> isAutoLocale)
+    {
+        int stripped = 0;
+        foreach (Property property in _properties.Values)
+        {
+            if (property is not TextProperty text)
+            {
+                continue;
+            }
+
+            foreach (LocalizedText value in text.Values)
+            {
+                if (value.TableId != 0 && isAutoLocale(value.TableId))
+                {
+                    value.TableId = 0;
+                    value.InstanceId = 0;
+                    stripped++;
+                }
+            }
+        }
+
+        return stripped;
+    }
+
     // ---- binary ----
 
     public static PropertyList Read(Stream stream, DiagnosticSink? diagnostics = null)

@@ -21,6 +21,8 @@
 - **RefPack / QFS** — полный порт компрессора и декомпрессора (байт-совместимо с эталоном).
 - **Свойства (`.prop`)** — чтение/запись бинарного формата **байт-в-байт**, конвертация в
   понятный XML (`.prop.xml`), совместимый со SporeMaster 2. Поддержаны все типы значений.
+- **Локали (`.locale`)** — чтение/запись текстовых таблиц локализации и **авто-генерация**
+  таблиц из текстов-заглушек свойств при упаковке (как в SporeMaster 2).
 - **Хеши именования** — FNV-1 (как в SporeMaster 2 и SporeModder FX).
 - **Реестры имён** `reg_type`, `reg_file`, `reg_property`, `reg_simulator` — встроены в сборку.
 - **Устойчивость к ошибкам**: битые и обрезанные архивы не роняют программу, а дают диагностику.
@@ -29,7 +31,7 @@
   игровых архивах).
 
 Не реализовано (в планах, см. `MEMORY.md`): графический интерфейс, текстуры DDS, модели
-RenderWare4, локали (STBL/locale), полный список конвертеров.
+RenderWare4, полный список конвертеров.
 
 ---
 
@@ -95,6 +97,9 @@ dotnet run --project src/SporeMaster.Cli -- pack <папка> <архив.packag
 # Конвертировать один файл свойств в XML и обратно
 dotnet run --project src/SporeMaster.Cli -- prop <файл.prop> <файл.prop.xml>
 dotnet run --project src/SporeMaster.Cli -- prop <файл.prop.xml> <файл.prop>
+
+# Посмотреть таблицу локализации
+dotnet run --project src/SporeMaster.Cli -- locale <файл.locale>
 
 # Проверить целостность (прочитать и распаковать все ресурсы)
 dotnet run --project src/SporeMaster.Cli -- verify <архив.package>
