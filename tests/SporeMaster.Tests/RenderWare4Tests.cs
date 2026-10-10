@@ -1,0 +1,198 @@
+using SporeMaster.Core.Dbpf;
+using SporeMaster.Core.RenderWare4;
+
+namespace SporeMaster.Tests;
+
+public static class RenderWare4Tests
+{
+    private const uint Rw4Type = 0x2F4E681B;
+
+    [SporeTest("RW4 resources parse as containers (structure is consistent)")]
+    public static void ContainerStructure()
+    {
+        int tested = 0;
+        int problems = 0;
+        string? first = null;
+
+        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                tested++;
+                try
+                {
+                    RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+
+                    if (rw4.SectionCount != rw4.Sections.Count)
+                    {
+                        problems++;
+                        first ??= $"{Path.GetFileName(packagePath)} {entry.Key}: declared {rw4.SectionCount} sections but read {rw4.Sections.Count}";
+                        continue;
+                    }
+
+                    // Every listed section must fit inside the file.
+                    foreach (Rw4SectionInfo section in rw4.Sections)
+                    {
+                        if (section.DataOffset < 0 || section.DataOffset + (long)section.Size > data.Length)
+                        {
+                            problems++;
+                            first ??= $"{Path.GetFileName(packagePath)} {entry.Key}: section {section.TypeCode:X} out of range";
+                            break;
+                        }
+                    }
+
+                    // The declared type table should contain at least the base-resource code.
+                    if (!rw4.Manifest.TypeCodes.Contains((int)Rw4SectionType.BaseResource))
+                    {
+                        problems++;
+                        first ??= $"{Path.GetFileName(packagePath)} {entry.Key}: manifest has no base-resource type code";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    problems++;
+                    first ??= $"{Path.GetFileName(packagePath)} {entry.Key}: {ex.GetType().Name} {ex.Message}";
+                }
+            }
+        }
+
+        if (tested == 0)
+        {
+            throw new AssertionException("No RW4 resources found in the reference packages.");
+        }
+
+        Assert.True(problems == 0, $"{problems} of {tested} RW4 resource(s) failed container validation. First: {first}");
+    }
+
+    [SporeTest("RW4 texture containers expose a raster section")]
+    public static void TextureContainerHasRaster()
+    {
+        int tested = 0;
+
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                if (rw4.ContainerType != Rw4ContainerType.Texture)
+                {
+                    continue;
+                }
+
+                Assert.True(
+                    rw4.Sections.Any(s => s.TypeCode == (int)Rw4SectionType.Raster),
+                    $"texture RW4 {entry.Key} should contain a raster section");
+                tested++;
+
+                if (tested >= 25)
+                {
+                    return;
+                }
+            }
+        }
+
+        if (tested == 0)
+        {
+            throw new AssertionException("No RW4 texture containers found.");
+        }
+    }
+
+    [SporeTest("RW4 model meshes expose plausible geometry")]
+    public static void MeshInfo()
+    {
+        int meshes = 0;
+
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                if (rw4.ContainerType != Rw4ContainerType.Model)
+                {
+                    continue;
+                }
+
+                foreach (Rw4Mesh mesh in rw4.ReadMeshes())
+                {
+                    Assert.True(mesh.TriangleCount > 0, "mesh should have triangles");
+                    Assert.True(mesh.VertexCount > 0, "mesh should have vertices");
+                    Assert.True(mesh.VertexBufferIndices.Count > 0, "mesh should reference a vertex buffer");
+
+                    // References are indices into the section list (0x400000 is a "no buffer" sentinel).
+                    Assert.True(
+                        mesh.IndexBufferIndex >= 0 && mesh.IndexBufferIndex < rw4.Sections.Count,
+                        "mesh index buffer reference must be in range");
+                    foreach (int vb in mesh.VertexBufferIndices)
+                    {
+                        Assert.True(
+                            vb == 0x400000 || (vb >= 0 && vb < rw4.Sections.Count),
+                            $"mesh vertex buffer reference {vb} out of range");
+                    }
+
+                    meshes++;
+                }
+
+                if (meshes >= 100)
+                {
+                    return;
+                }
+            }
+        }
+
+        if (meshes == 0)
+        {
+            throw new AssertionException("No RW4 meshes found.");
+        }
+    }
+
+    [SporeTest("bad RW4 magic is rejected")]
+    public static void BadMagic()
+    {
+        Assert.Throws<NotRenderWare4Exception>(() =>
+            RenderWare4File.Read(new MemoryStream(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })));
+    }
+
+    [SporeTest("section type names are resolved")]
+    public static void SectionNames()
+    {
+        Assert.Equal("Mesh", Rw4SectionTypes.Describe((int)Rw4SectionType.Mesh));
+        Assert.Equal("BaseResource", Rw4SectionTypes.Describe((int)Rw4SectionType.BaseResource));
+        Assert.Contains(Rw4SectionTypes.Describe(0x1234), "0x");
+    }
+}

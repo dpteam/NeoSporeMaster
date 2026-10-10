@@ -59,9 +59,10 @@
 | Свойства `.prop` (бинарно, байт-в-байт) + `.prop.xml` | ✅ |
 | Локали `.locale` (текст) + авто-генерация | ✅ |
 | Текстуры `.raster` ⇄ DDS (байт-точно, мипмапы, DXT) | ✅ |
-| CLI (info/list/extract/unpack/pack/prop/locale/texture/verify/hash/types) | ✅ |
+| RenderWare4 `.rw4` (контейнер + меши) | ✅ |
+| CLI (info/list/extract/unpack/pack/prop/locale/texture/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (35, на реальных архивах) | ✅ |
+| Тесты (40, на реальных архивах) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -70,16 +71,16 @@
 
 Приоритет сверху вниз.
 
-1. **Модели RenderWare4** — перенос `RW4Model`, `ModelPack/Unpack`, `OgreXml*` и `DecodeRW4`.
-2. **GUI** — миграция WPF на `net9.0-windows` (или новый UI), переиспользуя `SporeMaster.Core`.
-3. **Хеш-гуссер** (`guess_left.txt` / `guess_right.txt`) — восстановление имён по хешам.
-4. **Индекс для полнотекстового поиска** (`FullTextIndex`).
-5. **Скрипты/конвертеры** из `refs/SporeModder-FX-master` (cnv, tlsa, spui, effect и т.д.).
-6. **ArgScript-формат `.prop_t`** (текстовый формат SporeModder FX) — дополнительно к `.prop.xml`.
-7. **Очистка авто-локалей при `unpack`** (поведение SporeMaster 2) — требует постоянного реестра
+1. **Полное декодирование RenderWare4** — описания вершин, материалы (`CompiledState`),
+   скелеты, анимации, блендшейпы и экспорт мешей в Ogre XML (как в SporeMaster 2).
+2. **Конвертация Bitmap** (`.png`/`.jpg` ⇄ внутренний bitmap-ресурс) — `refs/.../file/bitmaps`.
+3. **GUI** — миграция WPF на `net9.0-windows` (или новый UI), переиспользуя `SporeMaster.Core`.
+4. **Хеш-гуссер** (`guess_left.txt` / `guess_right.txt`) — восстановление имён по хешам.
+5. **Индекс для полнотекстового поиска** (`FullTextIndex`).
+6. **Скрипты/конвертеры** из `refs/SporeModder-FX-master` (cnv, tlsa, spui, effect и т.д.).
+7. **ArgScript-формат `.prop_t`** (текстовый формат SporeModder FX) — дополнительно к `.prop.xml`.
+8. **Очистка авто-локалей при `unpack`** (поведение SporeMaster 2) — требует постоянного реестра
    имён, чтобы надёжно узнавать имена `auto_*`; иначе возможны висячие ссылки.
-8. **Конвертация Bitmap** (`.png`/`.jpg` ⇄ внутренний bitmap-ресурс) — отдельный конвертер
-   (`refs/SporeModder-FX-master/.../file/bitmaps`).
 
 ---
 
@@ -131,3 +132,6 @@
   самих локалей нет, поэтому проверка формата — на синтетических данных.
 - **Текстуры**: 134 ресурса `.raster` в `CSA_Graphics.package` (формат `A8R8G8B8`, 32×32,
   6 мипмапов, memSize 5508/5540). Конвертация raster → DDS → raster **байт-в-байт** на всех.
+- **RenderWare4**: 2883 ресурса `.rw4` во всех тестовых архивах разбираются как контейнеры
+  (Model/Texture/Special). Пример `ear.rw4` (модель): 21 секция, тип `Model`, меш
+  `TriangleList` с 612 треугольниками и 344 вершинами. Текстуры `rw4` содержат секцию `Raster`.

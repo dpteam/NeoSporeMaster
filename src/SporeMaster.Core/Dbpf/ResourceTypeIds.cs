@@ -11,6 +11,7 @@ public static class ResourceTypeIds
     public const uint ChildrenProp = 0x03F51892;
     public const uint Locale = 0x02FAC0B6;
     public const uint Raster = 0x2F4E681C;
+    public const uint Rw4 = 0x2F4E681B;
 
     private static readonly uint[] PropTypes =
     {
@@ -24,4 +25,7 @@ public static class ResourceTypeIds
 
     /// <summary>True when the type id denotes a rasterized texture (.raster) convertible to DDS.</summary>
     public static bool IsTexture(uint typeId) => typeId == Raster;
+
+    /// <summary>True when the type id denotes a RenderWare 4 resource.</summary>
+    public static bool IsRenderWare4(uint typeId) => typeId == Rw4;
 }

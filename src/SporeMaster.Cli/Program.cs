@@ -59,6 +59,7 @@ public static class Program
             "prop" => Commands.Prop(cli, output),
             "locale" => Commands.Locale(cli, output),
             "texture" => Commands.Texture(cli, output),
+            "rw4" => Commands.Rw4(cli, output),
             "verify" => Commands.Verify(cli, output),
             "hash" => Commands.Hash(cli, output),
             "types" => Commands.Types(cli, output),
@@ -89,6 +90,7 @@ public static class Program
         output.Line($"  {loc["cmd.prop.usage"],-58} {loc["cmd.prop.summary"]}");
         output.Line($"  {loc["cmd.locale.usage"],-58} {loc["cmd.locale.summary"]}");
         output.Line($"  {loc["cmd.texture.usage"],-58} {loc["cmd.texture.summary"]}");
+        output.Line($"  {loc["cmd.rw4.usage"],-58} {loc["cmd.rw4.summary"]}");
         output.Line($"  {loc["cmd.verify.usage"],-58} {loc["cmd.verify.summary"]}");
         output.Line($"  {loc["cmd.hash.usage"],-58} {loc["cmd.hash.summary"]}");
         output.Line($"  {loc["cmd.types.usage"],-58} {loc["cmd.types.summary"]}");

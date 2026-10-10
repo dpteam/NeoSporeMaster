@@ -7,6 +7,7 @@ using SporeMaster.Core.Locale;
 using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
 using SporeMaster.Core.Properties;
+using SporeMaster.Core.RenderWare4;
 using SporeMaster.Core.Textures;
 
 namespace SporeMaster.Cli;
@@ -487,6 +488,91 @@ public static class Commands
         {
             output.Error($"Texture conversion failed: {ex.Message}");
             return 1;
+        }
+
+        return 0;
+    }
+
+    /// <summary>Inspects a RenderWare 4 resource: <c>rw4 &lt;file.rw4&gt;</c>.</summary>
+    public static int Rw4(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 1)
+        {
+            return UsageError(output, "rw4 <file.rw4>");
+        }
+
+        string input = cli.Positional[0];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        RenderWare4File rw4;
+        try
+        {
+            rw4 = RenderWare4File.Open(input);
+        }
+        catch (NotRenderWare4Exception ex)
+        {
+            output.Error(ex.Message);
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Failed to read RW4 resource: {ex.Message}");
+            return 1;
+        }
+
+        output.Heading($"RenderWare 4: {Path.GetFileName(input)}");
+        output.Line($"Container type: {Rw4SectionTypes.DescribeContainer(rw4.RawType)} (0x{rw4.RawType:X8})");
+        output.Line($"Sections: {rw4.SectionCount}");
+        output.Line($"Section table: 0x{rw4.SectionInfoOffset:X}");
+        output.Line($"Buffer data: 0x{rw4.BufferDataOffset:X}");
+        output.Line($"Manifest type codes: {rw4.Manifest.TypeCodes.Count}");
+        output.Line($"Sub-references: {rw4.Manifest.SubReferences.Count}");
+        output.Line();
+
+        var rows = rw4.Sections
+            .Select((s, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                Rw4SectionTypes.Describe(s.TypeCode),
+                $"0x{s.DataOffset:X}",
+                s.Size.ToString(CultureInfo.InvariantCulture),
+                s.Alignment.ToString(CultureInfo.InvariantCulture),
+            })
+            .ToList();
+
+        output.Table(new[] { "#", "Type", "Offset", "Size", "Align" }, rows);
+
+        IReadOnlyList<Core.RenderWare4.Rw4Mesh> meshes = rw4.ReadMeshes();
+        if (meshes.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Meshes ({meshes.Count})");
+            var meshRows = meshes.Select((m, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                m.PrimitiveType.ToString(),
+                m.TriangleCount.ToString(CultureInfo.InvariantCulture),
+                m.VertexCount.ToString(CultureInfo.InvariantCulture),
+                m.PrimitiveCount.ToString(CultureInfo.InvariantCulture),
+                m.VertexBufferIndices.Count.ToString(CultureInfo.InvariantCulture),
+            }).ToList();
+            output.Table(new[] { "#", "Primitive", "Triangles", "Vertices", "Prims", "VBufs" }, meshRows);
+        }
+
+        foreach (var diagnostic in rw4.Diagnostics.Items)
+        {
+            if (diagnostic.Level == Core.Diagnostics.DiagnosticLevel.Error)
+            {
+                output.Error(diagnostic.Message);
+            }
+            else if (diagnostic.Level == Core.Diagnostics.DiagnosticLevel.Warning)
+            {
+                output.Warn(diagnostic.Message);
+            }
         }
 
         return 0;
