@@ -1,5 +1,7 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using SporeMaster.Core.Dbpf;
@@ -8,24 +10,38 @@ using CoreBitmapImage = SporeMaster.Core.Bitmaps.BitmapImage;
 
 namespace SporeMaster.Gui;
 
-/// <summary>The main application window: a resource explorer for Spore packages.</summary>
+/// <summary>
+/// The main window: an Explorer-like browser for Spore packages. Resources are shown as files
+/// grouped into folders (by group id); the left pane is a folder tree, the middle pane is the file
+/// list and the right pane is a preview. Navigation (back/forward/up), a filter box, column
+/// sorting, context menus and extraction are all supported.
+/// </summary>
 /// <remarks>
-/// Every event handler is defensive: it catches its own exceptions (including the ones raised
-/// while decoding images in WPF) and reports them through the status bar / a message box instead
-/// of crashing. A global handler in <see cref="App"/> is the last line of defence.
+/// Every handler is defensive (see <see cref="Guarded"/>); a global handler in <see cref="App"/> is
+/// the last line of defence.
 /// </remarks>
 public partial class MainWindow : Window
 {
     private PackageSession? _session;
-    private List<ResourceItem> _rows = new();
+    private List<ResourceItem> _items = new();
+    private FolderNode? _root;
+    private FolderNode? _current;
+    private readonly List<FolderNode> _history = new();
+    private int _historyIndex = -1;
+    private bool _flatView;
+    private bool _navigating;
+    private ResourceSort _sort = ResourceSort.Path;
+    private bool _sortDescending;
+    private int _treeWidth = 260;
 
     public MainWindow()
     {
         InitializeComponent();
+        AddHandler(GridViewColumnHeader.ClickEvent, new RoutedEventHandler(OnColumnHeaderClick));
         Loaded += (_, _) => Guarded(TryOpenFromCommandLine);
     }
 
-    // ---- opening ----
+    // ---- opening / closing ----
 
     private void OnOpenPackage(object sender, RoutedEventArgs e) => Guarded(() =>
     {
@@ -57,9 +73,14 @@ public partial class MainWindow : Window
         {
             _session?.Dispose();
             _session = PackageSession.Open(path);
-            _rows = _session.BuildItems().ToList();
+            _items = _session.BuildItems().ToList();
+            RebuildTree();
             Title = $"SporeMaster 3 — {Path.GetFileName(path)}";
-            ApplyFilter();
+
+            _history.Clear();
+            _historyIndex = -1;
+            Navigate(_root, record: true, resetHistory: true);
+
             StatusText.Text = $"{_session.Count} resource(s) — DBPF {_session.Header?.Version}";
         }
         catch (NotAPackageException ex)
@@ -72,15 +93,39 @@ public partial class MainWindow : Window
         }
     }
 
+    private void RebuildTree()
+    {
+        _root = new FolderNode(Path.GetFileName(_session?.FilePath ?? "package"), 0, isRoot: true);
+        foreach (ResourceItem item in _items)
+        {
+            _root.Items.Add(item);
+        }
+
+        foreach (ResourceFolder folder in ExplorerModel.BuildFolders(_items))
+        {
+            var node = new FolderNode(folder.Name, folder.GroupId, isRoot: false);
+            node.Items.AddRange(folder.Items);
+            _root.Children.Add(node);
+        }
+
+        FolderTree.ItemsSource = new[] { _root };
+    }
+
     private void OnClosePackage(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         _session?.Dispose();
         _session = null;
-        _rows = new List<ResourceItem>();
+        _items = new List<ResourceItem>();
+        _root = null;
+        _current = null;
+        _history.Clear();
+        _historyIndex = -1;
+        FolderTree.ItemsSource = null;
         ResourceList.ItemsSource = null;
         PreviewText.Text = string.Empty;
         PreviewImage.Source = null;
         PreviewHeader.Text = "Preview";
+        Breadcrumb.Text = string.Empty;
         Title = "SporeMaster 3";
         StatusText.Text = "Open a .package file to begin.";
         CountText.Text = string.Empty;
@@ -88,21 +133,243 @@ public partial class MainWindow : Window
 
     private void OnExit(object sender, RoutedEventArgs e) => Guarded(Close);
 
-    // ---- filtering ----
+    // ---- navigation ----
 
-    private void OnFilterChanged(object sender, RoutedEventArgs e) => Guarded(ApplyFilter);
-
-    private void ApplyFilter()
+    private void OnFolderSelected(object sender, RoutedPropertyChangedEventArgs<object> e) => Guarded(() =>
     {
-        string filter = FilterBox?.Text ?? string.Empty;
-        List<ResourceItem> filtered = _rows.Where(r => r.Matches(filter)).ToList();
-        ResourceList.ItemsSource = filtered;
-        CountText.Text = $"{filtered.Count} / {_rows.Count}";
+        if (!_navigating && !_flatView && e.NewValue is FolderNode node)
+        {
+            Navigate(node, record: true, resetHistory: false);
+        }
+    });
+
+    private void Navigate(FolderNode? node, bool record, bool resetHistory)
+    {
+        if (node is null)
+        {
+            return;
+        }
+
+        _current = node;
+
+        if (record)
+        {
+            if (resetHistory)
+            {
+                _history.Clear();
+                _historyIndex = -1;
+            }
+
+            if (_history.Count == 0 || !ReferenceEquals(_history[_historyIndex == -1 ? 0 : _historyIndex], node))
+            {
+                _history.RemoveRange(_historyIndex + 1, _history.Count - _historyIndex - 1);
+                _history.Add(node);
+                _historyIndex = _history.Count - 1;
+            }
+        }
+
+        RefreshList();
+        UpdateBreadcrumb();
+        UpdateNavigationButtons();
     }
+
+    private void OnBack(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_historyIndex > 0)
+        {
+            _historyIndex--;
+            _navigating = true;
+            SelectCurrent(record: false);
+            _navigating = false;
+        }
+    });
+
+    private void OnForward(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_historyIndex >= 0 && _historyIndex < _history.Count - 1)
+        {
+            _historyIndex++;
+            _navigating = true;
+            SelectCurrent(record: false);
+            _navigating = false;
+        }
+    });
+
+    private void OnUp(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_current is { IsRoot: false } && _root is not null)
+        {
+            SelectNode(_root);
+        }
+    });
+
+    private void SelectCurrent(bool record)
+    {
+        if (_historyIndex >= 0 && _historyIndex < _history.Count)
+        {
+            Navigate(_history[_historyIndex], record: false, resetHistory: false);
+        }
+    }
+
+    private void SelectNode(FolderNode node)
+    {
+        _navigating = true;
+        SelectInTree(node);
+        _navigating = false;
+        Navigate(node, record: true, resetHistory: false);
+    }
+
+    private void SelectInTree(FolderNode node)
+    {
+        // The tree only has two levels (root + folders); find the matching container.
+        if (node.IsRoot)
+        {
+            if (FolderTree.ItemContainerGenerator.ContainerFromItem(_root) is TreeViewItem rootItem)
+            {
+                rootItem.IsSelected = true;
+            }
+
+            return;
+        }
+
+        if (FolderTree.ItemContainerGenerator.ContainerFromItem(_root) is TreeViewItem parent)
+        {
+            parent.IsExpanded = true;
+            parent.UpdateLayout();
+            if (parent.ItemContainerGenerator.ContainerFromItem(node) is TreeViewItem child)
+            {
+                child.IsSelected = true;
+            }
+        }
+    }
+
+    private void UpdateBreadcrumb()
+    {
+        string package = _session is null ? string.Empty : Path.GetFileName(_session.FilePath);
+        if (_flatView)
+        {
+            Breadcrumb.Text = $"{package}  ▸  (flat view, {_items.Count} items)";
+        }
+        else if (_current is null || _current.IsRoot)
+        {
+            Breadcrumb.Text = $"{package}  ▸  (all {_items.Count} items)";
+        }
+        else
+        {
+            Breadcrumb.Text = $"{package}  ▸  📁 {_current.Name}  ({_current.Items.Count} items)";
+        }
+    }
+
+    private void UpdateNavigationButtons() => Title = Title; // buttons are always enabled; kept simple
+
+    // ---- filtering / sorting / listing ----
+
+    private void OnFilterChanged(object sender, RoutedEventArgs e) => Guarded(RefreshList);
+
+    private void RefreshList()
+    {
+        IEnumerable<ResourceItem> source = _flatView
+            ? _items
+            : _current?.Items ?? _items;
+
+        List<ResourceItem> filtered = ExplorerModel.Filter(source, FilterBox?.Text);
+        List<ResourceItem> sorted = ExplorerModel.Sort(filtered, _sort, _sortDescending);
+
+        ResourceList.ItemsSource = sorted;
+        CountText.Text = $"{sorted.Count} / {source.Count()}";
+    }
+
+    private void OnColumnHeaderClick(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (e.OriginalSource is not GridViewColumnHeader header || header.Column is null)
+        {
+            return;
+        }
+
+        ResourceSort sort = (header.Column.Header as string) switch
+        {
+            "Type" => ResourceSort.Type,
+            "Size" => ResourceSort.PackedSize,
+            "Mem" => ResourceSort.MemSize,
+            "Comp" => ResourceSort.PackedSize,
+            _ => ResourceSort.Path,
+        };
+
+        if (sort == _sort)
+        {
+            _sortDescending = !_sortDescending;
+        }
+        else
+        {
+            _sort = sort;
+            _sortDescending = false;
+        }
+
+        RefreshList();
+    });
+
+    private void OnRefresh(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_session is not null)
+        {
+            OpenPackage(_session.FilePath);
+        }
+    });
+
+    private void OnViewDetails(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        ResourceList.View = BuildDetailsView();
+    });
+
+    private void OnViewLargeIcons(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        var view = new GridView();
+        view.Columns.Add(new GridViewColumn { Header = "Name", DisplayMemberBinding = new System.Windows.Data.Binding("ShortName"), Width = 300 });
+        ResourceList.View = view;
+    });
+
+    private GridView BuildDetailsView()
+    {
+        var view = new GridView();
+        view.Columns.Add(new GridViewColumn { Header = "Name", DisplayMemberBinding = new System.Windows.Data.Binding("ShortName"), Width = 240 });
+        view.Columns.Add(new GridViewColumn { Header = "Type", DisplayMemberBinding = new System.Windows.Data.Binding("TypeName"), Width = 110 });
+        view.Columns.Add(new GridViewColumn { Header = "Size", DisplayMemberBinding = new System.Windows.Data.Binding("PackedSize"), Width = 80 });
+        view.Columns.Add(new GridViewColumn { Header = "Mem", DisplayMemberBinding = new System.Windows.Data.Binding("MemSize"), Width = 80 });
+        view.Columns.Add(new GridViewColumn { Header = "Comp", DisplayMemberBinding = new System.Windows.Data.Binding("Compression"), Width = 60 });
+        return view;
+    }
+
+    private void OnFlatViewToggle(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        _flatView = !_flatView;
+
+        if (_flatView)
+        {
+            _treeWidth = (int)TreeColumn.Width.Value;
+            TreeColumn.MinWidth = 0;
+            TreeColumn.Width = new GridLength(0);
+        }
+        else
+        {
+            TreeColumn.MinWidth = 160;
+            TreeColumn.Width = new GridLength(_treeWidth <= 0 ? 260 : _treeWidth);
+        }
+
+        RefreshList();
+        UpdateBreadcrumb();
+    });
 
     // ---- preview ----
 
     private void OnSelectionChanged(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (ResourceList.SelectedItem is ResourceItem row)
+        {
+            ShowPreview(row);
+        }
+    });
+
+    private void OnPreviewSelected(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         if (ResourceList.SelectedItem is ResourceItem row)
         {
@@ -151,7 +418,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Decodes image bytes into a WPF bitmap, returning false instead of throwing.</summary>
     private static bool TryDecodeImage(byte[] bytes, out BitmapSource? bitmap)
     {
         bitmap = null;
@@ -182,7 +448,17 @@ public partial class MainWindow : Window
 
     // ---- extraction ----
 
-    private void OnExtractSelected(object sender, RoutedEventArgs e) => Guarded(() =>
+    private void OnListDoubleClick(object sender, MouseButtonEventArgs e) => Guarded(() =>
+    {
+        if (ResourceList.SelectedItem is ResourceItem)
+        {
+            ExtractSelected();
+        }
+    });
+
+    private void OnExtractSelected(object sender, RoutedEventArgs e) => Guarded(ExtractSelected);
+
+    private void ExtractSelected()
     {
         if (_session is null || ResourceList.SelectedItem is not ResourceItem row)
         {
@@ -193,7 +469,7 @@ public partial class MainWindow : Window
         var dialog = new SaveFileDialog
         {
             Title = "Extract resource",
-            FileName = Path.GetFileName(row.Path),
+            FileName = Path.GetFileName(row.ShortName),
             Filter = "All files (*.*)|*.*",
         };
 
@@ -205,6 +481,30 @@ public partial class MainWindow : Window
         byte[] data = _session.Read(row.Entry);
         WriteConverted(row, data, dialog.FileName);
         StatusText.Text = $"Extracted {row.Path} ({data.Length} bytes).";
+    }
+
+    private void OnExtractFolder(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_session is null)
+        {
+            MessageBox.Show(this, "Open a package first.", "No package");
+            return;
+        }
+
+        List<ResourceItem> source = _flatView || _current?.IsRoot == true
+            ? _items
+            : _current?.Items ?? _items;
+
+        var dialog = new OpenFolderDialog { Title = "Choose an output folder" };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        (int written, int failed) = ExtractItems(source, dialog.FolderName);
+        StatusText.Text = $"Extracted {written} resource(s) to {dialog.FolderName}" + (failed > 0 ? $" ({failed} failed)" : string.Empty);
+        MessageBox.Show(this, $"Extracted {written} resource(s)." + (failed > 0 ? $"\n{failed} failed (see status bar)." : string.Empty),
+            "Extract folder", MessageBoxButton.OK, MessageBoxImage.Information);
     });
 
     private void OnExtractAll(object sender, RoutedEventArgs e) => Guarded(() =>
@@ -221,15 +521,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        string outputDir = dialog.FolderName;
+        (int written, int failed) = ExtractItems(_items, dialog.FolderName);
+        StatusText.Text = $"Extracted {written} resource(s) to {dialog.FolderName}" + (failed > 0 ? $" ({failed} failed)" : string.Empty);
+        MessageBox.Show(this, $"Extracted {written} resource(s)." + (failed > 0 ? $"\n{failed} failed (see status bar)." : string.Empty),
+            "Extract all", MessageBoxButton.OK, MessageBoxImage.Information);
+    });
+
+    private (int Written, int Failed) ExtractItems(IEnumerable<ResourceItem> items, string outputDir)
+    {
         int written = 0;
         int failed = 0;
 
-        foreach (ResourceItem row in _rows)
+        foreach (ResourceItem row in items)
         {
             try
             {
-                byte[] data = _session.Read(row.Entry);
+                byte[] data = _session!.Read(row.Entry);
                 string relative = row.Path.Replace('/', Path.DirectorySeparatorChar);
                 if (NeedsSuffix(row))
                 {
@@ -247,10 +554,8 @@ public partial class MainWindow : Window
             }
         }
 
-        StatusText.Text = $"Extracted {written} resource(s) to {outputDir}" + (failed > 0 ? $" ({failed} failed)" : string.Empty);
-        MessageBox.Show(this, $"Extracted {written} resource(s)." + (failed > 0 ? $"\n{failed} failed (see status bar)." : string.Empty),
-            "Extract all", MessageBoxButton.OK, MessageBoxImage.Information);
-    });
+        return (written, failed);
+    }
 
     /// <summary>Writes a resource, converting properties/textures/bitmaps to friendly formats.</summary>
     private void WriteConverted(ResourceItem row, byte[] data, string targetPath)
@@ -289,6 +594,8 @@ public partial class MainWindow : Window
         : ResourceTypeIds.IsTexture(row.TypeId) ? ".dds"
         : ".png";
 
+    // ---- misc commands ----
+
     private void OnLoadNames(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         if (_session is null)
@@ -309,8 +616,9 @@ public partial class MainWindow : Window
         }
 
         _session.LoadNames(dialog.FileName);
-        _rows = _session.BuildItems().ToList();
-        ApplyFilter();
+        _items = _session.BuildItems().ToList();
+        RebuildTree();
+        Navigate(_root, record: false, resetHistory: false);
         StatusText.Text = $"Loaded names from {Path.GetFileName(dialog.FileName)}.";
     });
 
@@ -320,6 +628,15 @@ public partial class MainWindow : Window
         {
             Clipboard.SetText(row.Key);
             StatusText.Text = $"Copied {row.Key}";
+        }
+    });
+
+    private void OnCopyName(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (ResourceList.SelectedItem is ResourceItem row)
+        {
+            Clipboard.SetText(row.ShortName);
+            StatusText.Text = $"Copied {row.ShortName}";
         }
     });
 
@@ -336,7 +653,6 @@ public partial class MainWindow : Window
 
     // ---- fault tolerance helpers ----
 
-    /// <summary>Runs an action, reporting any exception instead of letting it crash the app.</summary>
     private void Guarded(Action action)
     {
         try
@@ -372,13 +688,32 @@ public partial class MainWindow : Window
 
     // ---- test hooks (used by --selftest; no UI shown) ----
 
-    internal int RowCount => _rows.Count;
+    internal int RowCount => _items.Count;
 
     internal int ResourceCount => _session?.Count ?? 0;
 
+    internal int FolderCount => _root?.Children.Count ?? 0;
+
     internal void OpenPackageForTest(string path) => OpenPackage(path);
 
-    internal IReadOnlyList<ResourceItem> RowsForTest() => _rows;
+    internal IReadOnlyList<ResourceItem> RowsForTest() => _items;
+
+    internal IReadOnlyList<ResourceItem> VisibleRowsForTest() =>
+        ResourceList.ItemsSource as IReadOnlyList<ResourceItem> ?? Array.Empty<ResourceItem>();
+
+    internal void SelectFolderForTest(int index)
+    {
+        if (_root is not null && index >= 0 && index < _root.Children.Count)
+        {
+            SelectNode(_root.Children[index]);
+        }
+    }
+
+    internal void ApplyFilterForTest(string filter)
+    {
+        FilterBox.Text = filter;
+        RefreshList();
+    }
 
     internal ResourcePreview PreviewForTest(ResourceItem row)
     {

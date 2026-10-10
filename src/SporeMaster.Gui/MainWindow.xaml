@@ -1,7 +1,7 @@
 <Window x:Class="SporeMaster.Gui.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="SporeMaster 3" Height="720" Width="1180"
+        Title="SporeMaster 3" Height="760" Width="1240"
         Icon="SporeMaster3.ico"
         WindowStartupLocation="CenterScreen">
     <DockPanel>
@@ -12,64 +12,116 @@
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExit" />
             </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Copy Resource Key" Click="OnCopyKey" />
+                <MenuItem Header="Copy _Name" Click="OnCopyName" />
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Refresh" Click="OnRefresh" />
+                <Separator />
+                <MenuItem Header="_Details" Click="OnViewDetails" IsCheckable="True" IsChecked="True" />
+                <MenuItem Header="_Large Icons" Click="OnViewLargeIcons" IsCheckable="True" />
+            </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem Header="_Extract Selected..." Click="OnExtractSelected" />
                 <MenuItem Header="Extract _All..." Click="OnExtractAll" />
+                <MenuItem Header="Extract _Folder..." Click="OnExtractFolder" />
                 <Separator />
                 <MenuItem Header="Load recovered _names.txt..." Click="OnLoadNames" />
-                <Separator />
-                <MenuItem Header="_Copy Resource Key" Click="OnCopyKey" />
+                <MenuItem Header="Back to single list (flat view)" Click="OnFlatViewToggle" IsCheckable="True" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Click="OnAbout" />
-            </MenuItem>        </Menu>
+            </MenuItem>
+        </Menu>
 
         <ToolBarTray DockPanel.Dock="Top">
             <ToolBar>
-                <Button Content="Open" Click="OnOpenPackage" />
-                <Button Content="Extract Selected" Click="OnExtractSelected" />
+                <Button Content="← Back" Click="OnBack" />
+                <Button Content="→ Forward" Click="OnForward" />
+                <Button Content="↑ Up" Click="OnUp" />
                 <Separator />
-                <TextBlock Text="Filter:" VerticalAlignment="Center" Margin="6,0,4,0" />
-                <TextBox x:Name="FilterBox" Width="260" TextChanged="OnFilterChanged"
-                         ToolTip="Filter by name, type or key" />
-                <TextBlock x:Name="CountText" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#666" />
+                <Button Content="Open" Click="OnOpenPackage" />
+                <Button Content="Extract" Click="OnExtractSelected" />
             </ToolBar>
         </ToolBarTray>
+
+        <Border DockPanel.Dock="Top" Background="#F7F7F7" BorderBrush="#DDD" BorderThickness="0,0,0,1">
+            <DockPanel Margin="6,3">
+                <TextBlock x:Name="Breadcrumb" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <TextBlock DockPanel.Dock="Right" Text="Search:" VerticalAlignment="Center" Margin="8,0,4,0" />
+                <TextBox x:Name="FilterBox" DockPanel.Dock="Right" Width="280" TextChanged="OnFilterChanged"
+                         ToolTip="Filter by name, type or key" />
+            </DockPanel>
+        </Border>
 
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
                 <TextBlock x:Name="StatusText" Text="Open a .package file to begin." />
             </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock x:Name="CountText" Foreground="#666" />
+            </StatusBarItem>
         </StatusBar>
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" MinWidth="360" />
+                <ColumnDefinition x:Name="TreeColumn" Width="260" MinWidth="160" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="2*" MinWidth="300" />
                 <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="3*" MinWidth="280" />
             </Grid.ColumnDefinitions>
 
-            <ListView x:Name="ResourceList" Grid.Column="0"
-                      SelectionMode="Single" SelectionChanged="OnSelectionChanged"
+            <TreeView x:Name="FolderTree" Grid.Column="0"
+                      SelectedItemChanged="OnFolderSelected"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling">
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📁 " />
+                            <TextBlock Text="{Binding Name}" />
+                            <TextBlock Text="{Binding CountText}" Foreground="#888" Margin="6,0,0,0" />
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#DDD" />
+
+            <ListView x:Name="ResourceList" Grid.Column="2"
+                      SelectionMode="Extended" SelectionChanged="OnSelectionChanged"
+                      MouseDoubleClick="OnListDoubleClick"
                       VirtualizingStackPanel.IsVirtualizing="True"
                       VirtualizingStackPanel.VirtualizationMode="Recycling">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="#" Width="55" DisplayMemberBinding="{Binding Index}" />
+                        <GridViewColumn Header="Name" Width="240" DisplayMemberBinding="{Binding ShortName}" />
                         <GridViewColumn Header="Type" Width="110" DisplayMemberBinding="{Binding TypeName}" />
-                        <GridViewColumn Header="Comp" Width="60" DisplayMemberBinding="{Binding Compression}" />
-                        <GridViewColumn Header="Packed" Width="80" DisplayMemberBinding="{Binding PackedSize}" />
+                        <GridViewColumn Header="Size" Width="80" DisplayMemberBinding="{Binding PackedSize}" />
                         <GridViewColumn Header="Mem" Width="80" DisplayMemberBinding="{Binding MemSize}" />
-                        <GridViewColumn Header="Path" Width="420" DisplayMemberBinding="{Binding Path}" />
+                        <GridViewColumn Header="Comp" Width="60" DisplayMemberBinding="{Binding Compression}" />
                     </GridView>
                 </ListView.View>
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Extract..." Click="OnExtractSelected" />
+                        <MenuItem Header="Extract Folder..." Click="OnExtractFolder" />
+                        <Separator />
+                        <MenuItem Header="Copy Resource Key" Click="OnCopyKey" />
+                        <MenuItem Header="Copy Name" Click="OnCopyName" />
+                        <Separator />
+                        <MenuItem Header="Open in preview" Click="OnPreviewSelected" />
+                    </ContextMenu>
+                </ListView.ContextMenu>
             </ListView>
 
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#DDD" />
+            <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="#DDD" />
 
-            <DockPanel Grid.Column="2">
+            <DockPanel Grid.Column="4">
                 <TextBlock x:Name="PreviewHeader" DockPanel.Dock="Top" Padding="6,4"
-                           FontWeight="SemiBold" Text="Preview" Background="#F3F3F3" />
+                           FontWeight="SemiBold" Text="Preview" Background="#F3F3F3" TextTrimming="CharacterEllipsis" />
                 <Grid>
                     <TextBox x:Name="PreviewText" IsReadOnly="True" AcceptsReturn="True"
                              FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"

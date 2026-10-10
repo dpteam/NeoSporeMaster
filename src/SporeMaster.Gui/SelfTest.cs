@@ -6,8 +6,9 @@ namespace SporeMaster.Gui;
 
 /// <summary>
 /// A UI-less smoke test: it builds the real window (which loads the XAML) and, when a package is
-/// given, exercises opening, filtering and the full preview path (including image decoding) through
-/// the actual window code. The result is written to a report file and returned as an exit code.
+/// given, exercises opening, the folder tree, navigation, filtering, sorting and the full preview
+/// path (including image decoding) through the actual window code. The result is written to a
+/// report file and returned as an exit code.
 /// </summary>
 internal static class SelfTest
 {
@@ -29,13 +30,31 @@ internal static class SelfTest
             {
                 window.OpenPackageForTest(packagePath);
                 report.AppendLine($"Opened: {packagePath}");
-                report.AppendLine($"Resources: {window.ResourceCount}, rows: {window.RowCount}");
+                report.AppendLine($"Resources: {window.ResourceCount}, folders: {window.FolderCount}");
 
-                // Force a real layout pass so the GridView actually creates its cells (this is
-                // where WPF resolves binding cultures and where config problems surface).
+                // Force a real layout pass so the TreeView/GridView actually create their items
+                // (this is where WPF resolves binding cultures and where config problems surface).
                 window.Show();
                 window.UpdateLayout();
                 report.AppendLine("Layout pass: OK");
+
+                // Exercise folder navigation.
+                int foldersToVisit = Math.Min(window.FolderCount, 20);
+                for (int i = 0; i < foldersToVisit; i++)
+                {
+                    window.SelectFolderForTest(i);
+                }
+
+                report.AppendLine($"Folder navigation: {foldersToVisit} folder(s) selected");
+
+                // Exercise filtering.
+                window.SelectFolderForTest(0);
+                int before = window.VisibleRowsForTest().Count;
+                window.ApplyFilterForTest("prop");
+                report.AppendLine($"Filter 'prop': {before} -> {window.VisibleRowsForTest().Count} visible");
+                window.ApplyFilterForTest(string.Empty);
+
+                window.UpdateLayout();
                 window.Close();
 
                 IReadOnlyList<ResourceItem> rows = window.RowsForTest();

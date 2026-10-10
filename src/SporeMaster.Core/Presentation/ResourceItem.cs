@@ -42,6 +42,26 @@ public sealed class ResourceItem
     /// <summary>Resolved <c>group/name.ext</c> path.</summary>
     public string Path { get; }
 
+    /// <summary>Just the <c>name.ext</c> portion (without the folder).</summary>
+    public string ShortName
+    {
+        get
+        {
+            int slash = Path.IndexOf('/');
+            return slash >= 0 ? Path[(slash + 1)..] : Path;
+        }
+    }
+
+    /// <summary>The folder (group) name this resource lives in.</summary>
+    public string FolderName
+    {
+        get
+        {
+            int slash = Path.IndexOf('/');
+            return slash >= 0 ? Path[..slash] : string.Empty;
+        }
+    }
+
     public string TypeName { get; }
 
     public string Key => $"0x{TypeId:X8}:0x{GroupId:X8}:0x{InstanceId:X8}";

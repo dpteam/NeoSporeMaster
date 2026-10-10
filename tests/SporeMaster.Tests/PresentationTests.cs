@@ -81,6 +81,49 @@ public static class PresentationTests
         Assert.NotNull(preview.PngBytes);
     }
 
+    [SporeTest("explorer model groups resources into folders")]
+    public static void ExplorerFolders()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+
+        DbpfEntry Make(string group, string instance, string type) => new()
+        {
+            Key = new ResourceKey(names.GetTypeHash(type), names.GetFileHash(group), names.GetFileHash(instance)),
+        };
+
+        var items = new List<ResourceItem>
+        {
+            new(Make("CreatureGame", "a", "prop"), names),
+            new(Make("CreatureGame", "b", "rw4"), names),
+            new(Make("CellGame", "c", "prop"), names),
+        };
+
+        List<ResourceFolder> folders = ExplorerModel.BuildFolders(items);
+        Assert.Equal(2, folders.Count);
+
+        ResourceFolder creature = folders.First(f => f.Items.Any(i => i.Path.Contains("CreatureGame")));
+        Assert.Equal(2, creature.Count);
+        Assert.Equal(2, creature.TypeCount);
+    }
+
+    [SporeTest("explorer model filters and sorts")]
+    public static void ExplorerFilterSort()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        var items = new List<ResourceItem>
+        {
+            new(new DbpfEntry { Key = new ResourceKey(names.GetTypeHash("prop"), names.GetFileHash("g"), names.GetFileHash("alpha")) }, names),
+            new(new DbpfEntry { Key = new ResourceKey(names.GetTypeHash("rw4"), names.GetFileHash("g"), names.GetFileHash("beta")) }, names),
+        };
+
+        Assert.Equal(2, ExplorerModel.Filter(items, null).Count);
+        Assert.Equal(1, ExplorerModel.Filter(items, "alpha").Count);
+        Assert.Equal(0, ExplorerModel.Filter(items, "zzz").Count);
+
+        List<ResourceItem> byType = ExplorerModel.Sort(items, ResourceSort.Type, descending: false);
+        Assert.Contains(byType[0].TypeName, "prop");
+    }
+
     [SporeTest("package session enumerates and reads a real package")]
     public static void SessionReads()
     {
