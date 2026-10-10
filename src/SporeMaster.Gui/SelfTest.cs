@@ -135,6 +135,13 @@ internal static class SelfTest
                 int missingGlyphs = rows.Count(r => string.IsNullOrEmpty(r.Glyph));
                 report.AppendLine($"Rows missing a glyph: {missingGlyphs}");
 
+                // Drag-out export writes a temporary converted file.
+                if (rows.Count > 0)
+                {
+                    string temp = window.ExtractToTempForTest(rows[0]);
+                    report.AppendLine($"Drag-out temp file: {File.Exists(temp)} ({Path.GetFileName(temp)})");
+                }
+
                 int detailsFailures = 0;
                 foreach (ResourceItem row in rows.Take(200))
                 {

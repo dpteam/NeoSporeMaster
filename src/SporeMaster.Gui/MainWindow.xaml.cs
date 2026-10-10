@@ -593,6 +593,81 @@ public partial class MainWindow : Window
         }
     });
 
+    // ---- drag out (export to Explorer) ----
+
+    private Point _dragStart;
+    private bool _draggingOut;
+
+    private void OnListMouseDown(object sender, MouseButtonEventArgs e) =>
+        _dragStart = e.GetPosition(null);
+
+    /// <summary>
+    /// Explorer-style "drag out": dragging a resource writes it to a temporary file (with the usual
+    /// conversions) and starts a file drop, so it can be dropped into Explorer or another app.
+    /// </summary>
+    private void OnListMouseMove(object sender, MouseEventArgs e) => Guarded(() =>
+    {
+        if (_draggingOut || e.LeftButton != MouseButtonState.Pressed || _session is null)
+        {
+            return;
+        }
+
+        Point position = e.GetPosition(null);
+        if (Math.Abs(position.X - _dragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(position.Y - _dragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        if (ItemsUnder(e.OriginalSource).FirstOrDefault() is not { } row)
+        {
+            return;
+        }
+
+        _draggingOut = true;
+        try
+        {
+            string temp = ExtractToTemp(row);
+            StatusText.Text = $"Dragging {row.ShortName} (extracted to {temp}).";
+            DragDrop.DoDragDrop(ResourceList, new DataObject(DataFormats.FileDrop, new[] { temp }), DragDropEffects.Copy);
+        }
+        finally
+        {
+            _draggingOut = false;
+        }
+    });
+
+    /// <summary>Finds the resource under a visual (used by drag-out).</summary>
+    private IEnumerable<ResourceItem> ItemsUnder(object originalSource)
+    {
+        var element = originalSource as System.Windows.Media.Visual;
+        while (element is not null)
+        {
+            if (element is FrameworkElement { DataContext: ResourceItem item })
+            {
+                yield return item;
+                yield break;
+            }
+
+            element = System.Windows.Media.VisualTreeHelper.GetParent(element) as System.Windows.Media.Visual;
+        }
+    }
+
+    /// <summary>Extracts a resource to a uniquely named temporary file (with conversions).</summary>
+    private string ExtractToTemp(ResourceItem row)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "SporeMaster-dnd");
+        Directory.CreateDirectory(directory);
+
+        string name = row.ShortName;
+        string suffix = NeedsSuffix(row) ? SuffixFor(row) : string.Empty;
+        string target = Path.Combine(directory, $"{row.Key.Replace(':', '_')}_{name}{suffix}");
+
+        byte[] data = _session!.Read(row.Entry);
+        WriteConverted(row, data, target);
+        return target;
+    }
+
     private void OnExtractSelected(object sender, RoutedEventArgs e) => Guarded(ExtractSelected);
 
     private void ExtractSelected()
@@ -1075,6 +1150,9 @@ public partial class MainWindow : Window
         FilterBox.Text = filter;
         RefreshList();
     }
+
+    /// <summary>Extracts a row to a temporary file (used by the drag-out path) for the self-test.</summary>
+    internal string ExtractToTempForTest(ResourceItem row) => ExtractToTemp(row);
 
     internal void CheckFolderForTest(int index, bool isChecked)
     {

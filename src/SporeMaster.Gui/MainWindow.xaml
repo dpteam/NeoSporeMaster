@@ -144,6 +144,8 @@
             <ListView x:Name="ResourceList" Grid.Column="2"
                       SelectionMode="Extended" SelectionChanged="OnSelectionChanged"
                       MouseDoubleClick="OnListDoubleClick"
+                      PreviewMouseLeftButtonDown="OnListMouseDown"
+                      PreviewMouseMove="OnListMouseMove"
                       VirtualizingStackPanel.IsVirtualizing="True"
                       VirtualizingStackPanel.VirtualizationMode="Recycling">
                 <ListView.View>
