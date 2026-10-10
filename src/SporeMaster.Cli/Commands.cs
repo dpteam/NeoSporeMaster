@@ -903,6 +903,47 @@ public static class Commands
 
         output.Line($"Loaded {guesser.LeftCount} left and {guesser.RightCount} right fragment(s).");
 
+        // --validate <KeyMap.txt>: measure how well the guesser recovers real names.
+        string? validatePath = cli.Get("validate");
+        if (validatePath is not null)
+        {
+            if (!File.Exists(validatePath))
+            {
+                output.Error(Localizer.Default.Get("common.fileNotFound", validatePath));
+                return 1;
+            }
+
+            KeyMap keyMap = KeyMap.ParseFile(validatePath);
+            int limit = cli.GetInt("limit") ?? 500;
+            GuesserValidationResult result = GuesserValidation.Validate(
+                guesser, keyMap, limit, maxResultsPerHash: Math.Min(max, 10),
+                progress: (done, total) =>
+                {
+                    if (done % 50 == 0 || done == total)
+                    {
+                        output.Line($"  validating {done}/{total}...");
+                    }
+                });
+
+            output.Line();
+            output.Line($"Attempted:   {result.Attempted}");
+            output.Line($"Found:       {result.Found} ({result.FoundRate:P1})");
+            output.Line($"Correct:     {result.Correct} ({result.CorrectRate:P1}) — real name among candidates");
+            output.Line($"Top-1:       {result.Top1Correct} ({result.Top1Rate:P1}) — real name is the first candidate");
+
+            if (result.Misses.Count > 0)
+            {
+                output.Line();
+                output.Heading("Sample misses (real name -> top guess)");
+                foreach ((string real, string? top) in result.Misses.Take(15))
+                {
+                    output.Line($"  {real}  ->  {top ?? "(nothing found)"}");
+                }
+            }
+
+            return 0;
+        }
+
         // --package <path>: guess for every unnamed hash in a package.
         string? packagePath = cli.Get("package");
         if (packagePath is not null)
