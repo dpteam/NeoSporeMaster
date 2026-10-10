@@ -150,6 +150,43 @@ public sealed class NameRegistrySet
         KeyMap.ParseFile(path).ApplyTo(this);
     }
 
+    /// <summary>
+    /// Builds a <c>reg_file.txt</c>-style registry for exactly the keys used by a package: one line
+    /// per group/instance name. Names that do not hash to their id (aliases) are written as
+    /// <c>name\thash</c>. Useful for making an unpacked mod self-describing.
+    /// </summary>
+    public string BuildNameRegistry(IEnumerable<(uint Type, uint Group, uint Instance)> keys)
+    {
+        var groups = new HashSet<uint>();
+        var instances = new HashSet<uint>();
+        foreach ((uint _, uint group, uint instance) in keys)
+        {
+            groups.Add(group);
+            instances.Add(instance);
+        }
+
+        var merged = new SortedDictionary<uint, string>();
+        foreach (uint hash in groups)
+        {
+            merged[hash] = GetFileName(hash);
+        }
+
+        foreach (uint hash in instances)
+        {
+            merged[hash] = GetFileName(hash);
+        }
+
+        var builder = new System.Text.StringBuilder();
+        builder.Append("# Names used by the package (SporeMaster 3)\n");
+        foreach ((uint hash, string name) in merged)
+        {
+            bool alias = name.EndsWith('~') || Hashing.Fnv.Hash(name) != hash;
+            builder.Append(alias ? $"{name}\t0x{hash:x8}\n" : $"{name}\n");
+        }
+
+        return builder.ToString();
+    }
+
     public uint GetTypeHash(string name)
     {
         if (name.StartsWith('#') || name.StartsWith("0x", StringComparison.OrdinalIgnoreCase))

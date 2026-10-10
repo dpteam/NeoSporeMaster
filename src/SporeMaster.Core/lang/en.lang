@@ -30,7 +30,7 @@ header.encrypted = Encrypted container (DBPP)
 # --- Команды CLI ---
 cmd.info.usage = info <package>
 cmd.info.summary = Print DBPF header information for a package.
-cmd.list.usage = list <package> [--type T] [--group G] [--name S|*.ext|re:REGEX] [--content text:S|hex:BYTES] [--compressed] [--limit N] [--format csv|json] [--out FILE]
+cmd.list.usage = list <package> [--type T] [--group G] [--name S|*.ext|re:REGEX] [--content text:S|hex:BYTES] [--compressed] [--limit N] [--format csv|json] [--out FILE] [--save-names names.txt]
 cmd.list.summary = List resources inside a package (name supports wildcards/regex; --content searches bytes).
 cmd.extract.usage = extract <package> <type:group:instance> [--out FILE]
 cmd.extract.summary = Extract a single resource by its 3-part key.

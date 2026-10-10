@@ -98,6 +98,18 @@ public static class KeyMapTests
         Assert.Equal("physical_chorus_30sec", names.GetFileName(0x07C31016));
     }
 
+    [SporeTest("build a name registry for the keys used by a package")]
+    public static void BuildUsedNameRegistry()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        uint group = names.GetFileHash("0x40626000");
+        uint instance = names.GetFileHash("0x47356FB7");
+
+        string registry = names.BuildNameRegistry(new[] { (0x00B1B104u, group, instance) });
+        Assert.Contains(registry, "creature_parts");
+        Assert.Contains(registry, "ce_movementTech_Brute_02");
+    }
+
     [SporeTest("real key map resolves many resources in a retail package")]
     public static void RealKeyMapResolvesPackage()
     {

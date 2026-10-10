@@ -29,7 +29,7 @@ header.encrypted = Зашифрованный контейнер (DBPP)
 # --- Команды CLI ---
 cmd.info.usage = info <package>
 cmd.info.summary = Показать информацию о заголовке DBPF архива.
-cmd.list.usage = list <package> [--type T] [--group G] [--name S|*.ext|re:REGEX] [--content text:S|hex:BYTES] [--compressed] [--limit N] [--format csv|json] [--out FILE]
+cmd.list.usage = list <package> [--type T] [--group G] [--name S|*.ext|re:REGEX] [--content text:S|hex:BYTES] [--compressed] [--limit N] [--format csv|json] [--out FILE] [--save-names names.txt]
 cmd.list.summary = Список ресурсов архива (имя поддерживает маски/regex; --content ищет по байтам).
 cmd.extract.usage = extract <package> <type:group:instance> [--out FILE]
 cmd.extract.summary = Извлечь один ресурс по его ключу из трёх частей.

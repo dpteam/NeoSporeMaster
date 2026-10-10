@@ -164,6 +164,16 @@ public static class Commands
             }
 
             PrintDiagnostics(package!, output);
+
+            // --save-names <file>: write a reg_file-style registry of the names used by this package.
+            string? saveNames = cli.Get("save-names");
+            if (!string.IsNullOrEmpty(saveNames))
+            {
+                string registry = names.BuildNameRegistry(
+                    package!.Entries.Select(e => (e.Key.TypeId, e.Key.GroupId, e.Key.InstanceId)));
+                File.WriteAllText(saveNames, registry, new UTF8Encoding(false));
+                output.Success($"Wrote name registry to {saveNames}");
+            }
         }
 
         return 0;
