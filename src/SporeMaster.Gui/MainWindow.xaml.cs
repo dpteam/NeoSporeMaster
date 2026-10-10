@@ -1732,6 +1732,32 @@ public partial class MainWindow : Window
         StatusText.Text = $"Loaded names from {Path.GetFileName(dialog.FileName)}.";
     });
 
+    private void OnLoadKeyMap(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_session is null)
+        {
+            MessageBox.Show(this, Core.Localization.Localizer.Default["gui.msg.openFirst"], "SporeMaster 3");
+            return;
+        }
+
+        var dialog = new OpenFileDialog
+        {
+            Title = Core.Localization.Localizer.Default["gui.menu.loadKeyMap"],
+            Filter = "Key map (*.txt)|*.txt|All files (*.*)|*.*",
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        _session.LoadKeyMap(dialog.FileName);
+        _items = _session.BuildItems().ToList();
+        RebuildTree();
+        Navigate(_root, record: false, resetHistory: false);
+        StatusText.Text = $"Loaded key map from {Path.GetFileName(dialog.FileName)}.";
+    });
+
     private void OnCopyKey(object sender, RoutedEventArgs e) => Guarded(() =>
     {
         if (ResourceList.SelectedItem is ResourceItem row)
@@ -1916,6 +1942,19 @@ public partial class MainWindow : Window
     {
         ResourcePreview preview = PreviewForTest(row);
         return preview.Model?.SkeletonJoints.Count ?? 0;
+    }
+
+    /// <summary>Loads a key map and rebuilds (used by the self-test).</summary>
+    internal void LoadKeyMapForTest(string path)
+    {
+        if (_session is null)
+        {
+            return;
+        }
+
+        _session.LoadKeyMap(path);
+        _items = _session.BuildItems().ToList();
+        RebuildTree();
     }
 
     /// <summary>Compares the current package with another and returns the report text (for the self-test).</summary>

@@ -48,6 +48,9 @@ public sealed class PackageSession : IDisposable
     /// <summary>Merges an extra names registry (e.g. a recovered <c>names.txt</c>).</summary>
     public void LoadNames(string path) => Names.LoadProjectNames(path);
 
+    /// <summary>Merges the game's key map (<c>KeyMap.txt</c>): authoritative real names.</summary>
+    public void LoadKeyMap(string path) => Names.ApplyKeyMap(path);
+
     /// <summary>Groups the resources into Explorer-like folders (one per group id).</summary>
     public List<ResourceFolder> BuildFolders() => ExplorerModel.BuildFolders(BuildItems());
 

@@ -164,6 +164,7 @@ dotnet run --project src/SporeMaster.Gui -- путь\к\архиву.package
   (`.prop.xml`, `.dds`, `.png`);
 - **Экспорт всех моделей** (Tools → Export all models → OBJ/Ogre XML) с материалами и текстурами;
 - **Сравнение архивов** (Tools → Compare with package...) — добавочные/удалённые/изменённые ресурсы;
+- **Загрузка карты ключей** (Tools → Load game KeyMap.txt...) — авторитетные игровые имена;
 - через меню **Tools → Load recovered names.txt** можно подключить восстановленные имена.
 
 У GUI есть режим самопроверки (создаёт окно, открывает архив, строит превью и завершает работу

@@ -50,6 +50,7 @@
                 <MenuItem Header="{loc:Loc gui.menu.uncheckAll}" Click="OnUncheckAllFolders" />
                 <Separator />
                 <MenuItem Header="{loc:Loc gui.menu.loadNames}" Click="OnLoadNames" />
+                <MenuItem Header="{loc:Loc gui.menu.loadKeyMap}" Click="OnLoadKeyMap" />
                 <Separator />
                 <MenuItem Header="{loc:Loc gui.menu.compare}" Click="OnComparePackages" />
                 <Separator />

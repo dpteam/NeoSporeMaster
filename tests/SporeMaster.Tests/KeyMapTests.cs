@@ -88,6 +88,16 @@ public static class KeyMapTests
         Assert.Contains(table, "0x2f4e681b\trdx9");
     }
 
+    [SporeTest("applying a key map updates the name registry")]
+    public static void ApplyKeyMapToRegistry()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        KeyMap map = KeyMap.Parse(new[] { "{0x01a527db 0x021407ee 0x07c31016} \"Audio\\physical_chorus_30sec.snr\"" });
+
+        map.ApplyTo(names);
+        Assert.Equal("physical_chorus_30sec", names.GetFileName(0x07C31016));
+    }
+
     [SporeTest("real key map resolves many resources in a retail package")]
     public static void RealKeyMapResolvesPackage()
     {

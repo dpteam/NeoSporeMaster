@@ -139,6 +139,17 @@ public sealed class NameRegistrySet
         _files.Read(File.ReadAllLines(path));
     }
 
+    /// <summary>Merges the game's key map (<c>KeyMap.txt</c>): authoritative real names.</summary>
+    public void ApplyKeyMap(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        KeyMap.ParseFile(path).ApplyTo(this);
+    }
+
     public uint GetTypeHash(string name)
     {
         if (name.StartsWith('#') || name.StartsWith("0x", StringComparison.OrdinalIgnoreCase))

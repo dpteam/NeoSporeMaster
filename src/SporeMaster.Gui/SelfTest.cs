@@ -185,6 +185,18 @@ internal static class SelfTest
                     report.AppendLine($"Compare with self failed: {ex.Message}");
                 }
 
+                // Load a key map (if available) to improve names, then rebuild.
+                string keyMapPath = Path.Combine("refs", "SporeUnpackedData", "SporeBeta2008", "Data", "KeyMap.txt");
+                if (File.Exists(keyMapPath))
+                {
+                    window.LoadKeyMapForTest(keyMapPath);
+                    report.AppendLine($"Loaded key map: {keyMapPath}");
+                }
+                else
+                {
+                    report.AppendLine("Key map not found; skipped key-map load.");
+                }
+
                 // Exercise filtering.
                 window.SelectFolderForTest(0);
                 int before = window.VisibleRowsForTest().Count;
