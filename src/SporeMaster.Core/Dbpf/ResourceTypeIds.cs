@@ -10,6 +10,7 @@ public static class ResourceTypeIds
     public const uint ModeProp = 0x0497925E;
     public const uint ChildrenProp = 0x03F51892;
     public const uint Locale = 0x02FAC0B6;
+    public const uint Raster = 0x2F4E681C;
 
     private static readonly uint[] PropTypes =
     {
@@ -20,4 +21,7 @@ public static class ResourceTypeIds
     public static bool IsProperty(uint typeId) => Array.IndexOf(PropTypes, typeId) >= 0;
 
     public static IReadOnlyList<uint> PropertyTypes => PropTypes;
+
+    /// <summary>True when the type id denotes a rasterized texture (.raster) convertible to DDS.</summary>
+    public static bool IsTexture(uint typeId) => typeId == Raster;
 }

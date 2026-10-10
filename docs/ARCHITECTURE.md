@@ -69,6 +69,12 @@ little-endian; флаги и stride сохраняются для байт-то�
   `auto_<group>_<instance>`, как в SporeMaster 2 и SporeModder FX).
   Формат описан в `docs/LOCALE_FORMAT.md`.
 
+### `Textures/*`
+- `TextureFormats` — идентификаторы форматов (D3DFMT и FourCC) и расчёт размеров уровней.
+- `RasterTexture` — текстура Spore `.raster`: чтение/запись и конвертация в/из DDS.
+- `DdsTexture` — стандартный DDS-файл (заголовок 128 байт + данные мипмапов).
+  Формат описан в `docs/TEXTURE_FORMAT.md`.
+
 ### `Names/*`
 - `NameRegistry` — двусторонний словарь «имя ↔ хеш» с поддержкой псевдонимов (`~`).
 - `NameRegistrySet` — набор реестров (типы, файлы/группы, свойства, атрибуты симулятора),

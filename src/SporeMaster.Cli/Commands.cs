@@ -7,6 +7,7 @@ using SporeMaster.Core.Locale;
 using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
 using SporeMaster.Core.Properties;
+using SporeMaster.Core.Textures;
 
 namespace SporeMaster.Cli;
 
@@ -197,6 +198,26 @@ public static class Commands
                     using FileStream xmlOut = File.Create(propPath);
                     list.WriteXml(xmlOut, names);
                 }
+                else if (!raw && ResourceTypeIds.IsTexture(entry.Key.TypeId))
+                {
+                    string ddsPath = Path.Combine(
+                        outputDir,
+                        SanitizePath(names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId) + ".dds"));
+                    WriteDirectory(ddsPath);
+
+                    try
+                    {
+                        RasterTexture raster = RasterTexture.Read(new MemoryStream(data));
+                        using FileStream ddsOut = File.Create(ddsPath);
+                        raster.ToDds().Write(ddsOut);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Fault tolerance: fall back to the raw raster bytes.
+                        output.Warn($"Could not convert raster {entry.Key} to DDS ({ex.Message}); writing raw data.");
+                        File.WriteAllBytes(ddsPath[..^4], data);
+                    }
+                }
                 else
                 {
                     string relative = raw
@@ -248,8 +269,12 @@ public static class Commands
         {
             string relative = Path.GetRelativePath(inputDir, file);
             bool isPropXml = relative.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
+            bool isTextureDds = relative.EndsWith(".raster.dds", StringComparison.OrdinalIgnoreCase);
 
-            if (!TryResolveInput(relative, names, stripXml: isPropXml,
+            // Strip the conversion suffix so the remaining group/name.ext resolves normally.
+            string resolvable = isPropXml ? relative[..^4] : isTextureDds ? relative[..^4] : relative;
+
+            if (!TryResolveInput(resolvable, names, stripXml: false,
                     out uint typeId, out uint groupId, out uint instanceId, out string groupName, out string instanceName))
             {
                 output.Warn($"Skipping '{relative}': cannot derive a resource key (expected group/name.ext).");
@@ -287,6 +312,25 @@ public static class Commands
                         new ResourceKey(ResourceTypeIds.Locale, AutoLocale.LocaleGroup, localeInstance),
                         Encoding.UTF8.GetBytes(autoLocale.Serialize())));
                 }
+            }
+            else if (isTextureDds && ResourceTypeIds.IsTexture(typeId))
+            {
+                byte[] binary;
+                try
+                {
+                    using FileStream ddsIn = File.OpenRead(file);
+                    DdsTexture dds = DdsTexture.Read(ddsIn);
+                    using var buffer = new MemoryStream();
+                    RasterTexture.FromDds(dds).Write(buffer);
+                    binary = buffer.ToArray();
+                }
+                catch (Exception ex)
+                {
+                    output.Error($"Failed to convert '{relative}': {ex.Message}");
+                    continue;
+                }
+
+                items.Add(new DbpfWriteItem(new ResourceKey(typeId, groupId, instanceId), binary));
             }
             else
             {
@@ -395,6 +439,58 @@ public static class Commands
 
     private static string Truncate(string value, int max) =>
         value.Length <= max ? value : value[..max] + "…";
+
+    /// <summary>Converts a texture: <c>texture &lt;in&gt; &lt;out&gt;</c> (raster ⇄ DDS, auto-detected).</summary>
+    public static int Texture(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "texture <input.raster|input.dds> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            byte[] head = new byte[4];
+            using (FileStream probe = File.OpenRead(input))
+            {
+                probe.ReadExactly(head, 0, 4);
+            }
+
+            bool isDds = head[0] == (byte)'D' && head[1] == (byte)'D' && head[2] == (byte)'S' && head[3] == (byte)' ';
+
+            if (isDds)
+            {
+                using FileStream ddsIn = File.OpenRead(input);
+                DdsTexture dds = DdsTexture.Read(ddsIn);
+                using FileStream rasterOut = File.Create(outputPath);
+                RasterTexture.FromDds(dds).Write(rasterOut);
+                output.Success($"Wrote raster ({dds.Width}x{dds.Height}, {TextureFormats.Describe(dds.Format)}): {outputPath}");
+            }
+            else
+            {
+                using FileStream rasterIn = File.OpenRead(input);
+                RasterTexture raster = RasterTexture.Read(rasterIn);
+                using FileStream ddsOut = File.Create(outputPath);
+                raster.ToDds().Write(ddsOut);
+                output.Success($"Wrote DDS ({raster.Width}x{raster.Height}, {TextureFormats.Describe(raster.TextureFormat)}, {raster.MipmapCount} mip(s)): {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Texture conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
 
     public static int Verify(CommandLine cli, Output output)
     {
