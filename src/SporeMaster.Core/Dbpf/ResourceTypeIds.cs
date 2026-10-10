@@ -28,4 +28,7 @@ public static class ResourceTypeIds
 
     /// <summary>True when the type id denotes a RenderWare 4 resource.</summary>
     public static bool IsRenderWare4(uint typeId) => typeId == Rw4;
+
+    /// <summary>True when the type id denotes a raw bitmap resource convertible to PNG.</summary>
+    public static bool IsBitmap(uint typeId) => Bitmaps.SporeBitmapTypes.IsSupported(typeId);
 }

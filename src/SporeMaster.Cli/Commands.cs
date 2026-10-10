@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Text;
+using SporeMaster.Core.Bitmaps;
 using SporeMaster.Core.Compression;
 using SporeMaster.Core.Dbpf;
 using SporeMaster.Core.Hashing;
+using SporeMaster.Core.Imaging;
 using SporeMaster.Core.Locale;
 using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
@@ -219,6 +221,25 @@ public static class Commands
                         File.WriteAllBytes(ddsPath[..^4], data);
                     }
                 }
+                else if (!raw && ResourceTypeIds.IsBitmap(entry.Key.TypeId))
+                {
+                    string pngPath = Path.Combine(
+                        outputDir,
+                        SanitizePath(names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId) + ".png"));
+                    WriteDirectory(pngPath);
+
+                    try
+                    {
+                        BitmapImage bitmap = BitmapImage.Read(new MemoryStream(data), entry.Key.TypeId);
+                        using FileStream pngOut = File.Create(pngPath);
+                        PngCodec.Encode(bitmap.Image, pngOut);
+                    }
+                    catch (Exception ex)
+                    {
+                        output.Warn($"Could not convert bitmap {entry.Key} to PNG ({ex.Message}); writing raw data.");
+                        File.WriteAllBytes(pngPath[..^4], data);
+                    }
+                }
                 else
                 {
                     string relative = raw
@@ -271,9 +292,13 @@ public static class Commands
             string relative = Path.GetRelativePath(inputDir, file);
             bool isPropXml = relative.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
             bool isTextureDds = relative.EndsWith(".raster.dds", StringComparison.OrdinalIgnoreCase);
+            bool isBitmapPng = relative.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
 
             // Strip the conversion suffix so the remaining group/name.ext resolves normally.
-            string resolvable = isPropXml ? relative[..^4] : isTextureDds ? relative[..^4] : relative;
+            string resolvable = isPropXml ? relative[..^4]
+                : isTextureDds ? relative[..^4]
+                : isBitmapPng ? relative[..^4]
+                : relative;
 
             if (!TryResolveInput(resolvable, names, stripXml: false,
                     out uint typeId, out uint groupId, out uint instanceId, out string groupName, out string instanceName))
@@ -323,6 +348,26 @@ public static class Commands
                     DdsTexture dds = DdsTexture.Read(ddsIn);
                     using var buffer = new MemoryStream();
                     RasterTexture.FromDds(dds).Write(buffer);
+                    binary = buffer.ToArray();
+                }
+                catch (Exception ex)
+                {
+                    output.Error($"Failed to convert '{relative}': {ex.Message}");
+                    continue;
+                }
+
+                items.Add(new DbpfWriteItem(new ResourceKey(typeId, groupId, instanceId), binary));
+            }
+            else if (isBitmapPng && ResourceTypeIds.IsBitmap(typeId))
+            {
+                byte[] binary;
+                try
+                {
+                    using FileStream pngIn = File.OpenRead(file);
+                    RgbaImage image = PngCodec.Decode(pngIn);
+                    BitmapImage bitmap = BitmapImage.FromImage(typeId, image);
+                    using var buffer = new MemoryStream();
+                    bitmap.Write(buffer);
                     binary = buffer.ToArray();
                 }
                 catch (Exception ex)
@@ -576,6 +621,92 @@ public static class Commands
         }
 
         return 0;
+    }
+
+    /// <summary>Converts a bitmap or a texture: <c>bitmap &lt;in&gt; &lt;out&gt;</c> (auto-detected).</summary>
+    public static int Bitmap(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "bitmap <input.bitImage|input.png> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            byte[] head = new byte[8];
+            using (FileStream probe = File.OpenRead(input))
+            {
+                probe.ReadExactly(head, 0, 8);
+            }
+
+            bool isPng = head[0] == 0x89 && head[1] == (byte)'P' && head[2] == (byte)'N' && head[3] == (byte)'G';
+
+            if (isPng)
+            {
+                uint type = ResolveBitmapType(input);
+                using FileStream pngIn = File.OpenRead(input);
+                RgbaImage image = PngCodec.Decode(pngIn);
+                BitmapImage bitmap = BitmapImage.FromImage(type, image);
+                using FileStream binOut = File.Create(outputPath);
+                bitmap.Write(binOut);
+                output.Success($"Wrote {SporeBitmapTypes.GetName(type)} ({image.Width}x{image.Height}): {outputPath}");
+            }
+            else
+            {
+                uint type = ResolveBitmapType(input);
+                using FileStream binIn = File.OpenRead(input);
+                BitmapImage bitmap = BitmapImage.Read(binIn, type);
+                using FileStream pngOut = File.Create(outputPath);
+                PngCodec.Encode(bitmap.Image, pngOut);
+                output.Success($"Wrote PNG ({bitmap.Width}x{bitmap.Height}): {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Bitmap conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /// <summary>Determines the bitmap type from a file's extension (e.g. <c>foo.32bitImage.png</c>).</summary>
+    private static uint ResolveBitmapType(string path)
+    {
+        string name = Path.GetFileName(path);
+        // Strip a trailing ".png" so the extension before it names the bitmap type.
+        if (name.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+        {
+            name = name[..^4];
+        }
+
+        int dot = name.LastIndexOf('.');
+        if (dot >= 0)
+        {
+            string ext = name[(dot + 1)..];
+            foreach (uint type in new[]
+            {
+                SporeBitmapTypes.BitImage, SporeBitmapTypes.EightBitImage,
+                SporeBitmapTypes.ThirtyTwoBitImage, SporeBitmapTypes.FortyEightBitImage,
+            })
+            {
+                if (string.Equals(SporeBitmapTypes.GetName(type), ext, StringComparison.OrdinalIgnoreCase))
+                {
+                    return type;
+                }
+            }
+        }
+
+        // Default to a full-colour 32-bit bitmap.
+        return SporeBitmapTypes.ThirtyTwoBitImage;
     }
 
     public static int Verify(CommandLine cli, Output output)

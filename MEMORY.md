@@ -60,9 +60,10 @@
 | Локали `.locale` (текст) + авто-генерация | ✅ |
 | Текстуры `.raster` ⇄ DDS (байт-точно, мипмапы, DXT) | ✅ |
 | RenderWare4 `.rw4` (контейнер + меши) | ✅ |
-| CLI (info/list/extract/unpack/pack/prop/locale/texture/rw4/verify/hash/types) | ✅ |
+| Bitmap (1/8/32/48 бит) ⇄ PNG | ✅ |
+| CLI (info/list/extract/unpack/pack/prop/locale/texture/bitmap/rw4/verify/hash/types) | ✅ |
 | Локализация (каркас, EN) | ✅ |
-| Тесты (40, на реальных архивах) | ✅ |
+| Тесты (50, на реальных + синтетических данных) | ✅ |
 | Документация (RU) | ✅ |
 
 ---
@@ -73,13 +74,12 @@
 
 1. **Полное декодирование RenderWare4** — описания вершин, материалы (`CompiledState`),
    скелеты, анимации, блендшейпы и экспорт мешей в Ogre XML (как в SporeMaster 2).
-2. **Конвертация Bitmap** (`.png`/`.jpg` ⇄ внутренний bitmap-ресурс) — `refs/.../file/bitmaps`.
-3. **GUI** — миграция WPF на `net9.0-windows` (или новый UI), переиспользуя `SporeMaster.Core`.
-4. **Хеш-гуссер** (`guess_left.txt` / `guess_right.txt`) — восстановление имён по хешам.
-5. **Индекс для полнотекстового поиска** (`FullTextIndex`).
-6. **Скрипты/конвертеры** из `refs/SporeModder-FX-master` (cnv, tlsa, spui, effect и т.д.).
-7. **ArgScript-формат `.prop_t`** (текстовый формат SporeModder FX) — дополнительно к `.prop.xml`.
-8. **Очистка авто-локалей при `unpack`** (поведение SporeMaster 2) — требует постоянного реестра
+2. **GUI** — миграция WPF на `net9.0-windows` (или новый UI), переиспользуя `SporeMaster.Core`.
+3. **Хеш-гуссер** (`guess_left.txt` / `guess_right.txt`) — восстановление имён по хешам.
+4. **Индекс для полнотекстового поиска** (`FullTextIndex`).
+5. **Скрипты/конвертеры** из `refs/SporeModder-FX-master` (cnv, tlsa, spui, effect и т.д.).
+6. **ArgScript-формат `.prop_t`** (текстовый формат SporeModder FX) — дополнительно к `.prop.xml`.
+7. **Очистка авто-локалей при `unpack`** (поведение SporeMaster 2) — требует постоянного реестра
    имён, чтобы надёжно узнавать имена `auto_*`; иначе возможны висячие ссылки.
 
 ---
@@ -135,3 +135,6 @@
 - **RenderWare4**: 2883 ресурса `.rw4` во всех тестовых архивах разбираются как контейнеры
   (Model/Texture/Special). Пример `ear.rw4` (модель): 21 секция, тип `Model`, меш
   `TriangleList` с 612 треугольниками и 344 вершинами. Текстуры `rw4` содержат секцию `Raster`.
+- **Bitmap/PNG**: в тестовых архивах bitmap-ресурсов нет (проверено), поэтому формат проверен
+  синтетически. PNG-кодек проверен на своих данных (RGBA, серый, RGB, фильтры). Сквозной цикл
+  bitmap → PNG → bitmap байт-точный; pack/unpack `.32bitImage.png` даёт исходные пиксели.

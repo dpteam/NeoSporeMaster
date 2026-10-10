@@ -27,6 +27,8 @@
   обратно (байт-точно), включая блочные форматы (DXT/ATI) и мипмапы.
 - **RenderWare 4 (`.rw4`)** — разбор контейнера (заголовок, манифест, таблица секций, типы) и
   чтение мешей (примитивы, ссылки на буферы вершин/индексов).
+- **Bitmap (`.bitImage`/`8bitImage`/`32bitImage`/`48bitImage` ⇄ PNG)** — конвертация «сырых»
+  растровых ресурсов Spore в PNG и обратно. PNG-кодек написан нами (только BCL+zlib).
 - **Хеши именования** — FNV-1 (как в SporeMaster 2 и SporeModder FX).
 - **Реестры имён** `reg_type`, `reg_file`, `reg_property`, `reg_simulator` — встроены в сборку.
 - **Устойчивость к ошибкам**: битые и обрезанные архивы не роняют программу, а дают диагностику.
@@ -36,7 +38,6 @@
 
 Не реализовано (в планах, см. `MEMORY.md`): графический интерфейс, полный разбор секций
 RenderWare4 (материалы, скелеты, анимации, экспорт в Ogre XML), полный список конвертеров.
-
 ---
 
 ## Структура репозитория
@@ -111,6 +112,10 @@ dotnet run --project src/SporeMaster.Cli -- texture <файл.dds> <файл.ras
 
 # Разобрать структуру ресурса RenderWare 4
 dotnet run --project src/SporeMaster.Cli -- rw4 <файл.rw4>
+
+# Конвертировать растровый ресурс (bitmap ⇄ PNG, определяется автоматически)
+dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage> <файл.32bitImage.png>
+dotnet run --project src/SporeMaster.Cli -- bitmap <файл.32bitImage.png> <файл.32bitImage>
 
 # Проверить целостность (прочитать и распаковать все ресурсы)
 dotnet run --project src/SporeMaster.Cli -- verify <архив.package>
