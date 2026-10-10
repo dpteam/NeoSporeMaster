@@ -55,6 +55,7 @@ public static class Program
             "list" or "ls" => Commands.List(cli, output),
             "extract" => Commands.Extract(cli, output),
             "unpack" => Commands.Unpack(cli, output),
+            "unpackdata" => Commands.UnpackData(cli, output),
             "pack" => Commands.Pack(cli, output),
             "prop" => Commands.Prop(cli, output),
             "propt" => Commands.PropT(cli, output),
@@ -97,6 +98,7 @@ public static class Program
         output.Line($"  {loc["cmd.list.usage"],-58} {loc["cmd.list.summary"]}");
         output.Line($"  {loc["cmd.extract.usage"],-58} {loc["cmd.extract.summary"]}");
         output.Line($"  {loc["cmd.unpack.usage"],-58} {loc["cmd.unpack.summary"]}");
+        output.Line($"  {loc["cmd.unpackdata.usage"],-58} {loc["cmd.unpackdata.summary"]}");
         output.Line($"  {loc["cmd.pack.usage"],-58} {loc["cmd.pack.summary"]}");
         output.Line($"  {loc["cmd.prop.usage"],-58} {loc["cmd.prop.summary"]}");
         output.Line($"  {loc["cmd.propt.usage"],-58} {loc["cmd.propt.summary"]}");

@@ -1396,6 +1396,83 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>
+    /// Experimental full unpack into a game-like <c>Data</c> layout, using real names from a key map
+    /// when available: <c>unpackdata &lt;package&gt; &lt;output-dir&gt; [--keymap KeyMap.txt]</c>.
+    /// </summary>
+    public static int UnpackData(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "unpackdata <package> <output-dir> [--keymap KeyMap.txt]");
+        }
+
+        if (!TryOpen(cli, output, out DatabasePackedFile? package))
+        {
+            return 1;
+        }
+
+        string outputDir = Path.GetFullPath(cli.Positional[1]);
+        NameRegistrySet names = OpenNames(cli);
+
+        KeyMap? keyMap = null;
+        string? keyMapPath = cli.Get("keymap");
+        if (!string.IsNullOrEmpty(keyMapPath))
+        {
+            if (!File.Exists(keyMapPath))
+            {
+                output.Error(Localizer.Default.Get("common.fileNotFound", keyMapPath));
+                return 1;
+            }
+
+            keyMap = KeyMap.ParseFile(keyMapPath);
+            output.Line($"Loaded key map with {keyMap.Entries.Count} entr(ies).");
+        }
+
+        Directory.CreateDirectory(outputDir);
+        int keyed = 0;
+        int fallback = 0;
+        int written = 0;
+
+        using (package)
+        {
+            foreach (DbpfEntry entry in package!.Entries)
+            {
+                string? realPath = keyMap?.GetPath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+                string relative = realPath ?? names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
+                if (realPath is not null)
+                {
+                    keyed++;
+                }
+                else
+                {
+                    fallback++;
+                }
+
+                string target = Path.Combine(outputDir, SanitizePath(relative));
+                WriteDirectory(target);
+
+                try
+                {
+                    byte[] data = package.ReadEntry(entry);
+                    File.WriteAllBytes(target, data);
+                    written++;
+                }
+                catch (Exception ex)
+                {
+                    output.Warn($"Could not write {entry.Key}: {ex.Message}");
+                }
+            }
+
+            output.Success($"Unpacked {written} resource(s) to {outputDir}.");
+            output.Line($"  named from key map: {keyed}");
+            output.Line($"  fallback (group/name.ext): {fallback}");
+            PrintDiagnostics(package, output);
+        }
+
+        return 0;
+    }
+
     public static int Verify(CommandLine cli, Output output)
     {
         if (!TryOpen(cli, output, out DatabasePackedFile? package))

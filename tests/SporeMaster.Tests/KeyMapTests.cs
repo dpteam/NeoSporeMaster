@@ -60,6 +60,41 @@ public static class KeyMapTests
         Assert.Contains(registry, "cellthing");
     }
 
+    [SporeTest("key map resolves an exact path for a resource key")]
+    public static void GetPath()
+    {
+        KeyMap map = KeyMap.Parse(new[] { "{0x2f4e681b 0x40606000 0x01dcaf31} \"Arenas\\Editors\\thing.rdx9\"" });
+
+        Assert.Equal(@"Arenas\Editors\thing.rdx9", map.GetPath(0x2F4E681B, 0x40606000, 0x01DCAF31));
+        Assert.True(map.GetPath(0x1, 0x2, 0x3) is null);
+    }
+
+    [SporeTest("real key map resolves many resources in a retail package")]
+    public static void RealKeyMapResolvesPackage()
+    {
+        string? keyMapPath = TestData.Combine("refs", "SporeUnpackedData", "SporeBeta2008", "Data", "KeyMap.txt");
+        string? packagePath = TestData.FinalPackages.FirstOrDefault(p => p.EndsWith("Spore_Game.package"));
+        if (keyMapPath is null || packagePath is null || !File.Exists(keyMapPath))
+        {
+            throw new AssertionException("KeyMap.txt or Spore_Game.package is not available.");
+        }
+
+        KeyMap map = KeyMap.ParseFile(keyMapPath);
+        using var package = Core.Dbpf.DatabasePackedFile.Open(packagePath);
+
+        int resolved = 0;
+        foreach (Core.Dbpf.DbpfEntry entry in package.Entries)
+        {
+            if (map.GetPath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId) is not null)
+            {
+                resolved++;
+            }
+        }
+
+        // Shared content across versions means a large fraction should resolve.
+        Assert.True(resolved > 1000, $"expected many resolved keys, got {resolved}");
+    }
+
     [SporeTest("real KeyMap.txt parses when available")]
     public static void RealKeyMap()
     {

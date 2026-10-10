@@ -15,6 +15,7 @@ public sealed class KeyMap
     private readonly Dictionary<uint, string> _typeNames = new();
     private readonly Dictionary<uint, string> _groupNames = new();
     private readonly Dictionary<uint, string> _instanceNames = new();
+    private readonly Dictionary<(uint Type, uint Group, uint Instance), string> _paths = new();
 
     public List<KeyMapEntry> Entries { get; } = new();
 
@@ -47,6 +48,9 @@ public sealed class KeyMap
             }
 
             map.Entries.Add(entry);
+
+            // Full-key lookup gives the exact real path for a resource.
+            map._paths[(entry.TypeId, entry.GroupId, entry.InstanceId)] = entry.Path;
 
             string path = entry.Path.Replace('\\', '/');
             int slash = path.LastIndexOf('/');
@@ -83,6 +87,10 @@ public sealed class KeyMap
     }
 
     public static KeyMap ParseFile(string path) => Parse(File.ReadLines(path));
+
+    /// <summary>Returns the exact real path for a resource key, or null when it is not in the map.</summary>
+    public string? GetPath(uint typeId, uint groupId, uint instanceId) =>
+        _paths.TryGetValue((typeId, groupId, instanceId), out string? path) ? path : null;
 
     private static void AddName(Dictionary<uint, string> target, uint hash, string name, bool verified)
     {

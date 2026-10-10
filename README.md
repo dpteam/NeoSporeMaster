@@ -33,7 +33,9 @@
   (`data/guess_left.txt`, `data/guess_right.txt`); пакетный режим восстанавливает все
   неизвестные хеши архива и сохраняет их в `names.txt` для повторного использования.
 - **KeyMap** — конвертация карт ключей игры (`KeyMap.txt` → `names.txt`) в авторитетный реестр имён
-  (точнее фрагментного guesser'а).
+  (точнее фрагментного guesser'а); **валидация гиссера** на реальных именах.
+- **Экспериментальная распаковка в `Data`** (`unpackdata`) — раскладка по реальным игровым путям
+  из карты ключей (см. `docs/UNPACK_DATA.md`).
 - **Поиск по тексту** — полнотекстовый поиск по распакованным файлам (регистронезависимый),
   с номерами строк и сниппетами.
 - **Экспорт списка ресурсов** в CSV/JSON; **очистка авто-локалей** при распаковке.
@@ -175,6 +177,9 @@ dotnet run --project src/SporeMaster.Cli -- guess --package <архив.package>
 
 # Извлечь авторитетные имена из карты ключей игры
 dotnet run --project src/SporeMaster.Cli -- keymap <KeyMap.txt> names.txt --types types.txt
+
+# Экспериментальная полная распаковка в игровой вид (реальные пути из карты ключей)
+dotnet run --project src/SporeMaster.Cli -- unpackdata <архив.package> <папка> --keymap <KeyMap.txt>
 
 # Экспортировать список ресурсов и найти текст
 dotnet run --project src/SporeMaster.Cli -- list <архив.package> --format csv --out resources.csv
