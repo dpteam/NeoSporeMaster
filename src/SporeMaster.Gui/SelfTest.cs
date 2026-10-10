@@ -55,6 +55,17 @@ internal static class SelfTest
                     window.CheckFolderForTest(0, false);
                     int afterUncheck = window.CheckedFolderCountForTest();
                     report.AppendLine($"Checked folder 0: {checkedResources} resource(s); after uncheck: {afterUncheck} folder(s)");
+
+                // Address bar: lists "(all)" + folders, and navigates by name.
+                report.AppendLine($"Address bar items: {window.AddressItemCountForTest()}");
+                if (window.FolderCount > 0)
+                {
+                    window.NavigateAddressForTest("all");
+                    window.NavigateAddressForTest("this-folder-does-not-exist");
+                    window.NavigateAddressForTest("creature_parts");
+                    report.AppendLine($"Address navigation: done ({window.VisibleRowsForTest().Count} visible)");
+                    window.SelectFolderForTest(0);
+                }
                 }
 
                 // Exercise filtering.

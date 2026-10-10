@@ -55,7 +55,12 @@
 
         <Border DockPanel.Dock="Top" Background="#F7F7F7" BorderBrush="#DDD" BorderThickness="0,0,0,1">
             <DockPanel Margin="6,3">
-                <TextBlock x:Name="Breadcrumb" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <TextBlock DockPanel.Dock="Left" Text="Address:" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#666" />
+                <ComboBox x:Name="AddressBox" DockPanel.Dock="Left" Width="360" IsEditable="True" IsTextSearchEnabled="False"
+                          VerticalAlignment="Center" ToolTip="Type a folder name (or 'all') and press Enter"
+                          KeyDown="OnAddressKeyDown" SelectionChanged="OnAddressSelected" />
+                <TextBlock x:Name="Breadcrumb" VerticalAlignment="Center" FontWeight="SemiBold" Margin="10,0,0,0"
+                           TextTrimming="CharacterEllipsis" />
                 <TextBlock DockPanel.Dock="Right" Text="Search:" VerticalAlignment="Center" Margin="8,0,4,0" />
                 <TextBox x:Name="FilterBox" DockPanel.Dock="Right" Width="280" TextChanged="OnFilterChanged"
                          ToolTip="Filter by name, type or key" />

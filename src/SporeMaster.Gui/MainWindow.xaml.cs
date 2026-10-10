@@ -33,6 +33,9 @@ public partial class MainWindow : Window
     private ResourceSort _sort = ResourceSort.Path;
     private bool _sortDescending;
     private int _treeWidth = 260;
+    private bool _updatingAddress;
+
+    private const string AllResourcesLabel = "(all resources)";
 
     public MainWindow()
     {
@@ -109,6 +112,79 @@ public partial class MainWindow : Window
         }
 
         FolderTree.ItemsSource = new[] { _root };
+        RefreshAddressItems();
+    }
+
+    /// <summary>Fills the address bar with "(all)" plus each folder, Explorer-style.</summary>
+    private void RefreshAddressItems()
+    {
+        _updatingAddress = true;
+        try
+        {
+            var items = new List<string> { AllResourcesLabel };
+            if (_root is not null)
+            {
+                items.AddRange(_root.Children.Select(c => $"📁 {c.Name}"));
+            }
+
+            AddressBox.ItemsSource = items;
+            UpdateBreadcrumb();
+        }
+        finally
+        {
+            _updatingAddress = false;
+        }
+    }
+
+    private void OnAddressSelected(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (!_updatingAddress && AddressBox.SelectedItem is string text)
+        {
+            NavigateAddress(text);
+        }
+    });
+
+    private void OnAddressKeyDown(object sender, KeyEventArgs e) => Guarded(() =>
+    {
+        if (e.Key == Key.Enter)
+        {
+            NavigateAddress(AddressBox.Text);
+            e.Handled = true;
+        }
+    });
+
+    /// <summary>Navigates to a folder typed in the address bar (name, or "all" for everything).</summary>
+    private void NavigateAddress(string? text)
+    {
+        if (_root is null || string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        string value = text.Trim();
+        if (value.Equals(AllResourcesLabel, StringComparison.OrdinalIgnoreCase)
+            || value.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            SelectNode(_root);
+            return;
+        }
+
+        // Strip a leading folder glyph if present.
+        value = value.Replace("📁", string.Empty).Trim();
+
+        FolderNode? folder = _root.Children.FirstOrDefault(
+            c => string.Equals(c.Name, value, StringComparison.OrdinalIgnoreCase)
+                 || c.Name.TrimEnd('~').Equals(value.TrimEnd('~'), StringComparison.OrdinalIgnoreCase));
+
+        if (folder is not null)
+        {
+            SelectNode(folder);
+        }
+        else
+        {
+            StatusText.Text = $"Folder not found: {value}";
+            UpdateBreadcrumb();
+        }
     }
 
     private void OnClosePackage(object sender, RoutedEventArgs e) => Guarded(() =>
@@ -122,6 +198,8 @@ public partial class MainWindow : Window
         _historyIndex = -1;
         FolderTree.ItemsSource = null;
         ResourceList.ItemsSource = null;
+        AddressBox.ItemsSource = null;
+        AddressBox.Text = string.Empty;
         PreviewText.Text = string.Empty;
         PreviewImage.Source = null;
         PreviewHeader.Text = "Preview";
@@ -249,14 +327,31 @@ public partial class MainWindow : Window
         if (_flatView)
         {
             Breadcrumb.Text = $"{package}  ▸  (flat view, {_items.Count} items)";
+            SetAddressText(AllResourcesLabel);
         }
         else if (_current is null || _current.IsRoot)
         {
             Breadcrumb.Text = $"{package}  ▸  (all {_items.Count} items)";
+            SetAddressText(AllResourcesLabel);
         }
         else
         {
             Breadcrumb.Text = $"{package}  ▸  📁 {_current.Name}  ({_current.Items.Count} items)";
+            SetAddressText($"📁 {_current.Name}");
+        }
+    }
+
+    /// <summary>Updates the address bar text without re-triggering navigation.</summary>
+    private void SetAddressText(string text)
+    {
+        _updatingAddress = true;
+        try
+        {
+            AddressBox.Text = text;
+        }
+        finally
+        {
+            _updatingAddress = false;
         }
     }
 
@@ -891,6 +986,12 @@ public partial class MainWindow : Window
     internal int CheckedResourceCountForTest() => CheckedItems().Count;
 
     internal int CheckedFolderCountForTest() => CheckedFolders().Count;
+
+    internal void NavigateAddressForTest(string text) => NavigateAddress(text);
+
+    internal int AddressItemCountForTest() => AddressBox.ItemsSource is System.Collections.IEnumerable items
+        ? items.Cast<object>().Count()
+        : 0;
 
     internal ResourcePreview PreviewForTest(ResourceItem row)
     {
