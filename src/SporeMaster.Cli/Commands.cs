@@ -9,6 +9,7 @@ using SporeMaster.Core.Imaging;
 using SporeMaster.Core.Locale;
 using SporeMaster.Core.Localization;
 using SporeMaster.Core.Names;
+using SporeMaster.Core.Pctp;
 using SporeMaster.Core.Properties;
 using SporeMaster.Core.RenderWare4;
 using SporeMaster.Core.Search;
@@ -1048,6 +1049,49 @@ public static class Commands
         catch (Exception ex)
         {
             output.Error($"Conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /// <summary>Converts a part-capabilities file: <c>pctp &lt;in&gt; &lt;out&gt;</c> (binary or text).</summary>
+    public static int Pctp(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "pctp <input.pctp|input.pctp_t> <output>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        NameRegistrySet names = OpenNames(cli);
+        try
+        {
+            if (input.EndsWith(".pctp_t", StringComparison.OrdinalIgnoreCase))
+            {
+                PctpUnit unit = PctpUnit.Parse(File.ReadAllText(input), names);
+                using FileStream binOut = File.Create(outputPath);
+                unit.Write(binOut);
+                output.Success($"Wrote binary PCTP v{unit.Version} ({unit.Capabilities.Count} capabilit(ies)): {outputPath}");
+            }
+            else
+            {
+                using FileStream input0 = File.OpenRead(input);
+                PctpUnit unit = PctpUnit.Read(input0);
+                File.WriteAllText(outputPath, unit.ToScript(names));
+                output.Success($"Wrote PCTP text ({unit.Capabilities.Count} capabilit(ies), {unit.DeformSpecs.Count} deformSpec(s)): {outputPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            output.Error($"PCTP conversion failed: {ex.Message}");
             return 1;
         }
 
