@@ -20,9 +20,9 @@
             <MenuItem Header="_View">
                 <MenuItem Header="_Refresh" Click="OnRefresh" />
                 <Separator />
-                <MenuItem Header="_Details" Click="OnViewDetails" IsCheckable="True" IsChecked="True" />
-                <MenuItem Header="Large _Icons" Click="OnViewLargeIcons" IsCheckable="True" />
-                <MenuItem Header="Details _pane" Click="OnToggleDetailsPane" IsCheckable="True" IsChecked="True" />
+                <MenuItem x:Name="DetailsMenuItem" Header="_Details" Click="OnViewDetails" IsCheckable="True" IsChecked="True" />
+                <MenuItem x:Name="LargeIconsMenuItem" Header="Large _Icons" Click="OnViewLargeIcons" IsCheckable="True" />
+                <MenuItem x:Name="DetailsPaneMenuItem" Header="Details _pane" Click="OnToggleDetailsPane" IsCheckable="True" IsChecked="True" />
             </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem Header="_Extract Selected..." Click="OnExtractSelected" />
@@ -116,8 +116,10 @@
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">
-                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center"
-                                      Margin="0,0,4,0" Click="OnFolderCheckChanged" />
+                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                      IsThreeState="{Binding IsThreeState}"
+                                      VerticalAlignment="Center" Margin="0,0,4,0"
+                                      Click="OnFolderCheckChanged" />
                             <TextBlock Text="📁 " />
                             <TextBlock Text="{Binding Name}" />
                             <TextBlock Text="{Binding CountText}" Foreground="#888" Margin="6,0,0,0" />

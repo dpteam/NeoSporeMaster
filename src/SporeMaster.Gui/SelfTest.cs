@@ -47,14 +47,39 @@ internal static class SelfTest
 
                 report.AppendLine($"Folder navigation: {foldersToVisit} folder(s) selected");
 
-                // Checked folders (multi-select for extraction).
+                // Checked folders (multi-select) with standard tri-state root behaviour.
                 if (window.FolderCount > 0)
                 {
                     window.CheckFolderForTest(0, true);
                     int checkedResources = window.CheckedResourceCountForTest();
-                    window.CheckFolderForTest(0, false);
-                    int afterUncheck = window.CheckedFolderCountForTest();
-                    report.AppendLine($"Checked folder 0: {checkedResources} resource(s); after uncheck: {afterUncheck} folder(s)");
+                    bool? partialRoot = window.RootCheckStateForTest();
+
+                    window.SetAllFoldersCheckedForTest(true);
+                    bool? allRoot = window.RootCheckStateForTest();
+                    int allFolders = window.CheckedFolderCountForTest();
+
+                    window.SetAllFoldersCheckedForTest(false);
+                    bool? noneRoot = window.RootCheckStateForTest();
+
+                    report.AppendLine(
+                        $"Checked folder 0: {checkedResources} resource(s), root={partialRoot}; " +
+                        $"check-all: {allFolders} folder(s), root={allRoot}; uncheck-all: root={noneRoot}");
+                }
+
+                // Details pane toggle is state-driven (visible -> hidden -> visible).
+                window.ToggleDetailsPaneForTest();
+                bool hidden = !window.DetailsPaneVisibleForTest();
+                window.ToggleDetailsPaneForTest();
+                bool shown = window.DetailsPaneVisibleForTest();
+                report.AppendLine($"Details pane toggle: hidden={hidden}, shown again={shown}");
+
+                // View menu: Details and Large Icons are mutually exclusive.
+                window.ApplyDetailsViewForTest();
+                (bool d1, bool l1) = window.ViewMenuStateForTest();
+                window.ApplyLargeIconsViewForTest();
+                (bool d2, bool l2) = window.ViewMenuStateForTest();
+                window.ApplyDetailsViewForTest();
+                report.AppendLine($"View menu: details=({d1},{l1}) largeIcons=({d2},{l2})");
 
                 // Address bar: lists "(all)" + folders, and navigates by name.
                 report.AppendLine($"Address bar items: {window.AddressItemCountForTest()}");
@@ -65,7 +90,6 @@ internal static class SelfTest
                     window.NavigateAddressForTest("creature_parts");
                     report.AppendLine($"Address navigation: done ({window.VisibleRowsForTest().Count} visible)");
                     window.SelectFolderForTest(0);
-                }
                 }
 
                 // Exercise filtering.

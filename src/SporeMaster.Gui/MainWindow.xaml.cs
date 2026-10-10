@@ -34,6 +34,8 @@ public partial class MainWindow : Window
     private bool _sortDescending;
     private int _treeWidth = 260;
     private bool _updatingAddress;
+    private bool _syncingChecks;
+    private bool _detailsPaneVisible = true;
 
     private const string AllResourcesLabel = "(all resources)";
 
@@ -112,6 +114,7 @@ public partial class MainWindow : Window
         }
 
         FolderTree.ItemsSource = new[] { _root };
+        UpdateRootCheckState();
         RefreshAddressItems();
     }
 
@@ -411,17 +414,25 @@ public partial class MainWindow : Window
         }
     });
 
-    private void OnViewDetails(object sender, RoutedEventArgs e) => Guarded(() =>
+    private void OnViewDetails(object sender, RoutedEventArgs e) => Guarded(ApplyDetailsView);
+
+    private void OnViewLargeIcons(object sender, RoutedEventArgs e) => Guarded(ApplyLargeIconsView);
+
+    private void ApplyDetailsView()
     {
         ResourceList.View = BuildDetailsView();
-    });
+        DetailsMenuItem.IsChecked = true;
+        LargeIconsMenuItem.IsChecked = false;
+    }
 
-    private void OnViewLargeIcons(object sender, RoutedEventArgs e) => Guarded(() =>
+    private void ApplyLargeIconsView()
     {
         var view = new GridView();
         view.Columns.Add(new GridViewColumn { Header = "Name", DisplayMemberBinding = new System.Windows.Data.Binding("LargeName"), Width = 300 });
         ResourceList.View = view;
-    });
+        LargeIconsMenuItem.IsChecked = true;
+        DetailsMenuItem.IsChecked = false;
+    }
 
     private GridView BuildDetailsView()
     {
@@ -477,20 +488,23 @@ public partial class MainWindow : Window
         DetailsType.Text = row.TypeName;
         DetailsKey.Text = row.Key;
         DetailsSize.Text = $"{row.PackedSize} bytes packed, {row.MemSize} bytes in memory ({row.Compression}) — {row.Path}";
-        DetailsPane.Visibility = Visibility.Visible;
+        ApplyDetailsPaneVisibility();
     }
 
     private void OnToggleDetailsPane(object sender, RoutedEventArgs e) => Guarded(() =>
     {
-        DetailsPane.Visibility = DetailsPane.Visibility == Visibility.Visible
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        // The MenuItem's own IsChecked has already toggled; treat it as the single source of truth.
+        _detailsPaneVisible = DetailsPaneMenuItem.IsChecked;
+        ApplyDetailsPaneVisibility();
 
-        if (DetailsPane.Visibility == Visibility.Visible && ResourceList.SelectedItem is ResourceItem row)
+        if (_detailsPaneVisible && ResourceList.SelectedItem is ResourceItem row)
         {
             UpdateDetailsPane(row);
         }
     });
+
+    private void ApplyDetailsPaneVisibility() =>
+        DetailsPane.Visibility = _detailsPaneVisible ? Visibility.Visible : Visibility.Collapsed;
 
     private void OnPreviewSelected(object sender, RoutedEventArgs e) => Guarded(() =>
     {
@@ -684,7 +698,7 @@ public partial class MainWindow : Window
 
     /// <summary>All folders currently ticked in the tree.</summary>
     private List<FolderNode> CheckedFolders() =>
-        _root is null ? new List<FolderNode>() : _root.Children.Where(c => c.IsChecked).ToList();
+        _root is null ? new List<FolderNode>() : _root.Children.Where(c => c.IsChecked == true).ToList();
 
     /// <summary>All resources inside the checked folders.</summary>
     private List<ResourceItem> CheckedItems()
@@ -698,43 +712,88 @@ public partial class MainWindow : Window
         return items;
     }
 
+    /// <summary>
+    /// Standard tree-view checkbox behaviour: a folder toggles itself; the package (root) node acts as
+    /// a tri-state "select all" (checked = all folders, indeterminate = some).
+    /// </summary>
     private void OnFolderCheckChanged(object sender, RoutedEventArgs e) => Guarded(() =>
     {
-        int checkedCount = CheckedFolders().Count;
-        StatusText.Text = checkedCount > 0
-            ? $"{checkedCount} folder(s) checked ({CheckedItems().Count} resource(s)) — use Tools → Extract Checked Folders."
-            : "No folders checked.";
-    });
-
-    private void OnCheckAllFolders(object sender, RoutedEventArgs e) => Guarded(() =>
-    {
-        if (_root is null)
+        if (_syncingChecks || sender is not CheckBox { DataContext: FolderNode node } || _root is null)
         {
             return;
         }
 
-        foreach (FolderNode folder in _root.Children)
+        if (node.IsRoot)
         {
-            folder.IsChecked = true;
+            // Clicking the root selects all when not all are checked, otherwise clears all.
+            bool selectAll = _root.Children.Any(c => c.IsChecked != true);
+            _syncingChecks = true;
+            foreach (FolderNode child in _root.Children)
+            {
+                child.IsChecked = selectAll;
+            }
+
+            _syncingChecks = false;
         }
 
-        StatusText.Text = $"{CheckedFolders().Count} folder(s) checked.";
+        UpdateRootCheckState();
+        UpdateCheckStatus();
+    });
+
+    /// <summary>Recomputes the root checkbox state from its folders (tri-state).</summary>
+    private void UpdateRootCheckState()
+    {
+        if (_root is null || _root.Children.Count == 0)
+        {
+            return;
+        }
+
+        int checkedCount = _root.Children.Count(c => c.IsChecked == true);
+        _syncingChecks = true;
+        _root.IsChecked = checkedCount == 0
+            ? false
+            : checkedCount == _root.Children.Count
+                ? true
+                : null;
+        _syncingChecks = false;
+    }
+
+    private void UpdateCheckStatus()
+    {
+        int checkedFolders = CheckedFolders().Count;
+        StatusText.Text = checkedFolders > 0
+            ? $"{checkedFolders} folder(s) checked ({CheckedItems().Count} resource(s)) — Tools → Extract Checked Folders."
+            : "No folders checked.";
+    }
+
+    private void OnCheckAllFolders(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        SetAllFoldersChecked(true);
     });
 
     private void OnUncheckAllFolders(object sender, RoutedEventArgs e) => Guarded(() =>
     {
+        SetAllFoldersChecked(false);
+    });
+
+    private void SetAllFoldersChecked(bool value)
+    {
         if (_root is null)
         {
             return;
         }
 
+        _syncingChecks = true;
         foreach (FolderNode folder in _root.Children)
         {
-            folder.IsChecked = false;
+            folder.IsChecked = value;
         }
 
-        StatusText.Text = "No folders checked.";
-    });
+        _syncingChecks = false;
+
+        UpdateRootCheckState();
+        UpdateCheckStatus();
+    }
 
     private void OnExtractChecked(object sender, RoutedEventArgs e) => Guarded(() =>
     {
@@ -980,12 +1039,33 @@ public partial class MainWindow : Window
         if (_root is not null && index >= 0 && index < _root.Children.Count)
         {
             _root.Children[index].IsChecked = isChecked;
+            UpdateRootCheckState();
         }
     }
 
     internal int CheckedResourceCountForTest() => CheckedItems().Count;
 
     internal int CheckedFolderCountForTest() => CheckedFolders().Count;
+
+    /// <summary>Root check state: true = all, false = none, null = some (tri-state).</summary>
+    internal bool? RootCheckStateForTest() => _root?.IsChecked;
+
+    internal void SetAllFoldersCheckedForTest(bool value) => SetAllFoldersChecked(value);
+
+    internal void ToggleDetailsPaneForTest()
+    {
+        DetailsPaneMenuItem.IsChecked = !DetailsPaneMenuItem.IsChecked;
+        _detailsPaneVisible = DetailsPaneMenuItem.IsChecked;
+        ApplyDetailsPaneVisibility();
+    }
+
+    internal bool DetailsPaneVisibleForTest() => DetailsPane.Visibility == Visibility.Visible;
+
+    internal (bool Details, bool LargeIcons) ViewMenuStateForTest() => (DetailsMenuItem.IsChecked, LargeIconsMenuItem.IsChecked);
+
+    internal void ApplyDetailsViewForTest() => ApplyDetailsView();
+
+    internal void ApplyLargeIconsViewForTest() => ApplyLargeIconsView();
 
     internal void NavigateAddressForTest(string text) => NavigateAddress(text);
 
