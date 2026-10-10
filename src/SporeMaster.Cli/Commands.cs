@@ -2215,7 +2215,10 @@ public static class Commands
 
     // ---- helpers ----
 
-    /// <summary>Loads the embedded registries plus an optional project <c>names.txt</c> (<c>--names</c>).</summary>
+    /// <summary>
+    /// Loads the embedded registries plus optional sources: a project <c>names.txt</c> (<c>--names</c>)
+    /// and the game's key map (<c>--keymap KeyMap.txt</c>, authoritative real names).
+    /// </summary>
     private static NameRegistrySet OpenNames(CommandLine cli)
     {
         NameRegistrySet names = NameRegistrySet.LoadEmbedded();
@@ -2223,6 +2226,13 @@ public static class Commands
         if (!string.IsNullOrEmpty(projectNames))
         {
             names.LoadProjectNames(projectNames);
+        }
+
+        string? keyMapPath = cli.Get("keymap");
+        if (!string.IsNullOrEmpty(keyMapPath) && File.Exists(keyMapPath))
+        {
+            KeyMap map = KeyMap.ParseFile(keyMapPath);
+            map.ApplyTo(names);
         }
 
         return names;

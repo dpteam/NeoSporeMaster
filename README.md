@@ -267,6 +267,10 @@ dotnet run --project src/SporeMaster.Cli -- types
 
 Глобальные параметры: `--lang <код>` (напр. `--lang ru`), `--quiet`, `--no-color`, `--help`, `--version`.
 
+Дополнительные источники имён (для любой команды): `--names <names.txt>` (восстановленные/проектные
+имена) и `--keymap <KeyMap.txt>` (авторитетные имена из карты ключей игры). Пример:
+`spore list <архив.package> --keymap <KeyMap.txt>`.
+
 ---
 
 ## Совместимость форматов
