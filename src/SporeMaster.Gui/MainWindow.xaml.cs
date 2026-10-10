@@ -103,6 +103,84 @@ public partial class MainWindow : Window
 
     private void OnOpenPreviousPackage(object sender, RoutedEventArgs e) => OpenPreviousPackage();
 
+    // ---- compare with another package ----
+
+    private void OnComparePackages(object sender, RoutedEventArgs e) => Guarded(() =>
+    {
+        if (_session is null)
+        {
+            MessageBox.Show(this, Core.Localization.Localizer.Default["gui.msg.openFirst"], "SporeMaster 3");
+            return;
+        }
+
+        var dialog = new OpenFileDialog
+        {
+            Title = Core.Localization.Localizer.Default["gui.menu.compare"],
+            Filter = "Spore package (*.package)|*.package|All files (*.*)|*.*",
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            using PackageSession other = PackageSession.Open(dialog.FileName);
+            Core.Diff.ArchiveDiffResult result = _session.Compare(other);
+
+            var report = new System.Text.StringBuilder();
+            report.AppendLine($"A: {Path.GetFileName(_session.FilePath)} ({result.CountA} resource(s))");
+            report.AppendLine($"B: {Path.GetFileName(dialog.FileName)} ({result.CountB} resource(s))");
+            report.AppendLine();
+            report.AppendLine($"added:   {result.Added.Count}   (only in B)");
+            report.AppendLine($"removed: {result.Removed.Count}   (only in A)");
+            report.AppendLine($"changed: {result.Changed.Count}   (both, different content)");
+            report.AppendLine($"same:    {result.Identical}");
+            report.AppendLine();
+
+            AppendDiff(report, _session.Names, "Added (only in B)", result.Added);
+            AppendDiff(report, _session.Names, "Removed (only in A)", result.Removed);
+            AppendDiff(report, _session.Names, "Changed", result.Changed);
+
+            if (result.IsIdentical)
+            {
+                report.AppendLine("Archives are identical (by key and content).");
+            }
+
+            ShowText(report.ToString());
+            PreviewHeader.Text = Core.Localization.Localizer.Default["gui.menu.compare"];
+            StatusText.Text = result.IsIdentical
+                ? "Archives are identical."
+                : $"{result.Added.Count + result.Removed.Count + result.Changed.Count} difference(s).";
+        }
+        catch (Exception ex)
+        {
+            ShowError("Compare failed", ex);
+        }
+    });
+
+    private static void AppendDiff(System.Text.StringBuilder report, Core.Names.NameRegistrySet names, string title, List<Core.Diff.DiffEntry> entries)
+    {
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        report.AppendLine($"{title} ({entries.Count}):");
+        foreach (Core.Diff.DiffEntry entry in entries.Take(200))
+        {
+            report.AppendLine($"  {names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId)}");
+        }
+
+        if (entries.Count > 200)
+        {
+            report.AppendLine($"  … {entries.Count - 200} more");
+        }
+
+        report.AppendLine();
+    }
+
     // ---- export all models ----
 
     private void OnExportAllModelsObj(object sender, RoutedEventArgs e) => Guarded(() => ExportAllModels("obj"));
@@ -1838,6 +1916,19 @@ public partial class MainWindow : Window
     {
         ResourcePreview preview = PreviewForTest(row);
         return preview.Model?.SkeletonJoints.Count ?? 0;
+    }
+
+    /// <summary>Compares the current package with another and returns the report text (for the self-test).</summary>
+    internal string CompareWithForTest(string otherPath)
+    {
+        if (_session is null)
+        {
+            return string.Empty;
+        }
+
+        using PackageSession other = PackageSession.Open(otherPath);
+        Core.Diff.ArchiveDiffResult result = _session.Compare(other);
+        return $"added={result.Added.Count} removed={result.Removed.Count} changed={result.Changed.Count} same={result.Identical}";
     }
 
     internal (bool Details, bool LargeIcons) ViewMenuStateForTest() => (DetailsMenuItem.IsChecked, LargeIconsMenuItem.IsChecked);

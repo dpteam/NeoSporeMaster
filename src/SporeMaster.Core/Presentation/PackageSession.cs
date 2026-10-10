@@ -54,5 +54,9 @@ public sealed class PackageSession : IDisposable
     /// <summary>Reads a resource and (if necessary) decompresses it.</summary>
     public byte[] Read(DbpfEntry entry) => _package.ReadEntry(entry);
 
+    /// <summary>Compares this package with another (added/removed/changed resources).</summary>
+    public Diff.ArchiveDiffResult Compare(PackageSession other) =>
+        Diff.ArchiveDiff.Compare(_package, other._package);
+
     public void Dispose() => _package.Dispose();
 }

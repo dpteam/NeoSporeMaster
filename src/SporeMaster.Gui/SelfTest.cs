@@ -174,6 +174,17 @@ internal static class SelfTest
 
                 report.AppendLine($"Package history: stack after nested={depthAfterNested}, returned to parent={returned}, cleared on top-level open={depthAfterTopLevel == 0}");
 
+                // Compare with itself (should be identical).
+                try
+                {
+                    string compare = window.CompareWithForTest(originalPath);
+                    report.AppendLine($"Compare with self: {compare}");
+                }
+                catch (Exception ex)
+                {
+                    report.AppendLine($"Compare with self failed: {ex.Message}");
+                }
+
                 // Exercise filtering.
                 window.SelectFolderForTest(0);
                 int before = window.VisibleRowsForTest().Count;

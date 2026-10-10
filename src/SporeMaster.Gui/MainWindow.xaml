@@ -50,6 +50,9 @@
                 <MenuItem Header="{loc:Loc gui.menu.uncheckAll}" Click="OnUncheckAllFolders" />
                 <Separator />
                 <MenuItem Header="{loc:Loc gui.menu.loadNames}" Click="OnLoadNames" />
+                <Separator />
+                <MenuItem Header="{loc:Loc gui.menu.compare}" Click="OnComparePackages" />
+                <Separator />
                 <MenuItem Header="{loc:Loc gui.menu.flatView}" Click="OnFlatViewToggle" IsCheckable="True" />
             </MenuItem>
             <MenuItem Header="{loc:Loc gui.menu.help}">

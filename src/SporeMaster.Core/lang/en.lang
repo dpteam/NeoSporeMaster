@@ -127,6 +127,7 @@ gui.msg.modelsExported = Exported {0} model(s). {1} model(s) had no static geome
 gui.menu.checkAll = Check all folders
 gui.menu.uncheckAll = Uncheck all folders
 gui.menu.loadNames = Load recovered _names.txt...
+gui.menu.compare = _Compare with package...
 gui.menu.flatView = Back to single list (flat view)
 gui.menu.help = _Help
 gui.menu.about = _About
