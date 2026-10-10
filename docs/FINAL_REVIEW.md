@@ -84,7 +84,6 @@
   (SporeModder: `ArithmeticaFile` + ANTLR-грамматика). Не текст.
 
 ### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
-
 Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `rw4`, `anim`, `pctp`,
 `tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`), `argscript`.
 
@@ -104,6 +103,27 @@
 - под-форматы `cell` (напр. `.structure`) — референс SporeModder **не всегда совпадает** с данными.
 
 Приоритет — по частоте/пользе; каждый **сначала проверять на реальных файлах** (правило проекта).
+
+### 5c.1 Подписи форматов (по первым байтам, проверено)
+
+| Тип | Формат | Первые байты / признак |
+|-----|--------|------------------------|
+| `0x0472329b` | `arth`/`htra` | бинарный, магия `48 54 52 41` = `HTRA` |
+| `0x2b978c46` | `crt` | XML (`<?xml ...?><sporemodel>`) |
+| `0x030bdee3` | `pollen_metadata` (otdb) | бинарный, начинается `00 00 00 0A 00 00 00 00 …`; в конце — свой ключ (type/group/instance BE) |
+| `0x00e6bce5` | `gmdl` | бинарный, начинается `08 00 00 00 00 00 00 00 01 00 00 00` + float-ы |
+| `0xea5118b0` | `effdir` (effects) | бинарный, `00 04 00 01 00 01 00 01 …` |
+| `0x497767b9` | `pfx` | **текст** Pure Data (`####…`, `#N canvas …`) |
+| `0x55ada24` | `cnv` | бинарный (наш парсер) |
+| `0x4b9ef6dc` | `structure` | бинарный; **бета ≠ SporeModder** (offset=0) |
+| `0xdfad9f51` | `cell` | бинарный; **бета ≠ SporeModder** (float + UTF-16 имя) |
+
+### 5c.2 Наборы тестовых архивов
+
+- **Релиз** (`_PackageFilesFinalVer`): `BoosterPack_01`, `BP2_Data`, `CSA_Audio`, `CSA_Graphics`,
+  `CSA_Main`, `CSA_Pack_03`, `Spore_Game`.
+- **Бета** (`_PackageFilesBetaVer`): `CellGame`, `CellGame_Layers`, `Cinematics`,
+  **`CompiledMaterials`**, **`Effects`**, **`Effects_SkinPaint`**, **`Images`**, `Other`.
 
 **Cell-форматы** (пакет `cell` SporeModder FX; сделан только `loottable`, `look_table`): ещё есть
 `CellFile` (мастер, 26 КБ), `CellGlobals`, `CellPopulate`, `CellStructure`, `CellWorld`,
