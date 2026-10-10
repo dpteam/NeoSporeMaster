@@ -2254,6 +2254,67 @@ public static class Commands
         }
     }
 
+    /// <summary>
+    /// Repacks a package with our writer and checks the result is identical (repack validation):
+    /// <c>roundtrip &lt;package&gt; [--compress] [--big] [--version X] [--keep out.package]</c>.
+    /// </summary>
+    public static int RoundTrip(CommandLine cli, Output output)
+    {
+        if (!TryOpen(cli, output, out DatabasePackedFile? package))
+        {
+            return 1;
+        }
+
+        var options = new DbpfWriteOptions
+        {
+            Compress = cli.Has("compress"),
+            Big = cli.Has("big"),
+            Version = ParseVersion(cli.Get("version")),
+        };
+
+        string? keep = cli.Get("keep");
+        using (package)
+        {
+            output.Line($"Round-tripping {cli.Positional[0]} ({package!.Entries.Count} resource(s)), " +
+                $"compress={options.Compress}, big={options.Big}...");
+
+            ArchiveDiffResult result;
+            try
+            {
+                result = ArchiveRoundTrip.Run(package, options, keep);
+            }
+            catch (Exception ex)
+            {
+                output.Error($"Round-trip failed: {ex.Message}");
+                return 1;
+            }
+
+            output.Line($"  added:   {result.Added.Count}");
+            output.Line($"  removed: {result.Removed.Count}");
+            output.Line($"  changed: {result.Changed.Count}");
+            output.Line($"  same:    {result.Identical}");
+
+            if (result.IsIdentical)
+            {
+                output.Success("Round-trip is lossless (identical by key and content).");
+                if (!string.IsNullOrEmpty(keep))
+                {
+                    output.Line($"  repacked archive: {keep}");
+                }
+
+                return 0;
+            }
+
+            output.Warn($"Round-trip differs: {result.Added.Count + result.Removed.Count + result.Changed.Count} difference(s).");
+            foreach (DiffEntry entry in result.AllDifferences.Take(20))
+            {
+                output.Line($"  [{entry.Kind}] {entry.Key} ({entry.SizeA} -> {entry.SizeB})");
+            }
+
+            return 1;
+        }
+    }
+
     public static int Hash(CommandLine cli, Output output)
     {
         if (cli.Positional.Count == 0)

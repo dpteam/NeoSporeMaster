@@ -73,6 +73,7 @@ public static class Program
             "keymap" => Commands.KeyMapCommand(cli, output),
             "rw4" => Commands.Rw4(cli, output),
             "verify" => Commands.Verify(cli, output),
+            "roundtrip" => Commands.RoundTrip(cli, output),
             "diff" => Commands.Diff(cli, output),
             "strings" => Commands.Strings(cli, output),
             "pdb" => Commands.Pdb(cli, output),
@@ -120,6 +121,7 @@ public static class Program
         output.Line($"  {loc["cmd.keymap.usage"],-58} {loc["cmd.keymap.summary"]}");
         output.Line($"  {loc["cmd.rw4.usage"],-58} {loc["cmd.rw4.summary"]}");
         output.Line($"  {loc["cmd.verify.usage"],-58} {loc["cmd.verify.summary"]}");
+        output.Line($"  {loc["cmd.roundtrip.usage"],-58} {loc["cmd.roundtrip.summary"]}");
         output.Line($"  {loc["cmd.diff.usage"],-58} {loc["cmd.diff.summary"]}");
         output.Line($"  {loc["cmd.strings.usage"],-58} {loc["cmd.strings.summary"]}");
         output.Line($"  {loc["cmd.pdb.usage"],-58} {loc["cmd.pdb.summary"]}");

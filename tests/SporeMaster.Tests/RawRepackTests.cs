@@ -76,6 +76,23 @@ public static class RawRepackTests
         }
     }
 
+    [SporeTest("archive round-trip is lossless on a real package")]
+    public static void RealRoundTrip()
+    {
+        string? packagePath = TestData.FinalPackages.FirstOrDefault(p => p.EndsWith("BP2_Data.package"));
+        if (packagePath is null)
+        {
+            Console.WriteLine("BP2_Data.package not available; skipping.");
+            return;
+        }
+
+        using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+        ArchiveDiffResult result = ArchiveRoundTrip.Run(package, new DbpfWriteOptions { Compress = true });
+
+        Assert.True(result.IsIdentical, "repacking a real package must be lossless");
+        Assert.Equal(package.Entries.Count, result.Identical);
+    }
+
     private static byte[] Randomish(int length, int seed)
     {
         var data = new byte[length];
