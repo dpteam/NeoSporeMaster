@@ -43,7 +43,8 @@
 - **Экспериментальная распаковка в `Data`** (`unpackdata`) — раскладка по реальным игровым путям
   из карты ключей (см. `docs/UNPACK_DATA.md`).
 - **Поиск по тексту** — полнотекстовый поиск по распакованным файлам (регистронезависимый),
-  с номерами строк и сниппетами.
+  с номерами строк и сниппетами. В GUI/`list` — **маски** (`*.rw4`), **regex** (`re:...`) и поиск
+  **по содержимому** (`text:`/`hex:`).
 - **Экспорт списка ресурсов** в CSV/JSON; **очистка авто-локалей** при распаковке.
 - **Сравнение двух архивов** (`diff`) — добавочные/удалённые/изменённые ресурсы по ключу и
   содержимому (не зависит от порядка, сжатия и паддинга) — удобно для модов и проверки репака.
@@ -183,8 +184,10 @@ dotnet run --project src/SporeMaster.Gui -- --selftest путь\к\архиву.
 # Информация об архиве
 dotnet run --project src/SporeMaster.Cli -- info <архив.package>
 
-# Список ресурсов (с фильтрами)
+# Список ресурсов (с фильтрами: имя — маски/regex; --content — поиск по байтам)
 dotnet run --project src/SporeMaster.Cli -- list <архив.package> --type prop --limit 20
+dotnet run --project src/SporeMaster.Cli -- list <архив.package> --name "*.rw4"
+dotnet run --project src/SporeMaster.Cli -- list <архив.package> --content "text:property"
 
 # Распаковать всё (свойства сохраняются как .prop.xml, имена — по реестрам)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка>

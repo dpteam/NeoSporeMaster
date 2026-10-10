@@ -72,7 +72,8 @@ public static class Commands
         NameRegistrySet names = OpenNames(cli);
         uint? typeFilter = ParseHashFilter(cli.Get("type"), names.GetTypeHash, output);
         uint? groupFilter = ParseHashFilter(cli.Get("group"), names.GetFileHash, output);
-        string? nameFilter = cli.Get("name");
+        NameFilter nameFilter = NameFilter.Compile(cli.Get("name"));
+        ContentQuery contentFilter = ContentQuery.Parse(cli.Get("content"));
         bool onlyCompressed = cli.Has("compressed");
         int limit = cli.GetInt("limit") ?? int.MaxValue;
 
@@ -96,12 +97,31 @@ public static class Commands
                     continue;
                 }
 
-                string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
-                if (nameFilter is not null &&
-                    resolved.IndexOf(nameFilter, StringComparison.OrdinalIgnoreCase) < 0)
+                if (!nameFilter.IsEmpty)
                 {
-                    continue;
+                    ResourceItem probe = new(entry, names);
+                    if (!probe.Matches(nameFilter))
+                    {
+                        continue;
+                    }
                 }
+
+                if (contentFilter.HasContent)
+                {
+                    try
+                    {
+                        if (!contentFilter.Matches(package.ReadEntry(entry)))
+                        {
+                            continue;
+                        }
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+                string resolved = names.GetRelativePath(entry.Key.TypeId, entry.Key.GroupId, entry.Key.InstanceId);
 
                 rows.Add(new[]
                 {
