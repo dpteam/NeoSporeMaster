@@ -243,6 +243,35 @@ public sealed class RenderWare4File : IDisposable
         return _stream.ReadBytesExactly(section.Size);
     }
 
+    /// <summary>Reads the skeleton sections of this resource (empty for non-skeletal containers).</summary>
+    public IReadOnlyList<Rw4Skeleton> ReadSkeletons()
+    {
+        if (_stream is null)
+        {
+            return Array.Empty<Rw4Skeleton>();
+        }
+
+        var skeletons = new List<Rw4Skeleton>();
+        foreach (Rw4SectionInfo section in Sections)
+        {
+            if (section.TypeCode != (int)Rw4SectionType.Skeleton || section.Size < 24)
+            {
+                continue;
+            }
+
+            try
+            {
+                skeletons.Add(Rw4Skeleton.Read(_stream, section.DataOffset, _length));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Warn($"RW4 skeleton section at 0x{section.DataOffset:X} could not be read: {ex.Message}");
+            }
+        }
+
+        return skeletons;
+    }
+
     /// <summary>
     /// Reads the triangle geometry for every mesh in this resource. Best-effort: meshes whose
     /// buffers cannot be resolved or decoded are reported through <see cref="Diagnostics"/>.

@@ -277,6 +277,55 @@ public static class RenderWare4Tests
         Assert.Contains(obj, "f 1/1 2/2 3/3");
     }
 
+    [SporeTest("RW4 skeletons expose bone hierarchies")]
+    public static void Skeletons()
+    {
+        int skeletons = 0;
+
+        foreach (string packagePath in TestData.FinalPackages)
+        {
+            using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+            foreach (DbpfEntry entry in package.Entries)
+            {
+                if (entry.Key.TypeId != Rw4Type)
+                {
+                    continue;
+                }
+
+                byte[] data = package.ReadEntry(entry);
+                if (data.Length < 0x100)
+                {
+                    continue;
+                }
+
+                using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
+                foreach (Rw4Skeleton skeleton in rw4.ReadSkeletons())
+                {
+                    Assert.True(skeleton.Bones.Count > 0, "a skeleton should have bones");
+
+                    // Every parent index must be a valid bone index or -1.
+                    foreach (Rw4Bone bone in skeleton.Bones)
+                    {
+                        Assert.True(
+                            bone.ParentIndex >= -1 && bone.ParentIndex < skeleton.Bones.Count,
+                            $"bone parent index {bone.ParentIndex} out of range");
+                    }
+
+                    skeletons++;
+                    if (skeletons >= 50)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (skeletons == 0)
+        {
+            throw new AssertionException("No RW4 skeletons found.");
+        }
+    }
+
     [SporeTest("bad RW4 magic is rejected")]
     public static void BadMagic()
     {

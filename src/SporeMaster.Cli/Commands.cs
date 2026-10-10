@@ -762,6 +762,21 @@ public static class Commands
             output.Table(new[] { "#", "Primitive", "Triangles", "Vertices", "Prims", "VBufs" }, meshRows);
         }
 
+        IReadOnlyList<Core.RenderWare4.Rw4Skeleton> skeletons = rw4.ReadSkeletons();
+        if (skeletons.Count > 0)
+        {
+            output.Line();
+            output.Heading($"Skeletons ({skeletons.Count})");
+            var skeletonRows = skeletons.Select((s, i) => new[]
+            {
+                i.ToString(CultureInfo.InvariantCulture),
+                s.Bones.Count.ToString(CultureInfo.InvariantCulture),
+                s.Bones.Count(b => b.ParentIndex < 0).ToString(CultureInfo.InvariantCulture),
+                $"0x{s.SkeletonId:X8}",
+            }).ToList();
+            output.Table(new[] { "#", "Bones", "Roots", "Id" }, skeletonRows);
+        }
+
         // --export <file.obj>: dump decoded geometry.
         string? exportPath = cli.Get("export");
         if (exportPath is not null)
