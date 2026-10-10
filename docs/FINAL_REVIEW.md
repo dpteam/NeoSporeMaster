@@ -78,15 +78,25 @@
 - Выводы: текст (`trigger`→`.txt`) и `.prop` доминируют; есть UI-веб (`.css/.html/.js`), шрифты (`.ttf`),
   видео (`.vp6/.avi`), и `.crt`. Полезно проверить `crt`/`db`/`pkp`/`dat` на реальных данных.
 - **Найдено:** `.crt` (тип `0x2b978c46`) — это **XML** (`<?xml ...?><sporemodel>…`), т.е. текст
-  (превью уже покажет как текст). `.arth`/`htra` (`0x0472329b`) — тоже текст.
+  (превью уже покажет как текст).
+- **Найдено:** `arth`/`htra` (`0x0472329b`, в игре пути `SimulatorScripts\*.txt`) — **бинарный**
+  формат с магией **`HTRA`** (проверено: `CreatureTuning.htra`); это скрипты симулятора
+  (SporeModder: `ArithmeticaFile` + ANTLR-грамматика). Не текст.
 
 ### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
 
 Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `rw4`, `anim`, `pctp`,
 `tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`), `argscript`.
 
+**Проверка типов (сверено с конвертерами SporeModder FX): совпадают** —
+`pctp` `0x7c19aa7a`, `gait` `0x25df0112`, `tlsa` `0x4aeb6bc6`, `cnv` `0x55ada24`,
+`loottable` `0xd92af091`, `look_table` `0x8c042499`, `anim` `0xee17c6ad`, `prop` `0xb1b104`,
+`locale` `0x2fac0b6`, `raster` `0x2f4e681c`, `rw4` `0x2f4e681b`. (`scn` и `lvl` — один тип
+`0x47b8300`.)
+
 **Ещё не реализовано** (пакеты SporeModder FX, сверить на реальных данных перед реализацией!):
-- `arth` (`0x0472329b`; текст-подобный) — по KeyMap встречается 48 раз;
+- `arth` (`0x0472329b`; **бинарный `HTRA`**, не текст!) — скрипты симулятора (`SimulatorScripts`,
+  в релизе `.htra`), сплошь в `Spore_Game`/`CSA_Main` (десятки файлов);
 - `creaturedata` (`0x0f43029a`, 260) — данные редактора существ;
 - `scn` (`0x047b8300`) — уровни/архетипы (в тестовых архивах пока не встретился);
 - `spui` (`0x250fe9a2`) — layout'ы интерфейса (есть в `CSA_Graphics`/`CSA_Main`);
