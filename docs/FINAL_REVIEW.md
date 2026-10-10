@@ -99,6 +99,31 @@
 `CellFile` (мастер, 26 КБ), `CellGlobals`, `CellPopulate`, `CellStructure`, `CellWorld`,
 `CellRandomCreature`, `CellLookAlgorithm`, `CellBackgroundMap`, `CellEffectMap`, `CellPowers`.
 
+**Таблица типов (сверено с `reg_type.txt` и конвертерами SporeModder FX):**
+
+| Тип (`0x`) | Имя типа | SporeModder-конвертер | Наш статус |
+|-----------|----------|-----------------------|-----------|
+| `dfad9f51` | `cell` | CellFile | нет |
+| `2a3ce5b7` | `globals` | CellGlobals | нет |
+| `433fb70c` | `effectMap` | CellEffectMap | нет |
+| `4b9ef6dc` | `structure` | CellStructure | нет (референс не совпал!) |
+| `612b3191` | `backgroundMap` | CellBackgroundMap | нет |
+| `754be343` | `powers` | CellPowers | нет |
+| `9b8e862f` | `world` | CellWorld | нет |
+| `da141c1b` | `populate` | CellPopulate | нет |
+| `dba35ae2` | `look_algorithm` | CellLookAlgorithm | нет |
+| `f9c3d770` | `random_creature` | CellRandomCreature | нет |
+| `d92af091` | `loottable` | CellLootTable | **есть** |
+| `8c042499` | `look_table` | CellLookTable | **есть** |
+| `47b8300` | `lvl` (`scn`) | Scn | нет |
+| `ea5118b0` | `effdir` (effects) | Effects | нет |
+| `469a3f7` | `smt` | Smt | нет |
+| `2d5c9af` | `summary` | Summary | нет |
+| `30bdee3` | `pollen_metadata` (otdb) | PollenMetadata | нет |
+| `366a930d` | `adv` (Scenario) | Scenario | нет |
+| `6efc6aa` | `package` | DBPF | нет (это **вложенный `.package`**!) |
+| `617715d9` | `pd` (Pure Data) | — (нет конвертера) | текст |
+
 **Важное наблюдение (проверено на данных):** реальный `.structure` (бета `CellGame.package`,
 `struct_eggkid.structure`, 80 байт) **НЕ совпадает** с `CellStructureFile` SporeModder: по формату
 SporeModder поле `offset` (6-е int) обязано быть `28`, а в реальном файле оно `0`, и есть данные
