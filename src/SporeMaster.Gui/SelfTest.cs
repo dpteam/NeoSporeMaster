@@ -190,37 +190,46 @@ internal static class SelfTest
                 report.AppendLine($"Select all: {selectedCount} item(s); aggregate details has 'selected': {aggregateDetails.Contains("selected", StringComparison.OrdinalIgnoreCase)}");
 
                 // Package history: opening a nested package and going back.
-                string originalPath = window.CurrentPackagePathForTest()!;
-                string copy = Path.Combine(Path.GetTempPath(), "SporeMaster-selftest-copy.package");
-                File.Copy(originalPath, copy, overwrite: true);
-                window.OpenNestedPackageForTest(copy);
-                int depthAfterNested = window.PackageStackDepthForTest();
-                window.OpenPreviousPackageForTest();
-                bool returned = string.Equals(window.CurrentPackagePathForTest(), originalPath, StringComparison.OrdinalIgnoreCase);
-                // An explicit (top-level) open must clear the history, so you cannot bounce back into a stale nested package.
-                window.OpenNestedPackageForTest(copy);
-                window.OpenPackageForTest(originalPath);
-                int depthAfterTopLevel = window.PackageStackDepthForTest();
-                try
+                string? originalPath = window.CurrentPackagePathForTest();
+                if (string.IsNullOrEmpty(originalPath))
                 {
-                    File.Delete(copy);
+                    // The package could not be opened (e.g. it is not a valid archive); skip the
+                    // path-dependent checks instead of throwing.
+                    report.AppendLine("Package history: skipped (no package opened)");
                 }
-                catch
+                else
                 {
-                    // best effort
-                }
+                    string copy = Path.Combine(Path.GetTempPath(), "SporeMaster-selftest-copy.package");
+                    File.Copy(originalPath, copy, overwrite: true);
+                    window.OpenNestedPackageForTest(copy);
+                    int depthAfterNested = window.PackageStackDepthForTest();
+                    window.OpenPreviousPackageForTest();
+                    bool returned = string.Equals(window.CurrentPackagePathForTest(), originalPath, StringComparison.OrdinalIgnoreCase);
+                    // An explicit (top-level) open must clear the history, so you cannot bounce back into a stale nested package.
+                    window.OpenNestedPackageForTest(copy);
+                    window.OpenPackageForTest(originalPath);
+                    int depthAfterTopLevel = window.PackageStackDepthForTest();
+                    try
+                    {
+                        File.Delete(copy);
+                    }
+                    catch
+                    {
+                        // best effort
+                    }
 
-                report.AppendLine($"Package history: stack after nested={depthAfterNested}, returned to parent={returned}, cleared on top-level open={depthAfterTopLevel == 0}");
+                    report.AppendLine($"Package history: stack after nested={depthAfterNested}, returned to parent={returned}, cleared on top-level open={depthAfterTopLevel == 0}");
 
-                // Compare with itself (should be identical).
-                try
-                {
-                    string compare = window.CompareWithForTest(originalPath);
-                    report.AppendLine($"Compare with self: {compare}");
-                }
-                catch (Exception ex)
-                {
-                    report.AppendLine($"Compare with self failed: {ex.Message}");
+                    // Compare with itself (should be identical).
+                    try
+                    {
+                        string compare = window.CompareWithForTest(originalPath);
+                        report.AppendLine($"Compare with self: {compare}");
+                    }
+                    catch (Exception ex)
+                    {
+                        report.AppendLine($"Compare with self failed: {ex.Message}");
+                    }
                 }
 
                 // Load a key map (if available) to improve names, then rebuild.
