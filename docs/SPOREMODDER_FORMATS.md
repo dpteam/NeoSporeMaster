@@ -36,7 +36,7 @@
 | 15 | `CellLookAlgorithmConverter` | `cell/CellLookAlgorithm` | `dba35ae2` | ⚠ бета-запись 4 int ≠ 5 |
 | 16 | `ScenarioConverter` | `simulator/Scenario` | `366a930d` | ⬜ (в тест-пакетах нет) |
 | 17 | `GaitConverter` | `gait` | `25df0112` | ✅ |
-| 18 | `ScnConverter` | `scn/LevelDefinition` | `047b8300` | ⬜ (в тест-пакетах нет) |
+| 18 | `ScnConverter` | `scn/LevelDefinition` | `047b8300` | ✅ байт-точно |
 | 19 | `BitmapConverter` | `bitmaps` | разные (`2f7d0004`…`2f7d0006`) | ✅ |
 | 20 | `DBPFConverter` | `dbpf` | `06efc6aa` (вложенный `.package`) | ✅ |
 | 21 | `AnimConverter` | `anim` | `ee17c6ad` | ✅ чтение (+текст); запись — нет |
@@ -86,11 +86,12 @@ SporeModder FX читает их в редакторах, но **не** реги
 
 1. **Авторитетный список форматов — конвертеры `FormatManager` (29 шт.)**; из них реализованы
    **все основные**, кроме cell-подформатов «бета ≠ релиз», `effects`, `shaders` и форматов,
-   которых нет в тест-пакетах (`scn`, `simulator`, `powers`).
+   которых нет в тест-пакетах (`simulator`, `powers`).
 2. **Дополнительно** реализованы форматы, которых у SporeModder **нет** (`tga`, `cur`), и форматы
    «с кодом без конвертера», где это было проверить (`cell world/maps`).
 3. **Битва выяснения:** `populate`/`structure`/`cell`/`globals`/`look_algorithm` (бета) **не совпадают**
    со SporeModder — разбирать по реальным данным. `backgroundMap`/`effectMap`/`random_creature`/`world`
    (бета) — **совпадают** и реализованы.
-4. **Осталось крупное:** `spui` (совпадает, объёмен), `effects` (структура совпадает, десятки типов
-   компонентов), `shaders` (сборка шейдеров), `gmsh`/`blockdata` (реверс).
+4. **Осталось крупное:** `spui` (совпадает, объёмен и требует designer-определений), `effects`
+   (структура совпадает, десятки типов компонентов), `shaders` (сборка шейдеров), `gmsh`/`blockdata`
+   (реверс), `gmdl` (реальный ≠ SporeModder), `creaturedata` (RLE, нет писателя).

@@ -1938,6 +1938,39 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Dumps a Spore level/scenario file: <c>scn &lt;in.scn&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int Scn(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "scn <input.scn|input.lvl> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            SporeMaster.Core.Scn.ScnFile scn = SporeMaster.Core.Scn.ScnFile.Read(input0);
+            File.WriteAllText(outputPath, scn.ToText());
+            output.Success(
+                $"Wrote scn text (v{scn.Version}, {scn.Markers.Count} marker(s)): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Scn conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Dumps a cell auxiliary map (<c>cellmap &lt;kind&gt; &lt;in&gt; &lt;out.txt&gt;</c>).</summary>
     public static int CellMap(CommandLine cli, Output output)
     {

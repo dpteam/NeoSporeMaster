@@ -284,6 +284,12 @@ dotnet run --project src/SporeMaster.Cli -- pollen <файл.pollen_metadata> <�
 # Дамп программы Arithmetica (HTRA): операции, функции, строки
 dotnet run --project src/SporeMaster.Cli -- arth <файл.htra> <файл.txt>
 
+# Дамп уровня/сценария Spore (.scn/.lvl): маркеры с позицией/ориентацией
+dotnet run --project src/SporeMaster.Cli -- scn <файл.lvl> <файл.txt>
+
+# Дамп карт клетки (background/effect/random_creature)
+dotnet run --project src/SporeMaster.Cli -- cellmap background <файл.backgroundMap> <файл.txt>
+
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales
 

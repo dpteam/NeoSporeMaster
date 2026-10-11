@@ -6,6 +6,9 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (scn):** реализован **уровень/сценарий** `scn`/`lvl` (`0x047b8300`, версии 1/2/3) —
+  чтение/запись **байт-в-байт** + дамп маркеров (позиция/кватернион/тип/id). Проверено на реальных
+  `LevelEditor_Saves/*.lvl` (v3) и бета-`Other` (v2 с доп. блоком на маркер). Тесты +2 (итого 173).
 - **2026-10-11 (каталог форматов):** по `FormatManager.java` + `file/*` составлен **полный каталог
   форматов SporeModder FX** → `docs/SPOREMODDER_FORMATS.md` (29 конвертеров + «код без конвертера»).
   **Исправлено ошибочное «референса нет»:** у SporeModder **есть** код для `spui`, `gmdl`,
@@ -141,8 +144,9 @@
 
 ### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
 Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `tga`, `cur`, `rw4`, `anim`,
-`pctp`, `tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`, **`world`**),
-`otdb` (**`summary`**, **`pollen_metadata`**), **`arth`** (HTRA), `argscript`.
+`pctp`, `tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`, **`world`**, **`backgroundMap`**,
+**`effectMap`**, **`random_creature`**), `otdb` (**`summary`**, **`pollen_metadata`**), **`arth`** (HTRA),
+**`scn`** (уровни), `argscript`.
 
 **Проверка типов (сверено с конвертерами SporeModder FX): совпадают** —
 `pctp` `0x7c19aa7a`, `gait` `0x25df0112`, `tlsa` `0x4aeb6bc6`, `cnv` `0x55ada24`,
@@ -151,7 +155,9 @@
 `0x47b8300`.)
 
 **Ещё не реализовано** (полный разбор — `docs/SPOREMODDER_FORMATS.md`; сверять на реальных данных!):
-- `scn` (`0x047b8300`) — уровни/архетипы (в тестовых архивах пока не встретился); `powers` (`0x754be343`)
+- `scn` (`0x047b8300`) — ✅ **совпадает** со SporeModder и реализован **байт-точно** (`scn`, версии
+  1/2/3): заголовок `version,count,dataSize` + маркеры (BE offset/quaternion/type/id/definition +
+  фикс. payload `dataSize`, обычно `0x88`).; `powers` (`0x754be343`)
   и `simulator`/`adv` (`0x366a930d`) — тоже нет в тест-пакетах;
 - `spui` (`0x250fe9a2`, 284) — **совпадает** со SporeModder (магия `0xE3FE3FB8` ✓, версия 3 ✓),
   но объёмный (классы UI-элементов, типы свойств, стили, RLE-hit-mask);
@@ -196,6 +202,7 @@
 | `0f43029a` | `creaturedata` | 67 | ⬜ (header `ABB455B7` ✓; RLE; нет писателя) |
 | `00e6bce5` | `gmdl` | 67 | ⬜ (реальный ≠ SporeModder) |
 | `f2b924b3` | `ltp` | 52 | ✅ текст |
+| `047b8300` | `scn`/`lvl` | 35 | ✅ (dump, байт-точно) |
 
 Выводы: самое частое из непокрытого — `blockdata` (3239), `gmsh` (965), затем `cell`/`structure`
 (бета-специфичны), `spui` (284), картинки `cur`/`tga` (можно конвертить как изображения). `snr` —
@@ -247,7 +254,7 @@
 | `f9c3d770` | `random_creature` | CellRandomCreature | **есть** (dump, байт-точно) |
 | `d92af091` | `loottable` | CellLootTable | **есть** |
 | `8c042499` | `look_table` | CellLookTable | **есть** |
-| `47b8300` | `lvl` (`scn`) | Scn | нет |
+| `47b8300` | `lvl` (`scn`) | Scn | **есть** (dump, байт-точно) |
 | `ea5118b0` | `effdir` (effects) | Effects | нет |
 | `469a3f7` | `smt` | Smt | нет |
 | `2d5c9af` | `summary` | Summary | **есть** (dump, байт-точно) |

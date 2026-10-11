@@ -188,6 +188,10 @@ CLI `roundtrip` — автоматическая проверка lossless на 
 - `ArithmeticaFile` — Arithmetica/`HTRA` (`.htra`/`.arth`): байт-точное чтение/запись и дамп
   (операции с опкодами, функции, строки). Заголовок смешанной эндіанности.
 
+### `Scn/*`
+- `ScnFile` — уровень/сценарий Spore (`.scn`/`.lvl`, версии 1/2/3): байт-точное чтение/запись и
+  дамп маркеров (позиция/кватернион/тип/id + фикс. payload).
+
 ### `Presentation/*`
 UI-независимый слой, переиспользуемый GUI и CLI:
 - `PackageSession` — открытый архив + реестр имён; список ресурсов, чтение, диагностика;
@@ -217,7 +221,7 @@ UI-независимый слой, переиспользуемый GUI и CLI:
 - `TestData` — поиск корня репозитория и тестовых архивов.
 - Наборы тестов: хеши, RefPack, round-trip DBPF, реальные архивы, отказоустойчивость,
   локализация, свойства, локали, текстуры, bitmap/PNG, TGA/ICO, RW4, hash guesser, Presentation,
-  cell world, otdb (summary/pollen), Arithmetica (HTRA).
+  cell world, otdb (summary/pollen), Arithmetica (HTRA), scn (levels), cell maps.
 
 ## SporeMaster.Gui
 
