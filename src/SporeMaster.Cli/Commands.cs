@@ -1938,6 +1938,40 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Dumps a Spore creature editor save: <c>creaturedata &lt;in.creaturedata&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int CreatureData(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "creaturedata <input.creaturedata> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            SporeMaster.Core.CreatureData.CreatureDataFile data =
+                SporeMaster.Core.CreatureData.CreatureDataFile.Read(input0);
+            File.WriteAllText(outputPath, data.ToText());
+            output.Success(
+                $"Wrote creature data text (v{data.Version}, {data.Capabilities.Count} capability(ies), {data.Morphs.Count} morph(s)): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Creature data conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Dumps a Spore level/scenario file: <c>scn &lt;in.scn&gt; &lt;out.txt&gt;</c>.</summary>
     public static int Scn(CommandLine cli, Output output)
     {

@@ -290,6 +290,9 @@ dotnet run --project src/SporeMaster.Cli -- scn <файл.lvl> <файл.txt>
 # Дамп карт клетки (background/effect/random_creature)
 dotnet run --project src/SporeMaster.Cli -- cellmap background <файл.backgroundMap> <файл.txt>
 
+# Дамп сохранения редактора существ (способности и морфы)
+dotnet run --project src/SporeMaster.Cli -- creaturedata <файл.creaturedata> <файл.txt>
+
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales
 
