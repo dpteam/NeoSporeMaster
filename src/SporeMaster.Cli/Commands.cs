@@ -506,7 +506,7 @@ public static class Commands
                 continue;
             }
 
-            bool isPropXml = relative.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
+            bool isPropXml = ConversionSuffix.IsConvertedPropXml(relative);
             bool isTextureDds = relative.EndsWith(".raster.dds", StringComparison.OrdinalIgnoreCase);
 
             // ".png" is ambiguous: it is both the native "png" resource type and the suffix used by
@@ -2471,10 +2471,42 @@ public static class Commands
     /// </summary>
     private static string FallbackPath(NameRegistrySet names, KeyMap? keyMap, DbpfEntry entry)
     {
-        string extension = keyMap?.GetExtension(entry.Key.TypeId) ?? names.GetTypeName(entry.Key.TypeId);
-        string group = names.GetFileName(entry.Key.GroupId);
-        string name = names.GetFileName(entry.Key.InstanceId);
+        string extension = keyMap?.GetExtension(entry.Key.TypeId) ?? PathExtension(names, entry.Key.TypeId);
+        string group = PathSegment(names, entry.Key.GroupId);
+        string name = PathSegment(names, entry.Key.InstanceId);
         return $"{group}/{name}.{extension}";
+    }
+
+    /// <summary>
+    /// The file extension for a resource type: the registry extension when it hashes back to the type
+    /// id, otherwise a hex <c>0x…</c> literal (some type ids share an extension name, so only one of
+    /// them round-trips through the name).
+    /// </summary>
+    private static string PathExtension(NameRegistrySet names, uint typeId)
+    {
+        string name = names.GetTypeName(typeId);
+        if (!string.IsNullOrEmpty(name) && names.GetTypeHash(name) == typeId)
+        {
+            return name;
+        }
+
+        return "0x" + typeId.ToString("X8", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// A group folder / instance file name for an id: the registry name when it really hashes back to
+    /// the id, otherwise a hex <c>0x…</c> literal (aliased names such as <c>name~</c> do not hash to
+    /// their id, so writing the bare name would lose the key on repack).
+    /// </summary>
+    private static string PathSegment(NameRegistrySet names, uint id)
+    {
+        string name = names.GetFileName(id);
+        if (!string.IsNullOrEmpty(name) && names.GetFileHash(name) == id)
+        {
+            return name;
+        }
+
+        return "0x" + id.ToString("X8", CultureInfo.InvariantCulture);
     }
 
     public static int Verify(CommandLine cli, Output output)
@@ -3193,11 +3225,26 @@ public static class Commands
 
         groupName = group;
         instanceName = rest[..dot];
-        groupId = names.GetFileHash(groupName);
-        instanceId = names.GetFileHash(instanceName);
-        typeId = names.GetTypeHash(rest[(dot + 1)..]);
+        groupId = ParseNameOrHash(names, groupName);
+        instanceId = ParseNameOrHash(names, instanceName);
+        typeId = ParseTypeOrHash(names, rest[(dot + 1)..]);
         return true;
     }
+
+    /// <summary>
+    /// Resolves a path segment to a hash: a hex <c>0x…</c> literal (as written for aliased names) is
+    /// parsed directly, otherwise the FNV hash of the name is used.
+    /// </summary>
+    private static uint ParseNameOrHash(NameRegistrySet names, string segment) =>
+        segment.StartsWith("0x", System.StringComparison.OrdinalIgnoreCase)
+            ? uint.Parse(segment[2..], System.Globalization.NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+            : names.GetFileHash(segment);
+
+    /// <summary>Resolves a file extension to a type id (hex literal or the type name registry).</summary>
+    private static uint ParseTypeOrHash(NameRegistrySet names, string segment) =>
+        segment.StartsWith("0x", System.StringComparison.OrdinalIgnoreCase)
+            ? uint.Parse(segment[2..], System.Globalization.NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+            : names.GetTypeHash(segment);
 
     private static void PrintDiagnostics(DatabasePackedFile package, Output output)
     {

@@ -9,7 +9,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <Authors>SporeMaster3 contributors</Authors>
     <Product>SporeMaster 3</Product>
-    <Version>3.96.0</Version>
+    <Version>3.97.0</Version>
     <Copyright>SporeMaster3 contributors</Copyright>
     <!-- No external NuGet packages are used; everything is built on the BCL. -->
     <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>

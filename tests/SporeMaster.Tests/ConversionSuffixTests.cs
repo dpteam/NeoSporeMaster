@@ -22,6 +22,20 @@ public static class ConversionSuffixTests
         Assert.False(ConversionSuffix.IsConvertedPng("group~/thing.prop.xml"));
     }
 
+    [SporeTest("converted-prop-xml detection distinguishes native xml resources")]
+    public static void DetectConvertedPropXml()
+    {
+        // Converted property files: "<name>.<prop-ish>.xml".
+        Assert.True(ConversionSuffix.IsConvertedPropXml("group~/thing.prop.xml"));
+        Assert.True(ConversionSuffix.IsConvertedPropXml("CreatureEditorTemplates/creatureNoseTemplate.prop.xml"));
+
+        // Native xml resources (".xml" is the resource type) must be kept.
+        Assert.False(ConversionSuffix.IsConvertedPropXml("sporeUIDesigner~/SporeUIFonts.xml"));
+        Assert.False(ConversionSuffix.IsConvertedPropXml("dir/design.xml"));
+
+        Assert.False(ConversionSuffix.IsConvertedPropXml("group~/thing.prop"));
+    }
+
     [SporeTest("repacking a named unpack keeps native png resources")]
     public static void NativePngSurvivesRepack()
     {
