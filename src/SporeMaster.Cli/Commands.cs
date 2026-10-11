@@ -1938,6 +1938,39 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Dumps a Spore Arithmetica (HTRA) program: <c>arth &lt;in.htra&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int Arth(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "arth <input.htra|input.arth> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            SporeMaster.Core.Arithmetica.ArithmeticaFile arth = SporeMaster.Core.Arithmetica.ArithmeticaFile.Read(input0);
+            File.WriteAllText(outputPath, arth.ToText());
+            output.Success(
+                $"Wrote Arithmetica text ({arth.Operations.Count} op(s), {arth.Functions.Count} function(s), {arth.Strings.Count} string(s)): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Arithmetica conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Dumps a Spore <c>.pollen_metadata</c> file: <c>pollen &lt;in.pollen_metadata&gt; &lt;out.txt&gt;</c>.</summary>
     public static int Pollen(CommandLine cli, Output output)
     {

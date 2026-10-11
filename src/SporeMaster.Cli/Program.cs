@@ -74,6 +74,7 @@ public static class Program
             "cellworld" => Commands.CellWorld(cli, output),
             "summary" => Commands.Summary(cli, output),
             "pollen" => Commands.Pollen(cli, output),
+            "arth" => Commands.Arth(cli, output),
             "keymap" => Commands.KeyMapCommand(cli, output),
             "rw4" => Commands.Rw4(cli, output),
             "export-models" => Commands.ExportModels(cli, output),
@@ -127,6 +128,7 @@ public static class Program
         output.Line($"  {loc["cmd.cellworld.usage"],-58} {loc["cmd.cellworld.summary"]}");
         output.Line($"  {loc["cmd.summary.usage"],-58} {loc["cmd.summary.summary"]}");
         output.Line($"  {loc["cmd.pollen.usage"],-58} {loc["cmd.pollen.summary"]}");
+        output.Line($"  {loc["cmd.arth.usage"],-58} {loc["cmd.arth.summary"]}");
         output.Line($"  {loc["cmd.keymap.usage"],-58} {loc["cmd.keymap.summary"]}");
         output.Line($"  {loc["cmd.rw4.usage"],-58} {loc["cmd.rw4.summary"]}");
         output.Line($"  {loc["cmd.export-models.usage"],-58} {loc["cmd.export-models.summary"]}");
