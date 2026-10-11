@@ -381,4 +381,21 @@ SporeModder поле `offset` (6-е int) обязано быть `28`, а в р�
 
 - [ ] «Проекты» (как в SporeMaster/SporeModder FX) — нужны ли (идея заказчика №9).
 - [ ] Полный деманглинг C++-имён из PDB.
-- [ ] `.cnv`/`.anim` запись, `scn`/`spui`/`effects`.
+- [ ] `.cnv`/`.anim` **запись** — не сделаны (дампы есть). `scn` — **сделан** (байт-точно);
+      `spui`/`effects` — сделаны **контейнеры** (байт-точно), семантика элементов/компонентов — нет.
+- [x] `.prop` transform — **сделан** (корректная семантика + совместимый ввод, 3.90.0).
+- [ ] `cell` (`0xdfad9f51`, 796 б) / `gmsh` / `blockdata` / `gmdl` / `bem` — реверс по реальным данным.
+
+## 9. Итог ревизии (2026-10-11)
+
+- **Проверки:** `verify` на **всех 15 архивах** → **0 проблем** (40813 ресурсов); `roundtrip`
+  lossless на всех; смоук-тест игры PASS; GUI self-test OK; 186 тестов зелёные.
+- **Реализовано по итогам ревизии (все — байт-точно на реальных данных):** `cell world` + карты
+  (`backgroundMap`/`effectMap`/`random_creature`), релиз `populate`/`structure`, `tga`/`cur` → PNG,
+  `otdb` (`summary`/`pollen_metadata`), `arth` (HTRA), `scn` (уровни), `creaturedata`,
+  контейнеры `spui` и `effdir`; исправлена семантика `prop` `transform`; `PreBakedKeys` +
+  устойчивый `#include` в `DDFList`.
+- **Осознанно отложено:** скиннинг меша RW4; запись `.anim`/`.cnv`; семантика `effdir`/`spui`;
+  реверс `cell`/`gmsh`/`blockdata`/`gmdl`/`bem`; `simulator`/`shaders` (нет в тест-пакетах/вне области).
+- **Каталог форматов:** `docs/SPOREMODDER_FORMATS.md`. Все 29 конвертеров SporeModder — покрыты
+  (байт-точно или контейнер), кроме `smt` (шейдеры).
