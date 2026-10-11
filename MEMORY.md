@@ -20,6 +20,9 @@
 Всё на BCL: собственный парсер аргументов, собственный тест-раннер, `System.Buffers.Binary`
 для little-endian. Это упрощает сборку и соответствует требованию «всё нативно».
 
+**Версия продукта** — единый источник: `Directory.Build.props` (`<Version>`, сейчас `3.94.0`;
+показывается в `spore --version`). Держать в шагу с `HISTORY.md`.
+
 ### 1.4. Источник истины по форматам — `refs/`
 Реальные архивы (`refs/_PackageFilesBetaVer`, `refs/_PackageFilesFinalVer`) используются в тестах
 как эталон. Реализации в `refs/SporeModder-FX-master`, `refs/CheckAll`, `refs/SporeEdit`,

@@ -80,4 +80,6 @@
 3. Для изменений в GUI: `dotnet run --project src/SporeMaster.Gui -- --selftest <архив.package>`
    и убедиться, что отчёт заканчивается на `RESULT: OK`.
 4. Обновлены `HISTORY.md` (и при необходимости `MEMORY.md`, `README.md`, `RESUME.md`).
+   При росте версии — обновить `<Version>` в `Directory.Build.props` (единый источник; видно в
+   `spore --version`).
 5. Новые строки интерфейса добавлены в `en.lang`, если они видимы пользователю.
