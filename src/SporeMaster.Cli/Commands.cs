@@ -1938,6 +1938,40 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Dumps a Spore effect directory (sections): <c>effdir &lt;in.effdir&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int EffDir(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "effdir <input.effdir> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            SporeMaster.Core.Effects.EffectDirectoryFile effects =
+                SporeMaster.Core.Effects.EffectDirectoryFile.Read(input0);
+            File.WriteAllText(outputPath, effects.ToText());
+            output.Success(
+                $"Wrote effdir sections (v{effects.Version}, {effects.Sections.Count} section(s), {effects.VisualEffectCount} effect(s)): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Effect directory conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Dumps a Spore UI layout header: <c>spui &lt;in.spui&gt; &lt;out.txt&gt;</c>.</summary>
     public static int Spui(CommandLine cli, Output output)
     {

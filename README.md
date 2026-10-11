@@ -300,6 +300,9 @@ dotnet run --project src/SporeMaster.Cli -- creaturedata <файл.creaturedata>
 # Дамп заголовка UI-разметки Spore (.spui): ресурсы, hit-mask, классы
 dotnet run --project src/SporeMaster.Cli -- spui <файл.spui> <файл.txt>
 
+# Дамп каталога эффектов (.effdir): секции компонентов и ресурсов
+dotnet run --project src/SporeMaster.Cli -- effdir <файл.effdir> <файл.txt>
+
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales
 

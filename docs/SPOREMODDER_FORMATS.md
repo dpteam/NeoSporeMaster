@@ -45,7 +45,7 @@
 | 24 | `CnvConverter` | `cnv` | `055ada24` | ✅ дамп (запись/импорт — нет) |
 | 25 | `PCTPConverter` | `pctp` | `7c19aa7a` | ✅ |
 | 26 | `TLSAConverter` | `tlsa` | `4aeb6bc6` | ✅ |
-| 27 | `EffectsConverter` | `effects/EffectDirectory` | `ea5118b0` | ⬜ (огромный, но структура совпадает) |
+| 27 | `EffectsConverter` | `effects/EffectDirectory` | `ea5118b0` | ◑ контейнер байт-точно (секции), дамп разделов; семантика компонентов — нет |
 | 28 | `RenderWareConverter` | `rw4` | `2f4e681b` | ✅ |
 | 29 | `PropConverter` | `prop` | `00b1b104` | ✅ |
 
