@@ -109,6 +109,13 @@ public static class PreviewEngine
                 return ResourcePreview.AsText(info, "texture");
             }
 
+            // Structured formats we can dump as readable text (a friendlier view than hex).
+            string? structured = TryStructuredText(type, data);
+            if (structured is not null)
+            {
+                return ResourcePreview.AsText(structured, "text");
+            }
+
             if (ResourceTypeIds.IsRenderWare4(type))
             {
                 using RenderWare4File rw4 = RenderWare4File.Read(new MemoryStream(data));
@@ -580,9 +587,43 @@ public static class PreviewEngine
         return printable >= limit * 0.9;
     }
 
-    private static string HexDump(byte[] data)
+    /// <summary>
+    /// Dumps a resource of a structured format we support as readable text, or null when the type is
+    /// not handled here. Failures fall back to the hex view in the caller.
+    /// </summary>
+    private static string? TryStructuredText(uint type, byte[] data)
     {
-        int count = Math.Min(data.Length, MaxHexBytes);
+        try
+        {
+            string text = type switch
+            {
+                0x0472329Bu => Arithmetica.ArithmeticaFile.Read(new MemoryStream(data)).ToText(),
+                0x047B8300u => Scn.ScnFile.Read(new MemoryStream(data)).ToText(),
+                0x02D5C9AFu => Otdb.SummaryFile.Read(new MemoryStream(data)).ToText(),
+                0x030BDEE3u => Otdb.PollenMetadata.Read(new MemoryStream(data)).ToText(),
+                0x0F43029Au => CreatureData.CreatureDataFile.Read(new MemoryStream(data)).ToText(),
+                0x9B8E862Fu => Cell.CellWorldFile.Read(new MemoryStream(data)).ToText(),
+                0x612B3191u => Cell.CellBackgroundMapFile.Read(new MemoryStream(data)).ToText(),
+                0x433FB70Cu => Cell.CellEffectMapFile.Read(new MemoryStream(data)).ToText(),
+                0xF9C3D770u => Cell.CellRandomCreatureFile.Read(new MemoryStream(data)).ToText(),
+                _ => string.Empty,
+            };
+
+            if (text.Length == 0)
+            {
+                return null;
+            }
+
+            return text.Length > MaxTextChars ? text[..MaxTextChars] + "\n… (truncated)" : text;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string HexDump(byte[] data)
+    {        int count = Math.Min(data.Length, MaxHexBytes);
         var builder = new StringBuilder();
         builder.Append($"Binary data ({data.Length} bytes)").Append('\n').Append('\n');
 

@@ -218,6 +218,51 @@ public static class PresentationTests
         Assert.Equal("text", preview.Kind);
     }
 
+    [SporeTest("preview dumps structured formats as text")]
+    public static void PreviewStructured()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+
+        // (package file name, type id, a substring the dump must contain)
+        var cases = new (string Package, uint Type, string Needle)[]
+        {
+            ("CSA_Graphics.package", 0x02D5C9AF, "parameter"),   // summary
+            ("CSA_Graphics.package", 0x030BDEE3, "metadataVersion"), // pollen_metadata
+            ("CSA_Graphics.package", 0x0F43029A, "capabilities"),    // creaturedata
+            ("Spore_Game.package", 0x0472329B, "operations"),        // arth (HTRA)
+            ("Spore_Game.package", 0x047B8300, "marker"),            // scn
+        };
+
+        int tested = 0;
+        foreach ((string package, uint type, string needle) in cases)
+        {
+            string? path = TestData.FinalPackages.FirstOrDefault(p => p.EndsWith(package, StringComparison.OrdinalIgnoreCase));
+            if (path is null)
+            {
+                continue;
+            }
+
+            using DatabasePackedFile dbpf = DatabasePackedFile.Open(path);
+            DbpfEntry? entry = dbpf.Entries.FirstOrDefault(e => e.Key.TypeId == type);
+            if (entry is null)
+            {
+                continue;
+            }
+
+            var item = new ResourceItem(entry, names);
+            ResourcePreview preview = PreviewEngine.Build(item, dbpf.ReadEntry(entry), names);
+
+            Assert.Equal("text", preview.Kind);
+            Assert.Contains(preview.Text ?? string.Empty, needle);
+            tested++;
+        }
+
+        if (tested == 0)
+        {
+            Console.WriteLine("No structured preview resources found; skipping.");
+        }
+    }
+
     [SporeTest("a textured RW4 model previews with a decoded texture")]
     public static void PreviewTexturedModel()
     {
