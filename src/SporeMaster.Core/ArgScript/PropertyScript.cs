@@ -177,12 +177,27 @@ public static class PropertyScript
                 return $"({ArgScriptFormat.Float(box[0])}, {ArgScriptFormat.Float(box[1])}, {ArgScriptFormat.Float(box[2])}) " +
                        $"({ArgScriptFormat.Float(box[3])}, {ArgScriptFormat.Float(box[4])}, {ArgScriptFormat.Float(box[5])})";
             case TransformProperty t:
-                (uint flags, float[] matrix, uint reserved) = t.GetTransform(index);
+            {
+                TransformProperty.TransformValue tv = t.GetTransform(index);
                 var sb = new StringBuilder();
-                sb.Append("0x").Append(flags.ToString("X8", CultureInfo.InvariantCulture)).Append(" (");
-                sb.Append(string.Join(", ", matrix.Select(ArgScriptFormat.Float)));
-                sb.Append(") 0x").Append(reserved.ToString("X8", CultureInfo.InvariantCulture));
+                sb.Append("0x").Append(tv.Flags.ToString("X4", CultureInfo.InvariantCulture)).Append(' ');
+                sb.Append(ArgScriptFormat.Float(tv.Scale)).Append(' ');
+                sb.Append('(').Append(ArgScriptFormat.Float(tv.Offset[0])).Append(", ")
+                    .Append(ArgScriptFormat.Float(tv.Offset[1])).Append(", ")
+                    .Append(ArgScriptFormat.Float(tv.Offset[2])).Append(") (");
+                for (int r = 0; r < 9; r++)
+                {
+                    if (r > 0)
+                    {
+                        sb.Append(", ");
+                    }
+
+                    sb.Append(ArgScriptFormat.Float(tv.Rotation[r]));
+                }
+
+                sb.Append(')');
                 return sb.ToString();
+            }
             default:
                 return string.Empty;
         }
@@ -406,8 +421,7 @@ public static class PropertyScript
                 bb.Add(ParseBox(tokens, startIndex));
                 break;
             case TransformProperty t:
-                (uint tf, float[] tm, uint tr) = ParseTransform(tokens, startIndex);
-                t.Add(tf, tm, tr);
+                t.Add(ParseTransform(tokens, startIndex));
                 break;
         }
     }
@@ -468,29 +482,46 @@ public static class PropertyScript
         return box;
     }
 
-    private static (uint Flags, float[] Matrix, uint Reserved) ParseTransform(List<Token> tokens, int startIndex)
+    private static TransformProperty.TransformValue ParseTransform(List<Token> tokens, int startIndex)
     {
-        uint flags = 0;
-        var matrix = new float[12];
-        uint reserved = 0;
+        ushort flags = 0;
+        float scale = 1f;
+        var offset = new float[3];
+        var rotation = new float[9];
+        rotation[0] = 1f;
+        rotation[4] = 1f;
+        rotation[8] = 1f;
 
         if (startIndex < tokens.Count)
         {
-            flags = ParseUInt(tokens[startIndex].Text, null);
+            flags = (ushort)ParseUInt(tokens[startIndex].Text, null);
         }
 
         if (startIndex + 1 < tokens.Count)
         {
-            float[] values = ParseVector(tokens, startIndex + 1);
-            Array.Copy(values, matrix, Math.Min(12, values.Length));
+            scale = ParseFloat(tokens[startIndex + 1].Text);
         }
 
         if (startIndex + 2 < tokens.Count)
         {
-            reserved = ParseUInt(tokens[startIndex + 2].Text, null);
+            float[] values = ParseVector(tokens, startIndex + 2);
+            Array.Copy(values, offset, Math.Min(3, values.Length));
         }
 
-        return (flags, matrix, reserved);
+        if (startIndex + 3 < tokens.Count)
+        {
+            float[] values = ParseVector(tokens, startIndex + 3);
+            Array.Copy(values, rotation, Math.Min(9, values.Length));
+        }
+
+        return new TransformProperty.TransformValue
+        {
+            Flags = flags,
+            Count = 1,
+            Offset = offset,
+            Scale = scale,
+            Rotation = rotation,
+        };
     }
 
     private static long ParseInt(string token, NameRegistrySet? names) => unchecked((long)ParseUIntInner(token, names, signed: true));

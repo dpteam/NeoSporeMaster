@@ -395,96 +395,218 @@ public sealed class BoundingBoxProperty : Property
 }
 
 /// <summary>
-/// Transformation matrix (<c>transform</c>). Stored as a big-endian flags word followed by a
-/// little-endian 4x3 matrix plus a reserved word (56 bytes total, matching SporeModder FX).
+/// A 3D transformation (<c>transform</c>): flags, a transform count, an offset (3 floats), a scale
+/// and a 3x3 rotation (9 floats, row-major). Little-endian, 56 bytes, matching SporeModder FX.
 /// </summary>
 public sealed class TransformProperty : Property
 {
-    private readonly List<(uint Flags, float[] Matrix, uint Reserved)> _values = new();
+    /// <summary>One transformation value.</summary>
+    public readonly struct TransformValue
+    {
+        public ushort Flags { get; init; }
+
+        public short Count { get; init; }
+
+        /// <summary>Translation (3 floats).</summary>
+        public float[] Offset { get; init; }
+
+        public float Scale { get; init; }
+
+        /// <summary>Rotation basis, row-major (9 floats).</summary>
+        public float[] Rotation { get; init; }
+    }
+
+    private readonly List<TransformValue> _values = new();
 
     public override PropertyType Type => PropertyType.Transform;
 
     public override int Count => _values.Count;
 
-    /// <summary>Returns the raw flags, 12-float matrix and reserved word of element <paramref name="index"/>.</summary>
-    public (uint Flags, float[] Matrix, uint Reserved) GetTransform(int index)
-    {
-        (uint flags, float[] matrix, uint reserved) = _values[index];
-        return (flags, (float[])matrix.Clone(), reserved);
-    }
+    public TransformValue GetTransform(int index) => _values[index];
 
     public override void Clear() => _values.Clear();
 
     /// <summary>Appends a value.</summary>
-    public void Add(uint flags, float[] matrix, uint reserved = 0) => _values.Add((flags, (float[])matrix.Clone(), reserved));
+    public void Add(TransformValue value) => _values.Add(value);
 
     public override void ReadElement(Stream s, bool isArray)
     {
-        uint flags = s.ReadU32BE();
-        var matrix = new float[12];
-        for (int c = 0; c < 12; c++)
+        ushort flags = s.ReadU16();
+        short count = s.ReadI16();
+        var offset = new float[3];
+        for (int i = 0; i < 3; i++)
         {
-            matrix[c] = s.ReadF32LE();
+            offset[i] = s.ReadF32LE();
         }
 
-        _values.Add((flags, matrix, s.ReadU32()));
+        float scale = s.ReadF32LE();
+
+        var rotation = new float[9];
+        for (int i = 0; i < 9; i++)
+        {
+            rotation[i] = s.ReadF32LE();
+        }
+
+        _values.Add(new TransformValue { Flags = flags, Count = count, Offset = offset, Scale = scale, Rotation = rotation });
     }
 
     public override void WriteElement(Stream s, int index, bool isArray)
     {
-        (uint flags, float[] matrix, uint reserved) = _values[index];
-        s.WriteU32BE(flags);
-        foreach (float f in matrix)
+        TransformValue v = _values[index];
+        s.WriteU16(v.Flags);
+        s.WriteI16(v.Count);
+        foreach (float f in v.Offset)
         {
             s.WriteF32LE(f);
         }
 
-        s.WriteU32(reserved);
+        s.WriteF32LE(v.Scale);
+        foreach (float f in v.Rotation)
+        {
+            s.WriteF32LE(f);
+        }
     }
 
     public override void WriteXmlValue(XmlWriter w, int index, NameRegistrySet names)
     {
-        (uint flags, float[] m, _) = _values[index];
-        w.WriteAttributeString("flags", "0x" + flags.ToString("X8", CultureInfo.InvariantCulture));
-        w.WriteAttributeString("pos", $"{FloatText(m[0])},{FloatText(m[1])},{FloatText(m[2])}");
-        w.WriteAttributeString("vx", $"{FloatText(m[3])},{FloatText(m[6])},{FloatText(m[9])}");
-        w.WriteAttributeString("vy", $"{FloatText(m[4])},{FloatText(m[7])},{FloatText(m[10])}");
-        w.WriteAttributeString("vz", $"{FloatText(m[5])},{FloatText(m[8])},{FloatText(m[11])}");
+        TransformValue v = _values[index];
+        w.WriteAttributeString("flags", "0x" + v.Flags.ToString("X4", CultureInfo.InvariantCulture));
+        w.WriteAttributeString("offset", $"{FloatText(v.Offset[0])},{FloatText(v.Offset[1])},{FloatText(v.Offset[2])}");
+        w.WriteAttributeString("scale", FloatText(v.Scale));
+        w.WriteAttributeString("row1", $"{FloatText(v.Rotation[0])},{FloatText(v.Rotation[1])},{FloatText(v.Rotation[2])}");
+        w.WriteAttributeString("row2", $"{FloatText(v.Rotation[3])},{FloatText(v.Rotation[4])},{FloatText(v.Rotation[5])}");
+        w.WriteAttributeString("row3", $"{FloatText(v.Rotation[6])},{FloatText(v.Rotation[7])},{FloatText(v.Rotation[8])}");
     }
 
     public override void ReadXmlElement(XElement element, NameRegistrySet names)
     {
-        var m = new float[12];
-        uint flags = 0;
-
+        ushort flags = 0;
         string? flagsAttr = (string?)element.Attribute("flags");
         if (flagsAttr is not null)
         {
-            flags = ParseHex(flagsAttr);
-            ReadTriple(element, "pos", m, 0, 1, 2);
-            ReadTriple(element, "vx", m, 3, 6, 9);
-            ReadTriple(element, "vy", m, 4, 7, 10);
-            ReadTriple(element, "vz", m, 5, 8, 11);
+            flags = (ushort)ParseHex(flagsAttr);
         }
 
-        _values.Add((flags, m, 0));
+        var offset = new float[3];
+        if (!ReadTriple(element, "offset", offset, 0, 1, 2))
+        {
+            ReadTriple(element, "pos", offset, 0, 1, 2);
+        }
+
+        float scale = 1f;
+        string? scaleAttr = (string?)element.Attribute("scale");
+        if (scaleAttr is not null)
+        {
+            scale = ParseFloat(scaleAttr);
+        }
+
+        var rotation = new float[9];
+        RotationIdentity(rotation);
+        bool hasRows = ReadTriple(element, "row1", rotation, 0, 1, 2);
+        hasRows |= ReadTriple(element, "row2", rotation, 3, 4, 5);
+        hasRows |= ReadTriple(element, "row3", rotation, 6, 7, 8);
+
+        // Accept SporeModder's human-friendly rotation forms when no raw rows were given.
+        if (!hasRows)
+        {
+            var euler = new double[3];
+            bool usesEuler = false;
+
+            string? eulerAttr = (string?)element.Attribute("euler");
+            if (eulerAttr is not null)
+            {
+                Array.Copy(ParseTripleDoubles(eulerAttr), euler, 3);
+                usesEuler = true;
+            }
+
+            ReadEulerComponent(element, "rot_x", "rotX", euler, 0, ref usesEuler);
+            ReadEulerComponent(element, "rot_y", "rotY", euler, 1, ref usesEuler);
+            ReadEulerComponent(element, "rot_z", "rotZ", euler, 2, ref usesEuler);
+
+            string? rotateXyz = (string?)element.Attribute("rotateXYZ");
+            if (rotateXyz is not null)
+            {
+                Array.Copy(ParseTripleDoubles(rotateXyz), euler, 3);
+                usesEuler = true;
+            }
+
+            if (usesEuler)
+            {
+                RotateMatrix(rotation, euler[0], euler[1], euler[2]);
+            }
+        }
+
+        _values.Add(new TransformValue { Flags = flags, Count = 1, Offset = offset, Scale = scale, Rotation = rotation });
     }
 
-    private static void ReadTriple(XElement element, string name, float[] m, int a, int b, int c)
+    private static bool ReadTriple(XElement element, string name, float[] target, int a, int b, int c)
     {
         string? attr = (string?)element.Attribute(name);
         if (attr is null)
         {
-            return;
+            return false;
         }
 
         string[] parts = attr.Split(',');
-        if (parts.Length == 3)
+        if (parts.Length != 3)
         {
-            m[a] = ParseFloat(parts[0]);
-            m[b] = ParseFloat(parts[1]);
-            m[c] = ParseFloat(parts[2]);
+            return false;
         }
+
+        target[a] = ParseFloat(parts[0]);
+        target[b] = ParseFloat(parts[1]);
+        target[c] = ParseFloat(parts[2]);
+        return true;
+    }
+
+    private static double[] ParseTripleDoubles(string text)
+    {
+        string[] parts = text.Split(',');
+        var values = new double[3];
+        for (int i = 0; i < 3 && i < parts.Length; i++)
+        {
+            values[i] = double.Parse(parts[i].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture);
+        }
+
+        return values;
+    }
+
+    private static void ReadEulerComponent(XElement element, string name, string alias, double[] euler, int index, ref bool usesEuler)
+    {
+        string? attr = (string?)element.Attribute(name) ?? (string?)element.Attribute(alias);
+        if (attr is not null)
+        {
+            euler[index] = double.Parse(attr.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture);
+            usesEuler = true;
+        }
+    }
+
+    private static void RotationIdentity(float[] r)
+    {
+        r[0] = 1f;
+        r[4] = 1f;
+        r[8] = 1f;
+    }
+
+    /// <summary>Composes a row-major rotation matrix from Euler angles (degrees), like SporeModder.</summary>
+    private static void RotateMatrix(float[] r, double ex, double ey, double ez)
+    {
+        double x = ex * Math.PI / 180.0;
+        double y = ey * Math.PI / 180.0;
+        double z = ez * Math.PI / 180.0;
+        double ci = Math.Cos(x), cj = Math.Cos(y), ch = Math.Cos(z);
+        double si = Math.Sin(x), sj = Math.Sin(y), sh = Math.Sin(z);
+        double cc = ci * ch, cs = ci * sh, sc = si * ch, ss = si * sh;
+
+        r[0] = (float)(cj * ch);
+        r[1] = (float)(sj * sc - cs);
+        r[2] = (float)(sj * cc + ss);
+        r[3] = (float)(cj * sh);
+        r[4] = (float)(sj * ss + cc);
+        r[5] = (float)(sj * cs - sc);
+        r[6] = (float)-sj;
+        r[7] = (float)(cj * si);
+        r[8] = (float)(cj * ci);
     }
 
     private static uint ParseHex(string text) =>
