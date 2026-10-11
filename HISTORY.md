@@ -2,6 +2,21 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.85.0] — cell-карты (backgroundMap/effectMap/random_creature) + каталог форматов (2026-10-11)
+
+### Добавлено
+- **`CellBackgroundMapFile`** (`0x612b3191`), **`CellEffectMapFile`** (`0x433fb70c`),
+  **`CellRandomCreatureFile`** (`0xf9c3d770`) — **побайтово точные** чтение/запись и текстовые дампы.
+- CLI **`cellmap <background|effect|random_creature> <in> <out.txt>`**.
+- **`docs/SPOREMODDER_FORMATS.md`** — полный каталог форматов SporeModder FX (29 конвертеров +
+  форматы «с кодом без конвертера» + реверс-типы) и сопоставление с нашей реализацией.
+- Тесты: +4 (итого 171) — байт-точный round-trip на реальных бета-файлах + отказ по offset.
+
+### Выяснено
+- Ревизия исходников: у SporeModder **есть** код для `spui`, `gmdl`, `creaturedata` (не конвертеры).
+  Проверка: `spui` (магия `E3FE3FB8`, версия 3) и `creaturedata` (header `ABB455B7`) совпадают;
+  `gmdl` — нет. `backgroundMap`/`effectMap`/`random_creature` (бета) совпадают и реализованы.
+
 ## [3.84.0] — формат Arithmetica (HTRA) `arth` (2026-10-11)
 
 ### Добавлено

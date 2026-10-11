@@ -72,6 +72,7 @@ public static class Program
             "loottable" => Commands.LootTable(cli, output),
             "looktable" => Commands.LookTable(cli, output),
             "cellworld" => Commands.CellWorld(cli, output),
+            "cellmap" => Commands.CellMap(cli, output),
             "summary" => Commands.Summary(cli, output),
             "pollen" => Commands.Pollen(cli, output),
             "arth" => Commands.Arth(cli, output),
@@ -126,6 +127,7 @@ public static class Program
         output.Line($"  {loc["cmd.loottable.usage"],-58} {loc["cmd.loottable.summary"]}");
         output.Line($"  {loc["cmd.looktable.usage"],-58} {loc["cmd.looktable.summary"]}");
         output.Line($"  {loc["cmd.cellworld.usage"],-58} {loc["cmd.cellworld.summary"]}");
+        output.Line($"  {loc["cmd.cellmap.usage"],-58} {loc["cmd.cellmap.summary"]}");
         output.Line($"  {loc["cmd.summary.usage"],-58} {loc["cmd.summary.summary"]}");
         output.Line($"  {loc["cmd.pollen.usage"],-58} {loc["cmd.pollen.summary"]}");
         output.Line($"  {loc["cmd.arth.usage"],-58} {loc["cmd.arth.summary"]}");

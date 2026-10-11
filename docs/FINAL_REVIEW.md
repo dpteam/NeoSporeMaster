@@ -6,6 +6,12 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (каталог форматов):** по `FormatManager.java` + `file/*` составлен **полный каталог
+  форматов SporeModder FX** → `docs/SPOREMODDER_FORMATS.md` (29 конвертеров + «код без конвертера»).
+  **Исправлено ошибочное «референса нет»:** у SporeModder **есть** код для `spui`, `gmdl`,
+  `creaturedata`. Проверка на данных: `spui` (магия `E3FE3FB8` ✓, версия 3 ✓) и `creaturedata`
+  (header `ABB455B7` ✓) **совпадают**, `gmdl` — **нет**. Дополнительно реализованы
+  `backgroundMap`/`effectMap`/`random_creature` (**байт-точно**, проверено на бете; `cellmap`).
 - **2026-10-11 (arth):** реализован **Arithmetica/HTRA** (`arth 0x0472329b`) — чтение/запись
   **байт-в-байт** (проверено на реальных `scripts*/CreatureTuning.htra`), дамп операций/функций/строк.
   Проверка формата: `numDwords` (BE) = (длина−4)/4, магия `HTRA` (BE), далее LE-поля. Тесты +3 (итого 167).
@@ -87,9 +93,10 @@
 
 ## 5a. Просмотр `refs/` (источники)
 
-- [ ] **`refs/SporeModder-FX-master/`** — пройти по исходникам (форматы, конвертеры, RW4, cell,
-      `argscript`, `filestructures`, `shaders`, `simulator`, `locale`, `bitmap`/`raster`/`dds`):
-      сверить, что реализовано, что нет и что можно доделать; найти недостающие детали форматов.
+- [x] **`refs/SporeModder-FX-master/`** — пройдено: **полный список форматов** составлен по
+      `FormatManager.java` + `src/sporemodder/file/*` → **`docs/SPOREMODDER_FORMATS.md`** (каталог 29
+      конвертеров + форматы «с кодом без конвертера» + реверс-типы). Найдено: `spui`/`gmdl`/`creaturedata`
+      имеют код (не конвертеры), `spui` совпадает, `gmdl` — нет.
 - [ ] **Прочие источники** — `refs/SporeEdit`, `refs/CheckAll`, `refs/EAPackageBrowser-main`,
       `refs/_AlsoOnlyIfNeed`: сверить подходы/фичи, перенять утилиты/идеи.
 - [ ] **`refs/SporeMaster/`** (легаси SporeMaster 2) — проверить, не упущено ли что-то полезное
@@ -143,15 +150,18 @@
 `locale` `0x2fac0b6`, `raster` `0x2f4e681c`, `rw4` `0x2f4e681b`. (`scn` и `lvl` — один тип
 `0x47b8300`.)
 
-**Ещё не реализовано** (пакеты SporeModder FX, сверить на реальных данных перед реализацией!):
-- `arth` (`0x0472329b`; **бинарный `HTRA`**, не текст!) — ✅ **совпадает** со SporeModder и реализован
-  **байт-точно** (`arth`): простой формат (операции/функции/строки); дамп читаемый (`tuning`,
-  `VictoryPoints`, `MatingDistance`);
-- `creaturedata` (`0x0f43029a`, 260) — данные редактора существ;
-- `scn` (`0x047b8300`) — уровни/архетипы (в тестовых архивах пока не встретился);
-- `spui` (`0x250fe9a2`) — layout'ы интерфейса (есть в `CSA_Graphics`/`CSA_Main`);
-- `otdb`, `gmdl` (`0x00e6bce5`), `effects`, `shaders`, `simulator`;
-- под-форматы `cell` (напр. `.structure`) — референс SporeModder **не всегда совпадает** с данными.
+**Ещё не реализовано** (полный разбор — `docs/SPOREMODDER_FORMATS.md`; сверять на реальных данных!):
+- `scn` (`0x047b8300`) — уровни/архетипы (в тестовых архивах пока не встретился); `powers` (`0x754be343`)
+  и `simulator`/`adv` (`0x366a930d`) — тоже нет в тест-пакетах;
+- `spui` (`0x250fe9a2`, 284) — **совпадает** со SporeModder (магия `0xE3FE3FB8` ✓, версия 3 ✓),
+  но объёмный (классы UI-элементов, типы свойств, стили, RLE-hit-mask);
+- `effdir`/effects (`0xea5118b0`) — структура **совпадает**, но десятки типов компонентов;
+- `smt`/shaders (`0x0469a3f7`) — сборка шейдеров;
+- `gmdl` (`0x00e6bce5`) — читатель SporeModder **не совпадает** с реальным `gmdl` → реверс;
+- `creaturedata` (`0x0f43029a`) — заголовок `0xABB455B7` ✓/версия 9 ✓, но сжимаемый буфер и нет писателя;
+- `blockdata` (`0x5caa5e28`, 3239) — у SporeModder **нет** конвертера → реверс;
+- под-форматы `cell` (`.cell`/`.structure`/`.globals`/`populate`/`.look_algorithm`) — бета
+  **не совпадает** со SporeModder.
 
 Приоритет — по частоте/пользе; каждый **сначала проверять на реальных файлах** (правило проекта).
 
@@ -171,7 +181,7 @@
 | `01c135da` | `gmsh` | 965 | ⬜ старый Gonzago-меш |
 | `dfad9f51` | `cell` | 412 | ⬜ (бета ≠ SporeModder) |
 | `4b9ef6dc` | `structure` | 313 | ⬜ (бета ≠ SporeModder) |
-| `250fe9a2` | `spui` | 284 | ⬜ |
+| `250fe9a2` | `spui` | 284 | ⬜ (совпадает: магия `E3FE3FB8`, версия 3) |
 | `497767b9` | `pfx` | 260 | ✅ текст (Pure Data) |
 | `02393756` | `cur` | 136 | ✅ ICO/CUR (11 — RIFF AVI) |
 | `2f4e681c` | `raster` | 134 | ✅ |
@@ -183,8 +193,8 @@
 | `d92af091` | `loottable` | 101 | ✅ |
 | `2b978c46` | `crt` | 93 | ✅ XML (текст) |
 | `3c7e0f63` | `mcl` | 86 | ✅ текст (muscle) |
-| `0f43029a` | `creaturedata` | 67 | ⬜ |
-| `00e6bce5` | `gmdl` | 67 | ⬜ |
+| `0f43029a` | `creaturedata` | 67 | ⬜ (header `ABB455B7` ✓; RLE; нет писателя) |
+| `00e6bce5` | `gmdl` | 67 | ⬜ (реальный ≠ SporeModder) |
 | `f2b924b3` | `ltp` | 52 | ✅ текст |
 
 Выводы: самое частое из непокрытого — `blockdata` (3239), `gmsh` (965), затем `cell`/`structure`
@@ -217,9 +227,9 @@
 - **Бета** (`_PackageFilesBetaVer`): `CellGame`, `CellGame_Layers`, `Cinematics`,
   **`CompiledMaterials`**, **`Effects`**, **`Effects_SkinPaint`**, **`Images`**, `Other`.
 
-**Cell-форматы** (пакет `cell` SporeModder FX; сделан только `loottable`, `look_table`): ещё есть
-`CellFile` (мастер, 26 КБ), `CellGlobals`, `CellPopulate`, `CellStructure`, `CellWorld`,
-`CellRandomCreature`, `CellLookAlgorithm`, `CellBackgroundMap`, `CellEffectMap`, `CellPowers`.
+**Cell-форматы** (пакет `cell` SporeModder FX): сделаны `loottable`, `look_table`, `world`,
+`backgroundMap`, `effectMap`, `random_creature`. Осталось: `CellFile` (мастер, 26 КБ), `CellGlobals`,
+`CellPopulate`, `CellStructure`, `CellLookAlgorithm`, `CellPowers` (последний — нет в тест-пакетах).
 
 **Таблица типов (сверено с `reg_type.txt` и конвертерами SporeModder FX):**
 
@@ -227,14 +237,14 @@
 |-----------|----------|-----------------------|-----------|
 | `dfad9f51` | `cell` | CellFile | нет |
 | `2a3ce5b7` | `globals` | CellGlobals | нет |
-| `433fb70c` | `effectMap` | CellEffectMap | нет |
+| `433fb70c` | `effectMap` | CellEffectMap | **есть** (dump, байт-точно) |
 | `4b9ef6dc` | `structure` | CellStructure | нет (референс не совпал!) |
-| `612b3191` | `backgroundMap` | CellBackgroundMap | нет |
-| `754be343` | `powers` | CellPowers | нет |
+| `612b3191` | `backgroundMap` | CellBackgroundMap | **есть** (dump, байт-точно) |
+| `754be343` | `powers` | CellPowers | нет (в тест-пакетах нет) |
 | `9b8e862f` | `world` | CellWorld | **есть** (dump, байт-точно) |
 | `da141c1b` | `populate` | CellPopulate | нет (заголовок совпал, **маркер 64 б ≠ 76**) |
-| `dba35ae2` | `look_algorithm` | CellLookAlgorithm | нет |
-| `f9c3d770` | `random_creature` | CellRandomCreature | нет |
+| `dba35ae2` | `look_algorithm` | CellLookAlgorithm | нет (бета-запись 4 int ≠ 5) |
+| `f9c3d770` | `random_creature` | CellRandomCreature | **есть** (dump, байт-точно) |
 | `d92af091` | `loottable` | CellLootTable | **есть** |
 | `8c042499` | `look_table` | CellLookTable | **есть** |
 | `47b8300` | `lvl` (`scn`) | Scn | нет |

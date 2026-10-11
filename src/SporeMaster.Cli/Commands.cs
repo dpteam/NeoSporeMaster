@@ -1938,6 +1938,77 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Dumps a cell auxiliary map (<c>cellmap &lt;kind&gt; &lt;in&gt; &lt;out.txt&gt;</c>).</summary>
+    public static int CellMap(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 3)
+        {
+            return UsageError(output, "cellmap <background|effect|random_creature> <input> <output.txt>");
+        }
+
+        string kind = cli.Positional[0].ToLowerInvariant();
+        string input = cli.Positional[1];
+        string outputPath = cli.Positional[2];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            string text;
+            string summary;
+            using (FileStream input0 = File.OpenRead(input))
+            {
+                switch (kind)
+                {
+                    case "background":
+                    case "backgroundmap":
+                    {
+                        CellBackgroundMapFile file = CellBackgroundMapFile.Read(input0);
+                        text = file.ToText();
+                        summary = $"{file.Entries.Count} entr(ies)";
+                        break;
+                    }
+
+                    case "effect":
+                    case "effectmap":
+                    {
+                        CellEffectMapFile file = CellEffectMapFile.Read(input0);
+                        text = file.ToText();
+                        summary = $"{file.Entries.Count} entr(ies)";
+                        break;
+                    }
+
+                    case "random_creature":
+                    case "random":
+                    case "randomcreature":
+                    {
+                        CellRandomCreatureFile file = CellRandomCreatureFile.Read(input0);
+                        text = file.ToText();
+                        summary = $"{file.Entries.Count} entr(ies)";
+                        break;
+                    }
+
+                    default:
+                        output.Error($"Unknown cell map kind '{kind}' (use background|effect|random_creature).");
+                        return 1;
+                }
+            }
+
+            File.WriteAllText(outputPath, text);
+            output.Success($"Wrote {kind} map text ({summary}): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Cell map conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Dumps a Spore Arithmetica (HTRA) program: <c>arth &lt;in.htra&gt; &lt;out.txt&gt;</c>.</summary>
     public static int Arth(CommandLine cli, Output output)
     {

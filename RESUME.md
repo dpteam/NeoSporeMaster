@@ -82,11 +82,12 @@ refs/                     справочные материалы и реаль�
 - `docs/ARCHITECTURE.md` — структура Core по папкам.
 - `docs/*_FORMAT.md` — заметки по конкретным форматам (PROP, CNV, GAIT, TLSA, PCTP, LOOKTABLE,
   HASH_GUESSING, RW4_FORMAT, UNPACK_DATA, PDB_RESEARCH).
+- `docs/SPOREMODDER_FORMATS.md` — **полный каталог форматов SporeModder FX** и наш статус.
 - Комментарии в коде — английские `/// <summary>`.
 
 ## 5. Снимок состояния (обновлять по мере продвижения)
 
-- Версия — около **3.84.0**; тесты — **167/167**; дерево git чистое.
+- Версия — около **3.85.0**; тесты — **171/171**; дерево git чистое.
 - Готово в Core: DBPF 2.0/3.0/DBBF (read/write, бета и релиз); RefPack (байт-в-байт);
   `.prop`+`.prop.xml`+`.prop_t` (все 25 типов свойств); `.locale`+авто-локали+**CSV/TSV**;
   `.raster`⇄DDS; bitmap⇄PNG (свой PNG-кодек + DXT-декодер); **TGA** и **`.cur`/ICO**→PNG; **RW4** (контейнер, меши, геометрия
@@ -101,7 +102,7 @@ refs/                     справочные материалы и реаль�
   **слайдер анимации**)/`.anim`/trigger/hex, экспорт всех моделей, сравнение архивов, загрузка
   names/KeyMap, **переключение языка RU/EN**, self-test со скриншотами.
 - CLI-команды (полный список): `info list(ls) extract unpack unpackdata pack prop propt locale texture
-  bitmap image guess search pctp tlsa gait cnv loottable looktable cellworld summary pollen arth keymap
+  bitmap image guess search pctp tlsa gait cnv loottable looktable cellworld cellmap summary pollen arth keymap
   rw4 export-models verify roundtrip diff strings pdb anim hash types` (+ `--lang en|ru`, `--help`, `--version`).
 - Отложено (см. раздел 7 и `docs/FINAL_REVIEW.md`).
 
