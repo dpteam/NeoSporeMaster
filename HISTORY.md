@@ -2,6 +2,20 @@
 
 Формат: сверху — свежие изменения. Версии условные, отражают крупные этапы.
 
+## [3.91.0] — cell `populate` и `structure` (релиз, байт-точно) (2026-10-11)
+
+### Добавлено
+- **`CellStructureFile`** (`structure`, `0x4b9ef6dc`, релиз) — **побайтово точные** чтение/запись и
+  дамп: 5 death/hatch id + заголовок (offset 28) + вложения (40 б: bone/type/ids/level/RGB).
+- **`CellPopulateFile`** (`populate`, `0xda141c1b`, релиз) — **побайтово точные** чтение/запись и
+  дамп: заголовок (scale/maskTexture/count/offset) + маркеры (76 б), как в SporeModder.
+- CLI: `cellmap populate|structure <in> <out.txt>`; превью в GUI.
+- Тесты: +2 (итого 184) — байт-точный round-trip на релизных файлах.
+
+### Выяснено
+- **Релиз** `populate`/`structure` **совпадают** со SporeModder (маркер 76 б, offset 28), а
+  **бета** — нет (64 б / offset 0). `cell`/`globals` не совпадают нигде.
+
 ## [3.90.0] — корректная семантика `transform` + совместимый ввод (2026-10-11)
 
 ### Изменено

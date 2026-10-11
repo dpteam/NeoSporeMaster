@@ -177,6 +177,10 @@ CLI `roundtrip` — автоматическая проверка lossless на 
   (`.look_table_t`), байт-точно. Формат описан в `docs/LOOKTABLE_FORMAT.md`.
 - `CellWorldFile` — cell world (`.world`): бинарное чтение/запись (байт-точно) и текстовый дамп
   (записи `populate`/`advect`).
+- `CellMapFiles` — карты клетки (`.backgroundMap`, `.effectMap`, `.random_creature`): байт-точные
+  чтение/запись и дампы.
+- `CellStructurePopulateFiles` — `.populate` (маркеры) и `.structure` (вложения) для **релиза**:
+  байт-точные чтение/запись и дампы.
 
 ### `Otdb/*`
 - `SummaryFile` — `.summary` (версия 4, big-endian): байт-точное чтение/запись и дамп (параметры,

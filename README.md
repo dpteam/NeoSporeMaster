@@ -290,6 +290,10 @@ dotnet run --project src/SporeMaster.Cli -- scn <файл.lvl> <файл.txt>
 # Дамп карт клетки (background/effect/random_creature)
 dotnet run --project src/SporeMaster.Cli -- cellmap background <файл.backgroundMap> <файл.txt>
 
+# Дамп cell populate / structure (релиз)
+dotnet run --project src/SporeMaster.Cli -- cellmap populate <файл.populate> <файл.txt>
+dotnet run --project src/SporeMaster.Cli -- cellmap structure <файл.structure> <файл.txt>
+
 # Дамп сохранения редактора существ (способности и морфы)
 dotnet run --project src/SporeMaster.Cli -- creaturedata <файл.creaturedata> <файл.txt>
 

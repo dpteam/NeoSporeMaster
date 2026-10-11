@@ -606,6 +606,8 @@ public static class PreviewEngine
                 0x612B3191u => Cell.CellBackgroundMapFile.Read(new MemoryStream(data)).ToText(),
                 0x433FB70Cu => Cell.CellEffectMapFile.Read(new MemoryStream(data)).ToText(),
                 0xF9C3D770u => Cell.CellRandomCreatureFile.Read(new MemoryStream(data)).ToText(),
+                0x4B9EF6DCu => Cell.CellStructureFile.Read(new MemoryStream(data)).ToText(),
+                0xDA141C1Bu => Cell.CellPopulateFile.Read(new MemoryStream(data)).ToText(),
                 0x250FE9A2u => Spui.SpuiFile.Read(new MemoryStream(data)).ToText(),
                 _ => string.Empty,
             };

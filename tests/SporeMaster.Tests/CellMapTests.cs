@@ -42,13 +42,43 @@ public static class CellMapTests
         Assert.True(threw, "offset 12 should be rejected");
     }
 
+    [SporeTest("cell structure round-trips byte-exactly (release)")]
+    public static void StructureRoundTrip()
+    {
+        RoundTripRelease(0x4B9EF6DC, data => CellStructureFile.Read(new MemoryStream(data)), f => f.Write);
+    }
+
+    [SporeTest("cell populate round-trips byte-exactly (release)")]
+    public static void PopulateRoundTrip()
+    {
+        RoundTripRelease(0xDA141C1B, data => CellPopulateFile.Read(new MemoryStream(data)), f => f.Write);
+    }
+
     private static void RoundTripAll<T>(
         uint typeId,
         Func<byte[], T> read,
         Func<T, Action<Stream>> writer)
     {
+        RoundTripCore(typeId, read, writer, TestData.BetaPackages.Concat(TestData.FinalPackages));
+    }
+
+    private static void RoundTripRelease<T>(
+        uint typeId,
+        Func<byte[], T> read,
+        Func<T, Action<Stream>> writer)
+    {
+        // The beta variants of structure/populate use a different layout, so only check release data.
+        RoundTripCore(typeId, read, writer, TestData.FinalPackages);
+    }
+
+    private static void RoundTripCore<T>(
+        uint typeId,
+        Func<byte[], T> read,
+        Func<T, Action<Stream>> writer,
+        IEnumerable<string> packages)
+    {
         int tested = 0;
-        foreach (string packagePath in TestData.BetaPackages.Concat(TestData.FinalPackages))
+        foreach (string packagePath in packages)
         {
             using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
             foreach (DbpfEntry entry in package.Entries)

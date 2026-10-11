@@ -24,8 +24,8 @@
 | 3 | `ArithmeticaConverter` | `arth/ArithmeticaFile` | `0472329b` | ✅ байт-точно |
 | 4 | `CellLookTableConverter` | `cell/CellLookTable` | `8c042499` | ✅ байт-точно |
 | 5 | `CellEffectMapConverter` | `cell/CellEffectMap` | `433fb70c` | ✅ байт-точно |
-| 6 | `CellPopulateConverter` | `cell/CellPopulate` | `da141c1b` | ⚠ бета-маркер 64 б ≠ 76 б |
-| 7 | `CellStructureConverter` | `cell/CellStructure` | `4b9ef6dc` | ⚠ бета ≠ SporeModder |
+| 6 | `CellPopulateConverter` | `cell/CellPopulate` | `da141c1b` | ✅ релиз байт-точно (бета ≠, 64 б) |
+| 7 | `CellStructureConverter` | `cell/CellStructure` | `4b9ef6dc` | ✅ релиз байт-точно (бета ≠, offset 0) |
 | 8 | `CellRandomCreatureConverter` | `cell/CellRandomCreature` | `f9c3d770` | ✅ байт-точно |
 | 9 | `CellFileConverter` | `cell/CellFile` | `dfad9f51` | ⚠ бета ≠ SporeModder |
 | 10 | `CellLootTableConverter` | `cell/CellLootTable` | `d92af091` | ✅ байт-точно |
@@ -93,9 +93,9 @@ SporeModder FX читает их в редакторах, но **не** реги
    которых нет в тест-пакетах (`simulator`, `powers`).
 2. **Дополнительно** реализованы форматы, которых у SporeModder **нет** (`tga`, `cur`), и форматы
    «с кодом без конвертера», где это было проверить (`cell world/maps`).
-3. **Битва выяснения:** `populate`/`structure`/`cell`/`globals`/`look_algorithm` (бета) **не совпадают**
-   со SporeModder — разбирать по реальным данным. `backgroundMap`/`effectMap`/`random_creature`/`world`
-   (бета) — **совпадают** и реализованы.
+3. **Битва выяснения:** `cell`/`globals` (и бета-`populate`/`structure`/`look_algorithm`) **не совпадают**
+   со SporeModder — разбирать по реальным данным. `world`/`backgroundMap`/`effectMap`/`random_creature`
+   (бета) и **`populate`/`structure` (релиз)** — **совпадают** и реализованы.
 4. **Осталось крупное:** `spui` (совпадает, объёмен и требует designer-определений), `effects`
    (структура совпадает, десятки типов компонентов), `shaders` (сборка шейдеров), `gmsh`/`blockdata`
    (реверс), `gmdl` (реальный ≠ SporeModder), `creaturedata` (RLE, нет писателя).

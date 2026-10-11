@@ -2043,7 +2043,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 3)
         {
-            return UsageError(output, "cellmap <background|effect|random_creature> <input> <output.txt>");
+            return UsageError(output, "cellmap <background|effect|random_creature|populate|structure> <input> <output.txt>");
         }
 
         string kind = cli.Positional[0].ToLowerInvariant();
@@ -2091,8 +2091,25 @@ public static class Commands
                         break;
                     }
 
+                    case "populate":
+                    {
+                        CellPopulateFile file = CellPopulateFile.Read(input0);
+                        text = file.ToText();
+                        summary = $"{file.Markers.Count} marker(s)";
+                        break;
+                    }
+
+                    case "structure":
+                    {
+                        CellStructureFile file = CellStructureFile.Read(input0);
+                        text = file.ToText();
+                        summary = $"{file.Entries.Count} attachment(s)";
+                        break;
+                    }
+
                     default:
-                        output.Error($"Unknown cell map kind '{kind}' (use background|effect|random_creature).");
+                        output.Error(
+                            $"Unknown cell map kind '{kind}' (use background|effect|random_creature|populate|structure).");
                         return 1;
                 }
             }

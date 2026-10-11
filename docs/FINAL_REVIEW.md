@@ -6,6 +6,10 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (cell populate/structure):** проверка на **релизе** (`Spore_Game`): `structure`
+  (`offset=28`) и `populate` (**маркер 76 б**) **совпадают** со SporeModder — в отличие от беты.
+  Реализованы **байт-точно** (`cellmap populate|structure`), +2 теста (итого 184). `cell`/`globals`
+  не совпадают ни в релизе, ни в бете (своя «float + UTF-16 имя»).
 - **2026-10-11 (transform):** переписана семантика `transform` (`0x38`): раньше `.prop.xml` писал
   `flags/pos/vx/vy/vz` (перемешивало scale с поворотом) — теперь **корректно** `flags/offset/scale/
   row1..3` (offset + scale + 3×3 rotation), как в SporeModder. Вход принимает `offset`/`pos`, `scale`,
@@ -108,7 +112,7 @@
 
 ## 4. Тесты
 
-- [x] Все зелёные (сейчас 182). Есть ли непокрытые ветки (ошибки/граничные случаи)?
+- [x] Все зелёные (сейчас 184). Есть ли непокрытые ветки (ошибки/граничные случаи)?
 - [x] Тесты на реальных данных **пропускаются корректно**, если данных нет.
 
 ## 5. Документация
@@ -171,8 +175,9 @@
 ### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
 Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `tga`, `cur`, `rw4`, `anim`,
 `pctp`, `tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`, **`world`**, **`backgroundMap`**,
-**`effectMap`**, **`random_creature`**), `otdb` (**`summary`**, **`pollen_metadata`**), **`arth`** (HTRA),
-**`scn`** (уровни), `argscript`.
+**`effectMap`**, **`random_creature`**, **`populate`**, **`structure`**), `otdb` (**`summary`**,
+**`pollen_metadata`**), **`arth`** (HTRA), **`scn`** (уровни), **`creaturedata`**, **`spui`** (контейнер),
+`argscript`.
 
 **Проверка типов (сверено с конвертерами SporeModder FX): совпадают** —
 `pctp` `0x7c19aa7a`, `gait` `0x25df0112`, `tlsa` `0x4aeb6bc6`, `cnv` `0x55ada24`,
@@ -215,7 +220,7 @@
 | `02b9f662` | `audioProp` | 2121 | ✅ (вариант prop) |
 | `01c135da` | `gmsh` | 965 | ⬜ старый Gonzago-меш |
 | `dfad9f51` | `cell` | 412 | ⬜ (бета ≠ SporeModder) |
-| `4b9ef6dc` | `structure` | 313 | ⬜ (бета ≠ SporeModder) |
+| `4b9ef6dc` | `structure` | 313 | ✅ релиз (dump, байт-точно); бета ≠ |
 | `250fe9a2` | `spui` | 284 | ◑ контейнер (байт-точно), дамп заголовка |
 | `497767b9` | `pfx` | 260 | ✅ текст (Pure Data) |
 | `02393756` | `cur` | 136 | ✅ ICO/CUR (11 — RIFF AVI) |
@@ -274,11 +279,11 @@
 | `dfad9f51` | `cell` | CellFile | нет |
 | `2a3ce5b7` | `globals` | CellGlobals | нет |
 | `433fb70c` | `effectMap` | CellEffectMap | **есть** (dump, байт-точно) |
-| `4b9ef6dc` | `structure` | CellStructure | нет (референс не совпал!) |
+| `4b9ef6dc` | `structure` | CellStructure | **есть** релиз (dump, байт-точно); бета ≠ |
 | `612b3191` | `backgroundMap` | CellBackgroundMap | **есть** (dump, байт-точно) |
 | `754be343` | `powers` | CellPowers | нет (в тест-пакетах нет) |
 | `9b8e862f` | `world` | CellWorld | **есть** (dump, байт-точно) |
-| `da141c1b` | `populate` | CellPopulate | нет (заголовок совпал, **маркер 64 б ≠ 76**) |
+| `da141c1b` | `populate` | CellPopulate | **есть** релиз (dump, байт-точно); бета ≠ |
 | `dba35ae2` | `look_algorithm` | CellLookAlgorithm | нет (бета-запись 4 int ≠ 5) |
 | `f9c3d770` | `random_creature` | CellRandomCreature | **есть** (dump, байт-точно) |
 | `d92af091` | `loottable` | CellLootTable | **есть** |
@@ -308,11 +313,12 @@ SporeModder поле `offset` (6-е int) обязано быть `28`, а в р�
 - **`world`** (`0x9b8e862f`): `populateCount=2, populateOffset=16, advectCount=1, advectOffset=40` —
   совпадает с `CellWorldFile` и **round-trip байт-в-байт**. ✅ (реализовано)
 
-**Что у беты НЕ совпадает (проверено):**
-- **`populate`** (`0xda141c1b`): заголовок совпал (`scale, maskTexture, count, offset=0x10`), но
-  **маркеры 64 байта**, а у SporeModder `cMarker` — **76 байт** (19 полей). Значит бета-маркер имеет
-  меньше полей; разбирать по реальным данным.
-- `structure`, `cell`, `globals` — не совпадают (см. выше).
+**Что у беты НЕ совпадает (проверено) — но у РЕЛИЗА совпадает:**
+- **`populate`** (`0xda141c1b`): заголовок совпал и у беты, и у релиза; но **маркеры беты 64 байта**, а
+  **релиза — 76 байт** (как `cMarker` SporeModder). ✅ **реализован для релиза** (байт-точно).
+- **`structure`** (`0x4b9ef6dc`): бета `offset=0`, **релиз `offset=28`** (как `CellStructureFile`).
+  ✅ **реализован для релиза** (байт-точно; записи 40 б = 7 int + RGB).
+- `cell`, `globals` — не совпадают ни в релизе, ни в бете (своя «float + UTF-16 имя» / хеш-раскладка).
 
 Вывод: cell-форматы разбирать **поштучно по реальным данным** (не «все с нуля» и не «всё по SporeModder»).
 
