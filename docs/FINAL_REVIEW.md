@@ -6,6 +6,12 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (проход по чек-листу):** отмечены выполненные пункты (Core/CLI/GUI/тесты/доки/
+  репак/гигиена). Просмотрены **прочие `refs/`** (`SporeEdit`, `CheckAll`, `EAPackageBrowser`,
+  `_AlsoOnlyIfNeed/SporeMaster` — легаси SporeMaster 2): уникального, что стоит перенести, нет
+  (наш поиск/ридеры шире). Классифицированы `0x03055f61` (**текст**-инструмент), `bem`, `cll`,
+  `density`. Открытыми осознанно остаются: скиннинг меша, запись `.anim`/`.cnv`, большие форматы
+  (`effects`/`shaders`/`spui`/`simulator`), реверс `gmsh`/`blockdata`/`gmdl`/`bem`.
 - **2026-10-11 (GUI-превью):** структурированные форматы (`arth`, `scn`, `summary`, `pollen`,
   `creaturedata`, cell `world`/карты) теперь показываются в GUI **читаемым текстом** (а не hex).
   GUI self-test `CSA_Graphics`/`Spore_Game` → OK, 0 ошибок. Тест +1 (итого 177).
@@ -57,49 +63,50 @@
 
 ## 1. Ядро (Core)
 
-- [ ] DBPF: чтение/запись 2.0/3.0, DBBF, «загадочные» поля, устойчивость к битым файлам.
-- [ ] RefPack: байт-точность против SporeModder на «сложных» данных.
-- [ ] `.prop` (binary) + `.prop.xml` + `.prop_t`: round-trip на всём корпусе; авто-локали.
-- [ ] `.locale`: чтение/запись, генерация.
-- [ ] `.raster` ⇄ DDS, bitmap ⇄ PNG: round-trip на всём корпусе.
+- [x] DBPF: чтение/запись 2.0/3.0, DBBF, «загадочные» поля, устойчивость к битым файлам.
+- [x] RefPack: байт-точность против SporeModder на «сложных» данных.
+- [x] `.prop` (binary) + `.prop.xml` + `.prop_t`: round-trip на всём корпусе; авто-локали.
+- [x] `.locale`: чтение/запись, генерация.
+- [x] `.raster` ⇄ DDS, bitmap ⇄ PNG: round-trip на всём корпусе. Плюс TGA/CUR → PNG.
 - [ ] RenderWare4: контейнер, меши, геометрия, скелеты, скины, анимации, материалы, морфы, растры,
       OBJ+MTL, Ogre XML; **скиннинг меша** (деформация) — не реализован.
 - [ ] `.anim`: чтение (заголовок/каналы/кадры/интерполяторы) + текст; **запись** — не реализована.
-- [ ] Конвертеры: `.pctp`, `.tlsa`, `.gait`, `.look_table`, `.loottable`, `.cnv` (только дамп).
-- [ ] KeyMap/DDFList/расширения; hash guesser; поиск (маски/regex/содержимое).
-- [ ] Диагностика (`DiagnosticSink`) и «мягкая деградация» везде.
+- [x] Конвертеры: `.pctp`, `.tlsa`, `.gait`, `.look_table`, `.loottable`, `cell` (`world`/карты),
+      `otdb` (`summary`/`pollen`), `arth`, `scn`, `creaturedata` — байт-точно; `.cnv` — только дамп.
+- [x] KeyMap/DDFList/расширения (+`PreBakedKeys`); hash guesser; поиск (маски/regex/содержимое).
+- [x] Диагностика (`DiagnosticSink`) и «мягкая деградация» везде.
 
 ## 2. CLI
 
-- [ ] Пройти `--help` и каждый раздел `docs/*`; сверить usage/поведение.
-- [ ] `info list extract unpack unpackdata pack prop propt locale texture bitmap guess search pctp
-      tlsa gait cnv loottable looktable keymap rw4 export-models verify roundtrip diff strings pdb
-      anim hash types`.
-- [ ] Единый вывод: заголовки, таблицы, коды выхода, `--quiet/--no-color/--lang`.
-- [ ] Локализация RU/EN (нет ли незаполненных ключей — см. тест).
+- [x] Пройти `--help` и каждый раздел `docs/*`; сверить usage/поведение.
+- [x] Все команды: `info list extract unpack unpackdata pack prop propt locale texture bitmap image
+      guess search pctp tlsa gait cnv loottable looktable cellworld cellmap summary pollen arth scn
+      creaturedata keymap rw4 export-models verify roundtrip diff strings pdb anim hash types`.
+- [x] Единый вывод: заголовки, таблицы, коды выхода, `--quiet/--no-color/--lang`.
+- [x] Локализация RU/EN (нет незаполненных ключей — проверяется тестом).
 
 ## 3. GUI
 
-- [ ] Проводник: дерево+флажки, список, превью, навигация, крошки, адресная строка, фильтр,
+- [x] Проводник: дерево+флажки, список, превью, навигация, крошки, адресная строка, фильтр,
       сортировка, плоский режим, контекстные меню, мультивыбор, drag-in/out.
-- [ ] Превью: props(XML), texture/bitmap/PNG, **3D RW4** (текстура, скелет, слайдер анимации),
-      `.anim`, `trigger`-текст, hex.
-- [ ] Панели: сведения (снизу), свойства (справа), экспорт всех моделей, сравнение архивов,
+- [x] Превью: props(XML), texture/bitmap/PNG/TGA/CUR, **3D RW4** (текстура, скелет, слайдер анимации),
+      `.anim`, `trigger`-текст, hex, а также структурные форматы (arth/scn/summary/pollen/creaturedata/cell).
+- [x] Панели: сведения (снизу), свойства (справа), экспорт всех моделей, сравнение архивов,
       загрузка names/KeyMap, переключение языка.
-- [ ] Устойчивость: глобальный обработчик, `Guarded`, `%TEMP%\sporemaster-gui-crash.log`.
-- [ ] `--selftest` покрывает ключевые пути; нет аварий и «пустых» превью.
+- [x] Устойчивость: глобальный обработчик, `Guarded`, `%TEMP%\sporemaster-gui-crash.log`.
+- [x] `--selftest` покрывает ключевые пути; нет аварий и «пустых» превью.
 
 ## 4. Тесты
 
-- [ ] Все зелёные (сейчас 177). Есть ли непокрытые ветки (ошибки/граничные случаи)?
-- [ ] Тесты на реальных данных **пропускаются корректно**, если данных нет.
+- [x] Все зелёные (сейчас 177). Есть ли непокрытые ветки (ошибки/граничные случаи)?
+- [x] Тесты на реальных данных **пропускаются корректно**, если данных нет.
 
 ## 5. Документация
 
-- [ ] `README.md` (обзор, команды, возможности) — актуальность.
-- [ ] `AGENT.md`, `RESUME.md`, `MEMORY.md`, `HISTORY.md` — синхронность.
-- [ ] `docs/*` — формат-доки и заметки; нет устаревших «не реализовано».
-- [ ] Все «TODO/в планах» из `MEMORY.md` и `RESUME.md` — либо сделано, либо осознанно отложено.
+- [x] `README.md` (обзор, команды, возможности) — актуальность.
+- [x] `AGENT.md`, `RESUME.md`, `MEMORY.md`, `HISTORY.md` — синхронность.
+- [x] `docs/*` — формат-доки и заметки; нет устаревших «не реализовано».
+- [x] Все «TODO/в планах» из `MEMORY.md` и `RESUME.md` — либо сделано, либо осознанно отложено.
 
 ## 5a. Просмотр `refs/` (источники)
 
@@ -107,10 +114,12 @@
       `FormatManager.java` + `src/sporemodder/file/*` → **`docs/SPOREMODDER_FORMATS.md`** (каталог 29
       конвертеров + форматы «с кодом без конвертера» + реверс-типы). Найдено: `spui`/`gmdl`/`creaturedata`
       имеют код (не конвертеры), `spui` совпадает, `gmdl` — нет.
-- [ ] **Прочие источники** — `refs/SporeEdit`, `refs/CheckAll`, `refs/EAPackageBrowser-main`,
-      `refs/_AlsoOnlyIfNeed`: сверить подходы/фичи, перенять утилиты/идеи.
-- [ ] **`refs/SporeMaster/`** (легаси SporeMaster 2) — проверить, не упущено ли что-то полезное
-      (suffix-array поиск, обработка ошибок, UI-логика).
+- [x] **Прочие источники** — просмотрено: `refs/SporeEdit` (Gibbed: DBPF/prop/RW4 — совпадает с нашим
+      подходом), `refs/CheckAll` (сравнение архивов), `refs/EAPackageBrowser-main` (браузер пакетов),
+      `refs/_AlsoOnlyIfNeed` (тулзы). Ничего критичного не упущено; наши форматы покрывают их.
+- [x] **`refs/_AlsoOnlyIfNeed/SporeMaster`** (легаси SporeMaster 2) — просмотрено: имеет `FullTextIndex`
+      (полнотекстовый указатель) и RW4-ридеры; у нас поиск по содержимому (`text:`/`hex:`) и полный
+      RW4-ридер (**больше** возможностей). Уникального, что стоит перенести, не найдено.
 
 ## 5b. Внутренности Leftovers (распакованные данные)
 
@@ -317,19 +326,17 @@ SporeModder поле `offset` (6-е int) обязано быть `28`, а в р�
   затем секции компонентов/ресурсов/эффектов (`type`(BE short)+`version`+`size`(BE int)+`offset`+
   `count`). Но полная реализация = **десятки типов компонентов** (фабрики) со своими версиями/полями,
   поэтому **отложено** (формат огромный: реальные файлы ~2,5 МБ).
-- **`gmdl`** (`GameModelResource`): `primitiveType, count, numBits(16/32), bufferSize`, затем индексы
-  и вершины. Реальный бета-`gmdl` начинается `primitiveType=8, count=0, numBits=1` → **подозрительно**,
-  сверить перед реализацией.
+- **`gmdl`** (`GameModelResource`): читатель ждёт `primitiveType, count, numBits(16/32), bufferSize`.
+  Реальный `gmdl` (`00e6bce5`) начинается `08 00 00 00 00 00 00 00 01 00 00 00` → **не совпадает**
+  (нужен реверс). `simulator` (`adv`/Scenario, `0x366a930d`) — крупный формат, в тест-пакетах нет.
 - **`otdb`**: `pollen_metadata` (версия ≤13, assetID/key-и) и `summary` (версия 4, записи по типу) —
   ✅ **совпадают** со SporeModder и реализованы **байт-точно** (`summary`, `pollen`).
-- **`simulator`** (`adv`/Scenario, `0x366a930d`): ресурсы сценариев (поведения, цели, диалоги) —
-  крупный формат.
-- **`shaders`** (`smt` `0x469a3f7`, `CompiledShaders`): компиляция/сборка шейдеров — вне текущей области.
+- **`shaders`** (`smt` `0x0469a3f7`, `CompiledShaders`): компиляция/сборка шейдеров — вне области.
 
 ## 6. Репак/игра
 
-- [ ] `roundtrip` на всех тестовых архивах + Retail.
-- [ ] Смоук-тест игры (`tools/smoke-test.ps1 -Auto`, `-w -devDirs`).
+- [x] `roundtrip` на всех тестовых архивах + Retail.
+- [x] Смоук-тест игры (`tools/smoke-test.ps1 -Auto`, `-w -devDirs`).
 - [ ] Проверка папок игры (Main/Data) и тест-контур с батником (когда заказчик даст).
 
 **Проверено (2026-10-11):**
@@ -341,9 +348,10 @@ SporeModder поле `offset` (6-е int) обязано быть `28`, а в р�
 
 ## 7. Гигиена репозитория
 
-- [ ] `.gitignore` (крупные `refs/*`) корректен; нет случайных файлов (scratch-тесты, temp).
-- [ ] `bin/obj` не в git; большие данные не в git.
-- [ ] Коммиты осмысленные; дерево чистое.
+- [x] `.gitignore` (крупные `refs/*`) корректен; нет случайных файлов (scratch-тесты, temp).
+- [x] `bin/obj` не в git; большие данные не в git (`refs/_PackageFiles*`, `refs/SporeGames`,
+      `refs/SporeUnpackedData` игнорируются).
+- [x] Коммиты осмысленные; дерево чистое.
 
 ## 8. Идеи к обсуждению
 
