@@ -6,6 +6,10 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (otdb):** реализованы `summary` (`0x02d5c9af`, версия 4, BE) и `pollen_metadata`
+  (`0x030bdee3`, версии 1..13, BE) — чтение/запись **байт-в-байт** (проверено на реальных
+  `creature_editorModel/*.summary|.pollen_metadata`), дамп (`summary`, `pollen`). `summary`: 48
+  параметров + 17 amTag (значения типа `cuteness`, `height`, `cost` — вменяемые). Тесты +4 (итого 164).
 - **2026-10-11 (картинки):** реализованы декодеры **TGA** (`tga 0x2f7d0006`) и **Windows icon/cursor**
   (`cur 0x02393756`) → PNG; CLI **`image`**; превью в GUI. На реальных данных: `tga` — настоящие TGA
   (24 бита, RLE/raw, напр. 288×216); `cur` — настоящие ICO/CUR, но **11 из 136 — RIFF AVI**
@@ -225,8 +229,8 @@
 | `47b8300` | `lvl` (`scn`) | Scn | нет |
 | `ea5118b0` | `effdir` (effects) | Effects | нет |
 | `469a3f7` | `smt` | Smt | нет |
-| `2d5c9af` | `summary` | Summary | нет |
-| `30bdee3` | `pollen_metadata` (otdb) | PollenMetadata | нет |
+| `2d5c9af` | `summary` | Summary | **есть** (dump, байт-точно) |
+| `30bdee3` | `pollen_metadata` (otdb) | PollenMetadata | **есть** (dump, байт-точно) |
 | `366a930d` | `adv` (Scenario) | Scenario | нет |
 | `6efc6aa` | `package` | DBPF | нет (это **вложенный `.package`**!) |
 | `617715d9` | `pd` (Pure Data) | — (нет конвертера) | текст |
@@ -270,8 +274,8 @@ SporeModder поле `offset` (6-е int) обязано быть `28`, а в р�
 - **`gmdl`** (`GameModelResource`): `primitiveType, count, numBits(16/32), bufferSize`, затем индексы
   и вершины. Реальный бета-`gmdl` начинается `primitiveType=8, count=0, numBits=1` → **подозрительно**,
   сверить перед реализацией.
-- **`otdb`**: `pollen_metadata` (версия ≤13, assetID/key-и), `summary` (версия 4, записи по типу) —
-  структурированы, но требуют сверки.
+- **`otdb`**: `pollen_metadata` (версия ≤13, assetID/key-и) и `summary` (версия 4, записи по типу) —
+  ✅ **совпадают** со SporeModder и реализованы **байт-точно** (`summary`, `pollen`).
 - **`simulator`** (`adv`/Scenario, `0x366a930d`): ресурсы сценариев (поведения, цели, диалоги) —
   крупный формат.
 - **`shaders`** (`smt` `0x469a3f7`, `CompiledShaders`): компиляция/сборка шейдеров — вне текущей области.

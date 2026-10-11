@@ -1938,6 +1938,71 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Dumps a Spore <c>.pollen_metadata</c> file: <c>pollen &lt;in.pollen_metadata&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int Pollen(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "pollen <input.pollen_metadata> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            SporeMaster.Core.Otdb.PollenMetadata metadata = SporeMaster.Core.Otdb.PollenMetadata.Read(input0);
+            File.WriteAllText(outputPath, metadata.ToText());
+            output.Success($"Wrote pollen metadata text (version {metadata.MetadataVersion}): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Pollen metadata conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /// <summary>Dumps a Spore <c>.summary</c> file: <c>summary &lt;in.summary&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int Summary(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "summary <input.summary> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            SporeMaster.Core.Otdb.SummaryFile summary = SporeMaster.Core.Otdb.SummaryFile.Read(input0);
+            File.WriteAllText(outputPath, summary.ToText());
+            output.Success(
+                $"Wrote summary text ({summary.Parameters.Count} parameter(s), {summary.AmTags.Count} tag(s)): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"Summary conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Converts a cell world file: <c>cellworld &lt;in.world&gt; &lt;out.txt&gt;</c>.</summary>
     public static int CellWorld(CommandLine cli, Output output)
     {
