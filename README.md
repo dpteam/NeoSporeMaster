@@ -201,6 +201,11 @@ dotnet run --project src/SporeMaster.Cli -- list <архив.package> --content 
 # Распаковать всё (свойства сохраняются как .prop.xml, имена — по реестрам)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка>
 
+# Байтово-точная распаковка (ключи в пути _raw/type/group/instance.bin, без конвертаций).
+# Используйте её, если после правок нужен побайтово идентичный репак:
+#   unpack --raw → (правки) → pack → diff  =>  0 различий
+dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --raw
+
 # Собрать архив из папки (.prop.xml автоматически превращаются обратно в .prop)
 dotnet run --project src/SporeMaster.Cli -- pack <папка> <архив.package> --version 2.0 --compress
 
