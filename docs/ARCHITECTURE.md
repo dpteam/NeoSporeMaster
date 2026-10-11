@@ -196,6 +196,11 @@ CLI `roundtrip` — автоматическая проверка lossless на 
 - `CreatureDataFile` — сохранение редактора существ (`.creaturedata`, версии 9/10): байт-точное
   чтение/запись и дамп (способности PCTP + морфы); RLE-буфер хранится дословно.
 
+### `Spui/*`
+- `SpuiFile` — UI-разметка (`.spui`, версия ≤3): байт-точное чтение/запись **контейнера** (магия,
+  ресурсы, hit-mask, proxy-классы) и дамп заголовка; секция элементов — дословно (designer-определения
+  вне области).
+
 ### `Presentation/*`
 UI-независимый слой, переиспользуемый GUI и CLI:
 - `PackageSession` — открытый архив + реестр имён; список ресурсов, чтение, диагностика;
@@ -225,7 +230,7 @@ UI-независимый слой, переиспользуемый GUI и CLI:
 - `TestData` — поиск корня репозитория и тестовых архивов.
 - Наборы тестов: хеши, RefPack, round-trip DBPF, реальные архивы, отказоустойчивость,
   локализация, свойства, локали, текстуры, bitmap/PNG, TGA/ICO, RW4, hash guesser, Presentation,
-  cell world, otdb (summary/pollen), Arithmetica (HTRA), scn (levels), cell maps.
+  cell world, otdb (summary/pollen), Arithmetica (HTRA), scn (levels), cell maps, spui (header).
 
 ## SporeMaster.Gui
 

@@ -293,6 +293,9 @@ dotnet run --project src/SporeMaster.Cli -- cellmap background <файл.backgro
 # Дамп сохранения редактора существ (способности и морфы)
 dotnet run --project src/SporeMaster.Cli -- creaturedata <файл.creaturedata> <файл.txt>
 
+# Дамп заголовка UI-разметки Spore (.spui): ресурсы, hit-mask, классы
+dotnet run --project src/SporeMaster.Cli -- spui <файл.spui> <файл.txt>
+
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales
 

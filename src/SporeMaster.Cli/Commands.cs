@@ -1938,6 +1938,39 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Dumps a Spore UI layout header: <c>spui &lt;in.spui&gt; &lt;out.txt&gt;</c>.</summary>
+    public static int Spui(CommandLine cli, Output output)
+    {
+        if (cli.Positional.Count < 2)
+        {
+            return UsageError(output, "spui <input.spui> <output.txt>");
+        }
+
+        string input = cli.Positional[0];
+        string outputPath = cli.Positional[1];
+        if (!File.Exists(input))
+        {
+            output.Error(Localizer.Default.Get("common.fileNotFound", input));
+            return 1;
+        }
+
+        try
+        {
+            using FileStream input0 = File.OpenRead(input);
+            SporeMaster.Core.Spui.SpuiFile spui = SporeMaster.Core.Spui.SpuiFile.Read(input0);
+            File.WriteAllText(outputPath, spui.ToText());
+            output.Success(
+                $"Wrote spui header (v{spui.Version}, {spui.ImageResources.Count} image(s), {spui.ProxyIds.Count} class(es)): {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            output.Error($"SPUI conversion failed: {ex.Message}");
+            return 1;
+        }
+
+        return 0;
+    }
+
     /// <summary>Dumps a Spore creature editor save: <c>creaturedata &lt;in.creaturedata&gt; &lt;out.txt&gt;</c>.</summary>
     public static int CreatureData(CommandLine cli, Output output)
     {

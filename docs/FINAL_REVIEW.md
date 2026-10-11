@@ -6,6 +6,11 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (spui):** реализован **контейнер** UI-разметки `spui` (`0x250fe9a2`, версия ≤3) —
+  чтение/запись **байт-в-байт** (магия `0xE3FE3FB8`, списки ресурсов по ключам `instance,type,group`,
+  hit-mask версии 3 с флагом RLE, proxy-классы) + дамп заголовка; секция элементов хранится дословно
+  (декодирование требует designer-определений). Проверено на реальных `*.spui` (69 images, 54 класса).
+  Тесты +2 (итого 179).
 - **2026-10-11 (проход по чек-листу):** отмечены выполненные пункты (Core/CLI/GUI/тесты/доки/
   репак/гигиена). Просмотрены **прочие `refs/`** (`SporeEdit`, `CheckAll`, `EAPackageBrowser`,
   `_AlsoOnlyIfNeed/SporeMaster` — легаси SporeMaster 2): уникального, что стоит перенести, нет
@@ -81,7 +86,7 @@
 - [x] Пройти `--help` и каждый раздел `docs/*`; сверить usage/поведение.
 - [x] Все команды: `info list extract unpack unpackdata pack prop propt locale texture bitmap image
       guess search pctp tlsa gait cnv loottable looktable cellworld cellmap summary pollen arth scn
-      creaturedata keymap rw4 export-models verify roundtrip diff strings pdb anim hash types`.
+      creaturedata spui keymap rw4 export-models verify roundtrip diff strings pdb anim hash types`.
 - [x] Единый вывод: заголовки, таблицы, коды выхода, `--quiet/--no-color/--lang`.
 - [x] Локализация RU/EN (нет незаполненных ключей — проверяется тестом).
 
@@ -175,8 +180,9 @@
   1/2/3): заголовок `version,count,dataSize` + маркеры (BE offset/quaternion/type/id/definition +
   фикс. payload `dataSize`, обычно `0x88`).; `powers` (`0x754be343`)
   и `simulator`/`adv` (`0x366a930d`) — тоже нет в тест-пакетах;
-- `spui` (`0x250fe9a2`, 284) — **совпадает** со SporeModder (магия `0xE3FE3FB8` ✓, версия 3 ✓),
-  но объёмный (классы UI-элементов, типы свойств, стили, RLE-hit-mask);
+- `spui` (`0x250fe9a2`, 284) — ◑ **контейнер реализован байт-точно** (`spui`): магия `0xE3FE3FB8`,
+  версия ≤3, списки ресурсов/hit-mask/классов, дамп заголовка. Секция элементов требует внешних
+  **designer-определений** (XML-классы/свойства, есть в `refs/SporeModder-FX-master/UI Editor/`);
 - `effdir`/effects (`0xea5118b0`) — структура **совпадает**, но десятки типов компонентов;
 - `smt`/shaders (`0x0469a3f7`) — сборка шейдеров;
 - `gmdl` (`0x00e6bce5`) — читатель SporeModder **не совпадает** с реальным `gmdl` → реверс;
@@ -205,7 +211,7 @@
 | `01c135da` | `gmsh` | 965 | ⬜ старый Gonzago-меш |
 | `dfad9f51` | `cell` | 412 | ⬜ (бета ≠ SporeModder) |
 | `4b9ef6dc` | `structure` | 313 | ⬜ (бета ≠ SporeModder) |
-| `250fe9a2` | `spui` | 284 | ⬜ (совпадает: магия `E3FE3FB8`, версия 3) |
+| `250fe9a2` | `spui` | 284 | ◑ контейнер (байт-точно), дамп заголовка |
 | `497767b9` | `pfx` | 260 | ✅ текст (Pure Data) |
 | `02393756` | `cur` | 136 | ✅ ICO/CUR (11 — RIFF AVI) |
 | `2f4e681c` | `raster` | 134 | ✅ |
