@@ -277,6 +277,13 @@ dotnet run --project src/SporeMaster.Cli -- looktable <файл.look_table> <ф�
 # Дамп файла cell world (populate/advect)
 dotnet run --project src/SporeMaster.Cli -- cellworld <файл.world> <файл.txt>
 
+# Дамп метаданных редактора существа (.summary / .pollen_metadata)
+dotnet run --project src/SporeMaster.Cli -- summary <файл.summary> <файл.txt>
+dotnet run --project src/SporeMaster.Cli -- pollen <файл.pollen_metadata> <файл.txt>
+
+# Дамп программы Arithmetica (HTRA): операции, функции, строки
+dotnet run --project src/SporeMaster.Cli -- arth <файл.htra> <файл.txt>
+
 # Распаковать, убрав сгенерированные локали (они пересоберутся при упаковке)
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --clean-autolocales
 

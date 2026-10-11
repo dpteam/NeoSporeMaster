@@ -133,8 +133,9 @@
   родительских папках. На Wii-списке теперь **0 отсутствующих** include (было 6+).
 
 ### 5c. Инвентарь форматов (Core vs. SporeModder FX на 2026-10-11)
-Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `rw4`, `anim`, `pctp`,
-`tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`, **`world`**), `argscript`.
+Реализовано (Core): `dbpf`, `prop`, `locale`, `raster`/`dds`, `bitmaps`, `tga`, `cur`, `rw4`, `anim`,
+`pctp`, `tlsa`, `gait`, `cnv` (дамп), `cell` (`loottable`, `look_table`, **`world`**),
+`otdb` (**`summary`**, **`pollen_metadata`**), **`arth`** (HTRA), `argscript`.
 
 **Проверка типов (сверено с конвертерами SporeModder FX): совпадают** —
 `pctp` `0x7c19aa7a`, `gait` `0x25df0112`, `tlsa` `0x4aeb6bc6`, `cnv` `0x55ada24`,

@@ -112,6 +112,9 @@ little-endian; флаги и stride сохраняются для байт-то�
   color types 0/2/3/4/6, глубины 1/2/4/8/16, фильтры 0–4.
 - `BitmapImage` — «сырой» растровый ресурс Spore (1/8/32/48 бит), конвертация в/из `RgbaImage`.
   Формат описан в `docs/BITMAP_FORMAT.md`.
+- `TgaCodec` — декодер TGA (raw/RLE, true-colour/grayscale/colormapped, 8/16/24/32 бита).
+- `IcoCodec` — декодер Windows ICO/CUR (PNG- и DIB-записи, 32/24/8/4/1 бит; `LooksLikeIco`).
+- `ImageFormats` — определение контейнера (PNG / ICO / TGA) и общий `Decode`.
 
 ### `Names/*`
 - `NameRegistry` — двусторонний словарь «имя ↔ хеш» с поддержкой псевдонимов (`~`).
@@ -172,6 +175,18 @@ CLI `roundtrip` — автоматическая проверка lossless на 
   (`.loottable_t`), байт-точно. Формат описан в `docs/LOOTTABLE_FORMAT.md`.
 - `CellLookTableFile` — таблицы «взгляда» (`.look_table`): бинарное чтение/запись и текст
   (`.look_table_t`), байт-точно. Формат описан в `docs/LOOKTABLE_FORMAT.md`.
+- `CellWorldFile` — cell world (`.world`): бинарное чтение/запись (байт-точно) и текстовый дамп
+  (записи `populate`/`advect`).
+
+### `Otdb/*`
+- `SummaryFile` — `.summary` (версия 4, big-endian): байт-точное чтение/запись и дамп (параметры,
+  `amTag`); имена известных параметров/групп;
+- `PollenMetadata` — `.pollen_metadata` (версии 1..13): байт-точное чтение/запись и дамп (ассет,
+  родитель, автор, теги, consequence traits).
+
+### `Arithmetica/*`
+- `ArithmeticaFile` — Arithmetica/`HTRA` (`.htra`/`.arth`): байт-точное чтение/запись и дамп
+  (операции с опкодами, функции, строки). Заголовок смешанной эндіанности.
 
 ### `Presentation/*`
 UI-независимый слой, переиспользуемый GUI и CLI:
@@ -192,7 +207,8 @@ UI-независимый слой, переиспользуемый GUI и CLI:
 
 - `CommandLine` — минималистичный парсер (`--ключ значение`, `--флаг`).
 - `Output` — вывод с учётом `--quiet`/`--no-color`, таблицы, форматирование размеров.
-- `Commands` — команды `info`, `list`, `extract`, `unpack`, `pack`, `verify`, `hash`, `types`.
+- `Commands` — все команды CLI (просмотр/распаковка/упаковка, конвертеры форматов, hash-guesser,
+  поиск, диагностика; см. `README.md` и `RESUME.md`).
 - `Program` — точка входа и справка.
 
 ## SporeMaster.Tests
@@ -200,7 +216,8 @@ UI-независимый слой, переиспользуемый GUI и CLI:
 - `TestFramework` — атрибут `[SporeTest]`, `Assert`, раннер на рефлексии.
 - `TestData` — поиск корня репозитория и тестовых архивов.
 - Наборы тестов: хеши, RefPack, round-trip DBPF, реальные архивы, отказоустойчивость,
-  локализация, свойства, локали, текстуры, bitmap/PNG, RW4, hash guesser, Presentation.
+  локализация, свойства, локали, текстуры, bitmap/PNG, TGA/ICO, RW4, hash guesser, Presentation,
+  cell world, otdb (summary/pollen), Arithmetica (HTRA).
 
 ## SporeMaster.Gui
 
