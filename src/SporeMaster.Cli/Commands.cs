@@ -508,7 +508,11 @@ public static class Commands
 
             bool isPropXml = relative.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
             bool isTextureDds = relative.EndsWith(".raster.dds", StringComparison.OrdinalIgnoreCase);
-            bool isBitmapPng = relative.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+
+            // ".png" is ambiguous: it is both the native "png" resource type and the suffix used by
+            // the converted bitmap images (e.g. "name.32bitImage.png"). Strip it only when a further
+            // extension remains, otherwise keep it as the resource type.
+            bool isBitmapPng = ConversionSuffix.IsConvertedPng(relative);
 
             // Strip the conversion suffix so the remaining group/name.ext resolves normally.
             string resolvable = isPropXml ? relative[..^4]
@@ -2570,9 +2574,10 @@ public static class Commands
                 output.Warn(
                     $"Archives differ: {result.Added.Count + result.Removed.Count + result.Changed.Count} difference(s).");
             }
-        }
 
-        return 0;
+            // A non-zero exit code for differences makes 'diff' usable in scripts (like cmp/git diff).
+            return result.IsIdentical ? 0 : 1;
+        }
     }
 
     private static void PrintDiffSection(

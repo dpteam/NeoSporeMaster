@@ -87,7 +87,7 @@ refs/                     справочные материалы и реаль�
 
 ## 5. Снимок состояния (обновлять по мере продвижения)
 
-- Версия — около **3.94.0**; тесты — **187/187**; дерево git чистое.
+- Версия — около **3.95.0**; тесты — **189/189**; дерево git чистое.
 - Готово в Core: DBPF 2.0/3.0/DBBF (read/write, бета и релиз); RefPack (байт-в-байт);
   `.prop`+`.prop.xml`+`.prop_t` (все 25 типов свойств); `.locale`+авто-локали+**CSV/TSV**;
   `.raster`⇄DDS; bitmap⇄PNG (свой PNG-кодек + DXT-декодер); **TGA** и **`.cur`/ICO**→PNG; **RW4** (контейнер, меши, геометрия
@@ -123,7 +123,7 @@ refs/                     справочные материалы и реаль�
 - Реальные данные лежат в `refs/_PackageFilesBetaVer` (бета) и `refs/_PackageFilesFinalVer` (релиз);
   крупные папки (`refs/SporeGames`, `refs/SporeUnpackedData`, `_PackageFiles*`) — в `.gitignore`.
 - **Lossless raw-перепаковка подтверждена:** `unpack --raw → pack --compress → diff` идентично на
-  `BP2_Data` 187/187, `CSA_Graphics` 5822/5822, **`Spore_Game` 11676/11676, `CSA_Main` 8431/8431**,
+  `BP2_Data` 184/184, `CSA_Graphics` 5822/5822, **`Spore_Game` 11676/11676, `CSA_Main` 8431/8431**,
   а также на **реальной Retail-игре** (`refs/SporeGames/SporeRetail/Data`): `Spore_Game` 11529/11529,
   `Spore_Pack_03` 266/266.
 - `refs/SporeUnpackedData/**/KeyMap.txt` — карта «ключ → реальный путь» (авторитетные имена);
