@@ -510,6 +510,8 @@ public sealed class CnvUnit
                 builder.Append("\taction ").Append(names.GetFileName(unchecked((uint)dialog.Action))).Append('\n');
             }
 
+            AppendKeyRef(builder, names, dialog.GroupId, dialog.TypeId, dialog.InstanceId);
+
             foreach (CnvText text in dialog.Texts)
             {
                 AppendText(builder, names, text);
@@ -519,6 +521,7 @@ public sealed class CnvUnit
             {
                 builder.Append("\tresponse\n");
                 builder.Append("\t\taction ").Append(names.GetFileName(unchecked((uint)response.Action))).Append('\n');
+                AppendKeyRef(builder, names, response.GroupId, response.TypeId, response.InstanceId, "\t\t");
                 foreach (CnvText text in response.Texts)
                 {
                     AppendText(builder, names, text, "\t\t");
@@ -582,9 +585,11 @@ public sealed class CnvUnit
         }
 
         builder.Append('\n');
+        AppendFlags(builder, "require", text.RequireFlags, indent);
+        AppendFlags(builder, "exclude", text.ExcludeFlags, indent);
     }
 
-    private static void AppendFlags(StringBuilder builder, string command, bool[] flags)
+    private static void AppendFlags(StringBuilder builder, string command, bool[] flags, string indent = "\t")
     {
         var sb = new StringBuilder();
         for (int i = 0; i < flags.Length; i++)
@@ -597,7 +602,31 @@ public sealed class CnvUnit
 
         if (sb.Length > 0)
         {
-            builder.Append('\t').Append(command).Append(sb).Append('\n');
+            builder.Append(indent).Append(command).Append(sb).Append('\n');
+        }
+    }
+
+    private static void AppendKeyRef(
+        StringBuilder builder,
+        NameRegistrySet names,
+        int groupId,
+        int typeId,
+        int instanceId,
+        string indent = "\t")
+    {
+        if (groupId != 0)
+        {
+            builder.Append(indent).Append("group ").Append(names.GetFileName(unchecked((uint)groupId))).Append('\n');
+        }
+
+        if (typeId != 0)
+        {
+            builder.Append(indent).Append("type ").Append(names.GetFileName(unchecked((uint)typeId))).Append('\n');
+        }
+
+        if (instanceId != 0)
+        {
+            builder.Append(indent).Append("instance ").Append(names.GetFileName(unchecked((uint)instanceId))).Append('\n');
         }
     }
 

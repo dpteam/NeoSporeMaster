@@ -51,6 +51,31 @@ public static class CnvTests
         }
     }
 
+    [SporeTest("CNV text dump includes response identity and text flags")]
+    public static void TextDumpCompleteness()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+
+        var unit = new CnvUnit();
+        var dialog = new CnvDialog { Id = 0x11111111, Name = "d0", GroupId = 0x22222222, TypeId = 0x33333333, InstanceId = 0x44444444 };
+        var response = new CnvDialogResponse { Action = 0x55555555, GroupId = 0x66666666, TypeId = 0x77777777, InstanceId = unchecked((int)0x88888888u) };
+        var text = new CnvText { TableId = unchecked((int)0x99999999u), InstanceId = unchecked((int)0xAAAAAAAAu) };
+        text.RequireFlags[3] = true;
+        response.Texts.Add(text);
+        dialog.Responses.Add(response);
+        unit.Dialogs.Add(dialog);
+
+        string script = unit.ToScript(names);
+
+        Assert.Contains(script, "dialog d0");
+        // The response identity must be present (previously omitted).
+        Assert.Contains(script, "group 0x66666666");
+        Assert.Contains(script, "type 0x77777777");
+        Assert.Contains(script, "instance 0x88888888");
+        // The per-text require flags must be present (previously omitted).
+        Assert.Contains(script, "require 3");
+    }
+
     [SporeTest("CNV text dump is produced")]
     public static void TextDump()
     {

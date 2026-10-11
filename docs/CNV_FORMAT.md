@@ -109,13 +109,19 @@ int32   ints2Count   (LE) + int32 values (LE)
 
 ## 3. Текстовое представление (.cnv_t)
 
-Реализован **дамп** в читаемый текст (команда `cnv`). Пример:
+Реализован **дамп** в читаемый текст (команда `cnv`). Дамп **полный** по структуре (всё, что хранит
+бинарный формат): текст с флагами `require`/`exclude` и `-emotion`, идентичность диалога/ответа
+(`group`/`type`/`instance`), `ints1..4`. Пример:
 
 ```
 dialog mission_assign
+	group mission_tutorial_war
 	text mission_tutorial_war!animations~
 	response
 		action kCnvCommEvent~
+		group mission_tutorial_war
+		type 0x055ADA24
+		instance mission_clues
 		text mission_tutorial_war!0x0000000B
 		require 3 5
 		ints1 someKey~
@@ -124,8 +130,8 @@ end
 ```
 
 Полноценный импорт текста (`.cnv_t` → `.cnv`) пока **не реализован**: грамматика SporeModder
-большая и частично теряет нерасшифрованные записи (`unknown`). Бинарное чтение/запись при этом
-байт-точное.
+большая и частично теряет нерасшифрованные записи (`unknown`), а дамп использует алиасы имён.
+Бинарное чтение/запись при этом байт-точное (текст можно использовать как информативный дамп).
 
 ## 4. CLI
 

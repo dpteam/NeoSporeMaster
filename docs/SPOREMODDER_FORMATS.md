@@ -93,7 +93,7 @@ SporeModder FX читает их в редакторах, но **не** реги
    которых нет в тест-пакетах (`simulator`, `powers`).
 2. **Дополнительно** реализованы форматы, которых у SporeModder **нет** (`tga`, `cur`), и форматы
    «с кодом без конвертера», где это было проверить (`cell world/maps`).
-3. **Битва выяснения:** `cell`/`globals` (и бета-`populate`/`structure`/`look_algorithm`) **не совпадают**
+3. **Выяснение:** `cell`/`globals` (и бета-`populate`/`structure`/`look_algorithm`) **не совпадают**
    со SporeModder — разбирать по реальным данным. `world`/`backgroundMap`/`effectMap`/`random_creature`
    (бета) и **`populate`/`structure` (релиз)** — **совпадают** и реализованы.
 4. **Осталось крупное:** `spui` (совпадает, объёмен и требует designer-определений), `effects`
