@@ -206,8 +206,9 @@ dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <пап�
 #   unpack --raw → (правки) → pack → diff  =>  0 различий
 dotnet run --project src/SporeMaster.Cli -- unpack <архив.package> <папка> --raw
 
-# Собрать архив из папки (.prop.xml автоматически превращаются обратно в .prop)
-dotnet run --project src/SporeMaster.Cli -- pack <папка> <архив.package> --version 2.0 --compress
+# Собрать архив из папки (.prop.xml автоматически превращаются обратно в .prop).
+# --no-autolocales — для побайтово-точного репака: unpack → pack --no-autolocales → diff = 0 различий
+dotnet run --project src/SporeMaster.Cli -- pack <папка> <архив.package> --version 2.0 --compress --no-autolocales
 
 # Конвертировать один файл свойств в XML и обратно
 dotnet run --project src/SporeMaster.Cli -- prop <файл.prop> <файл.prop.xml>

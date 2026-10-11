@@ -473,7 +473,7 @@ public static class Commands
     {
         if (cli.Positional.Count < 2)
         {
-            return UsageError(output, "pack <input-dir> <package> [--version 2.0|3.0] [--compress] [--big]");
+            return UsageError(output, "pack <input-dir> <package> [--version 2.0|3.0] [--compress] [--big] [--no-autolocales]");
         }
 
         string inputDir = Path.GetFullPath(cli.Positional[0]);
@@ -491,6 +491,10 @@ public static class Commands
             Big = cli.Has("big"),
             Version = ParseVersion(cli.Get("version")),
         };
+
+        // For a byte-identical repack of existing content, skip generating the auto-locales (the
+        // originals were produced by a build step and are not part of the archive's resource set).
+        bool noAutoLocales = cli.Has("no-autolocales");
 
         NameRegistrySet names = NameRegistrySet.LoadEmbedded();
         var items = new List<DbpfWriteItem>();
@@ -538,7 +542,9 @@ public static class Commands
                     PropertyList list = PropertyList.ReadXml(xmlIn, names);
 
                     // Generate the auto locale from placeholder texts, then embed the ids.
-                    autoLocale = AutoLocale.Generate(list, AutoLocale.GetName(groupName, instanceName), names);
+                    autoLocale = noAutoLocales
+                        ? null
+                        : AutoLocale.Generate(list, AutoLocale.GetName(groupName, instanceName), names);
 
                     using var buffer = new MemoryStream();
                     list.Write(buffer);

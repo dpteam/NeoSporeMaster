@@ -167,6 +167,26 @@ public static class PropertyTests
         return stream.ToArray();
     }
 
+    [SporeTest("localized text keeps whitespace-only values through XML")]
+    public static void TextWhitespaceRoundTrip()
+    {
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+
+        var list = new PropertyList();
+        var text = new TextProperty();
+        text.Add(new LocalizedText { TableId = 0x02FABF01, InstanceId = 0x1234, Text = " " });
+        list.Add(0x02BB8697, text);
+
+        using var xml = new MemoryStream();
+        list.WriteXml(xml, names);
+        xml.Position = 0;
+        PropertyList reborn = PropertyList.ReadXml(xml, names);
+
+        var rebornText = (TextProperty)reborn.Get(0x02BB8697)!;
+        Assert.Equal(1, rebornText.Count);
+        Assert.Equal(" ", rebornText.Values[0].Text);
+    }
+
     [SporeTest("property files round-trip byte-for-byte through XML (BP2_Data)")]
     public static void XmlByteExact()
     {

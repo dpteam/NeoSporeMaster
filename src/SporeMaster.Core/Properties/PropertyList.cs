@@ -224,7 +224,9 @@ public sealed class PropertyList
     /// <summary>Reads the SporeMaster-compatible <c>.prop.xml</c> representation.</summary>
     public static PropertyList ReadXml(Stream stream, NameRegistrySet names)
     {
-        XDocument document = XDocument.Load(stream);
+        // Preserve whitespace: localized text values can legitimately be whitespace (even a single
+        // space), which the default loader would silently drop and thus lose on repack.
+        XDocument document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
         XElement root = document.Root ?? throw new InvalidDataException("Missing root element.");
         var list = new PropertyList();
 
