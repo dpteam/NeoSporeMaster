@@ -22,6 +22,16 @@ public static class ConversionSuffixTests
         Assert.False(ConversionSuffix.IsConvertedPng("group~/thing.prop.xml"));
     }
 
+    [SporeTest("48-bit images are kept raw (not losslessly convertible to PNG)")]
+    public static void FortyEightBitNotConvertible()
+    {
+        Assert.True(SporeMaster.Core.Bitmaps.SporeBitmapTypes.IsSupported(0x03E421EF)); // 48-bit
+        Assert.False(SporeMaster.Core.Bitmaps.SporeBitmapTypes.IsLosslesslyConvertibleToPng(0x03E421EF));
+        Assert.True(SporeMaster.Core.Bitmaps.SporeBitmapTypes.IsLosslesslyConvertibleToPng(0x03E421E9)); // bit
+        Assert.True(SporeMaster.Core.Bitmaps.SporeBitmapTypes.IsLosslesslyConvertibleToPng(0x03E421EC)); // 8-bit
+        Assert.True(SporeMaster.Core.Bitmaps.SporeBitmapTypes.IsLosslesslyConvertibleToPng(0x03E421ED)); // 32-bit
+    }
+
     [SporeTest("converted-prop-xml detection distinguishes native xml resources")]
     public static void DetectConvertedPropXml()
     {

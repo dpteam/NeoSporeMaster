@@ -418,7 +418,8 @@ public static class Commands
                         File.WriteAllBytes(ddsPath[..^4], data);
                     }
                 }
-                else if (!raw && ResourceTypeIds.IsBitmap(entry.Key.TypeId))
+                else if (!raw && ResourceTypeIds.IsBitmap(entry.Key.TypeId) &&
+                         SporeBitmapTypes.IsLosslesslyConvertibleToPng(entry.Key.TypeId))
                 {
                     string pngPath = Path.Combine(
                         outputDir,

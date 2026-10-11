@@ -15,6 +15,14 @@ public static class SporeBitmapTypes
     public static bool IsSupported(uint typeId) =>
         typeId is BitImage or EightBitImage or ThirtyTwoBitImage or FortyEightBitImage;
 
+    /// <summary>
+    /// True when the type can be converted to an 8-bit RGBA PNG and back without losing data. The
+    /// 48-bit type stores 16 bits per channel, so it is <b>not</b> lossless through our 8-bit PNG
+    /// pipeline; such resources are kept as raw bytes when unpacking so that repacking is exact.
+    /// </summary>
+    public static bool IsLosslesslyConvertibleToPng(uint typeId) =>
+        IsSupported(typeId) && typeId != FortyEightBitImage;
+
     public static string GetName(uint typeId) => typeId switch
     {
         BitImage => "bitImage",

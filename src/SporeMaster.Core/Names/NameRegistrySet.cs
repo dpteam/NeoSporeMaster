@@ -218,10 +218,24 @@ public sealed class NameRegistrySet
     /// <summary>Builds the canonical relative path used when unpacking: <c>group/name.ext</c>.</summary>
     public string GetRelativePath(uint typeId, uint groupId, uint instanceId)
     {
-        string group = GetFileName(groupId);
-        string name = GetFileName(instanceId);
-        string extension = GetTypeName(typeId);
+        string group = PathSegment(groupId, isType: false);
+        string name = PathSegment(instanceId, isType: false);
+        string extension = PathSegment(typeId, isType: true);
         return $"{group}/{name}.{extension}";
+    }
+
+    /// <summary>
+    /// A path segment for an id: the registry name when it really hashes back to the id, otherwise a
+    /// hex literal. Aliased names (with a <c>~</c>) and names shared by several ids (for example the
+    /// type name <c>xml</c>) do not round-trip through the bare name, so a hex id is written instead.
+    /// </summary>
+    private string PathSegment(uint id, bool isType)
+    {
+        string name = isType ? GetTypeName(id) : GetFileName(id);
+        bool roundTrips = isType ? GetTypeHash(name) == id : GetFileHash(name) == id;
+        return roundTrips
+            ? name
+            : "0x" + id.ToString("X8", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <summary>Parses a <c>group/name.ext</c> path back into hashes.</summary>
