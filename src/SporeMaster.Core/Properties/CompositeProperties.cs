@@ -72,27 +72,84 @@ public sealed class KeyProperty : Property
         ResourceKey k = _values[index];
         if (k.GroupId != 0)
         {
-            w.WriteAttributeString("groupid", names.GetFileName(k.GroupId));
+            w.WriteAttributeString("groupid", Ref(names, k.GroupId, isType: false));
         }
 
-        w.WriteAttributeString("instanceid", names.GetFileName(k.InstanceId));
+        w.WriteAttributeString("instanceid", Ref(names, k.InstanceId, isType: false));
 
         if (k.TypeId != 0)
         {
-            w.WriteAttributeString("typeid", names.GetTypeName(k.TypeId));
+            w.WriteAttributeString("typeid", Ref(names, k.TypeId, isType: true));
+        }
+    }
+
+    /// <summary>
+    /// Returns the registry name for an id, or a hex literal when the name does not round-trip (for
+    /// example an aliased name with a <c>~</c> suffix whose text does not hash back to the id).
+    /// </summary>
+    private static string Ref(NameRegistrySet names, uint id, bool isType)
+    {
+        string name = isType ? names.GetTypeName(id) : names.GetFileName(id);
+        bool roundTrips = isType
+            ? !string.IsNullOrEmpty(name) && names.GetTypeHash(name) == id
+            : !string.IsNullOrEmpty(name) && names.GetFileHash(name) == id;
+        return roundTrips ? name : "0x" + id.ToString("X8", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    internal override void WriteXmlAttributes(XmlWriter w)
+    {
+        if (!IsArray && _singlePadding.Length == 4 && System.Array.Exists(_singlePadding, b => b != 0))
+        {
+            w.WriteAttributeString("padding", Convert.ToHexString(_singlePadding));
+        }
+    }
+
+    internal override void ReadXmlAttributes(XElement element)
+    {
+        byte[]? padding = ParseHexBytes((string?)element.Attribute("padding"));
+        if (padding is { Length: 4 })
+        {
+            _singlePadding = padding;
         }
     }
 
     public override void ReadXmlElement(XElement element, NameRegistrySet names)
     {
+        ReadXmlAttributes(element);
         uint instance = ResolveHash(names, (string?)element.Attribute("instanceid"));
         uint group = ResolveHash(names, (string?)element.Attribute("groupid"));
-        uint type = ResolveHash(names, (string?)element.Attribute("typeid"));
+
+        // The type is written from the *type* name registry, so resolve it in the same namespace
+        // (resolving "rw4" as a file name would give a different hash).
+        string? typeName = (string?)element.Attribute("typeid");
+        uint type = string.IsNullOrEmpty(typeName) ? 0u : ResolveType(names, typeName);
         _values.Add(new ResourceKey(type, group, instance));
     }
 
-    private static uint ResolveHash(NameRegistrySet names, string? value) =>
-        string.IsNullOrEmpty(value) ? 0u : names.GetFileHash(value);
+    private static uint ResolveHash(NameRegistrySet names, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return 0u;
+        }
+
+        if (value.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            return uint.Parse(value[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        return names.GetFileHash(value);
+    }
+
+    private static uint ResolveType(NameRegistrySet names, string value)
+    {
+        if (value.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            return uint.Parse(value[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        return names.GetTypeHash(value);
+    }
 }
 
 /// <summary>Localized text property (<c>text</c>). Always stored as an array.</summary>
@@ -313,6 +370,7 @@ public abstract class FloatVectorProperty : Property
 
     public override void ReadXmlElement(XElement element, NameRegistrySet names)
     {
+        ReadXmlAttributes(element);
         var v = new float[Components];
         for (int c = 0; c < Components; c++)
         {
@@ -321,6 +379,24 @@ public abstract class FloatVectorProperty : Property
         }
 
         _values.Add(v);
+    }
+
+    internal override void WriteXmlAttributes(XmlWriter w)
+    {
+        if (!IsArray && PaddingSize > 0 && _singlePadding.Length == PaddingSize &&
+            System.Array.Exists(_singlePadding, b => b != 0))
+        {
+            w.WriteAttributeString("padding", Convert.ToHexString(_singlePadding));
+        }
+    }
+
+    internal override void ReadXmlAttributes(XElement element)
+    {
+        byte[]? padding = ParseHexBytes((string?)element.Attribute("padding"));
+        if (padding is not null && padding.Length == PaddingSize)
+        {
+            _singlePadding = padding;
+        }
     }
 }
 
@@ -471,6 +547,11 @@ public sealed class TransformProperty : Property
     {
         TransformValue v = _values[index];
         w.WriteAttributeString("flags", "0x" + v.Flags.ToString("X4", CultureInfo.InvariantCulture));
+        if (v.Count != 1)
+        {
+            w.WriteAttributeString("count", v.Count.ToString(CultureInfo.InvariantCulture));
+        }
+
         w.WriteAttributeString("offset", $"{FloatText(v.Offset[0])},{FloatText(v.Offset[1])},{FloatText(v.Offset[2])}");
         w.WriteAttributeString("scale", FloatText(v.Scale));
         w.WriteAttributeString("row1", $"{FloatText(v.Rotation[0])},{FloatText(v.Rotation[1])},{FloatText(v.Rotation[2])}");
@@ -485,6 +566,13 @@ public sealed class TransformProperty : Property
         if (flagsAttr is not null)
         {
             flags = (ushort)ParseHex(flagsAttr);
+        }
+
+        short count = 1;
+        string? countAttr = (string?)element.Attribute("count");
+        if (countAttr is not null)
+        {
+            count = short.Parse(countAttr.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         var offset = new float[3];
@@ -536,7 +624,7 @@ public sealed class TransformProperty : Property
             }
         }
 
-        _values.Add(new TransformValue { Flags = flags, Count = 1, Offset = offset, Scale = scale, Rotation = rotation });
+        _values.Add(new TransformValue { Flags = flags, Count = count, Offset = offset, Scale = scale, Rotation = rotation });
     }
 
     private static bool ReadTriple(XElement element, string name, float[] target, int a, int b, int c)

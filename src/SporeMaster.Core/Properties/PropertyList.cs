@@ -246,6 +246,22 @@ public sealed class PropertyList
             string? legacyId = (string?)element.Attribute("id");
             uint id = legacyId is not null ? ParseId(legacyId) : names.GetPropHash(name ?? string.Empty);
 
+            // A preserved descriptor flags word (written when it differs from the default).
+            string? flagsAttr = (string?)element.Attribute("flags");
+            if (flagsAttr is not null)
+            {
+                property.SourceFlags = (ushort)ParseId(flagsAttr);
+            }
+
+            property.ReadXmlAttributes(element);
+
+            string? itemSizeAttr = (string?)element.Attribute("itemsize");
+            if (itemSizeAttr is not null &&
+                int.TryParse(itemSizeAttr, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int itemSize))
+            {
+                property.SourceItemSize = itemSize;
+            }
+
             if (isArray)
             {
                 foreach (XElement child in element.Elements())
@@ -292,6 +308,24 @@ public sealed class PropertyList
             if (name.StartsWith('#') || Hashing.Fnv.Hash(name) != id)
             {
                 writer.WriteAttributeString("id", "0x" + id.ToString("X8", System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            // Preserve the descriptor flags when they differ from the default for the element kind,
+            // so unpack -> XML -> pack keeps the original descriptor (only padding may differ).
+            if (property.SourceFlags is ushort sourceFlags &&
+                sourceFlags != (property.IsArray ? 0x30 : 0x00))
+            {
+                writer.WriteAttributeString(
+                    "flags", "0x" + sourceFlags.ToString("X4", System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            property.WriteXmlAttributes(writer);
+
+            // Preserve a non-default array element stride so the XML round-trip is byte-accurate.
+            if (property.IsArray && property.SourceItemSize is int itemSize && itemSize != ComputeItemSize(property))
+            {
+                writer.WriteAttributeString(
+                    "itemsize", itemSize.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
 
             if (property.IsArray)

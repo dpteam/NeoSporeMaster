@@ -167,6 +167,67 @@ public static class PropertyTests
         return stream.ToArray();
     }
 
+    [SporeTest("property files round-trip byte-for-byte through XML (BP2_Data)")]
+    public static void XmlByteExact()
+    {
+        string? packagePath = TestData.FinalPackages.FirstOrDefault(p => p.EndsWith("BP2_Data.package"));
+        if (packagePath is null)
+        {
+            Console.WriteLine("BP2_Data.package not present; skipping.");
+            return;
+        }
+
+        NameRegistrySet names = NameRegistrySet.LoadEmbedded();
+        int total = 0;
+        int mismatches = 0;
+        string? firstMismatch = null;
+
+        using DatabasePackedFile package = DatabasePackedFile.Open(packagePath);
+        foreach (DbpfEntry entry in package.Entries)
+        {
+            if (Array.IndexOf(PropTypes, entry.Key.TypeId) < 0)
+            {
+                continue;
+            }
+
+            byte[] data = package.ReadEntry(entry);
+            if (data.Length < 8)
+            {
+                continue;
+            }
+
+            total++;
+            try
+            {
+                PropertyList original = PropertyList.Read(new MemoryStream(data));
+                using var xml = new MemoryStream();
+                original.WriteXml(xml, names);
+                xml.Position = 0;
+                PropertyList reborn = PropertyList.ReadXml(xml, names);
+                byte[] reserialised = Serialize(reborn);
+                if (!data.AsSpan().SequenceEqual(reserialised))
+                {
+                    mismatches++;
+                    firstMismatch ??= $"{entry.Key}";
+                }
+            }
+            catch (Exception ex)
+            {
+                mismatches++;
+                firstMismatch ??= $"{entry.Key}: {ex.GetType().Name} {ex.Message}";
+            }
+        }
+
+        if (total == 0)
+        {
+            throw new AssertionException("No property resources found in BP2_Data.");
+        }
+
+        Assert.True(
+            mismatches == 0,
+            $"{mismatches} of {total} property file(s) did not round-trip through XML. First: {firstMismatch}");
+    }
+
     private static string Describe(string package, DbpfEntry entry, byte[] a, byte[] b)
     {
         int diff = -1;

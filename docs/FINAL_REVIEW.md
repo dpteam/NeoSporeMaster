@@ -6,6 +6,11 @@
 
 ## Журнал ревизии
 
+- **2026-10-11 (XML-точность `.prop`):** сделал XML-путь (`unpack` → правка `.prop.xml` → `pack`)
+  **байтово-точным**: сохраняются флаги дескриптора, хвостовой padding (`key`/векторы), `itemsize`
+  массива, `transformCount`; ссылки-алиасы пишутся hex-id, `typeid` резолвится в типовом
+  пространстве. Итог: `unpack→pack` **идентичен** для `BP2_Data`/`CSA_Pack_03`/`Images`/`CellGame`;
+  `Spore_Game` 11644/11676. Тесты +1 (итого 190: сквозной byte-exact `binary→XML→binary`).
 - **2026-10-11 (мод-воркфлоу):** проверка `unpack → pack` выявила **реальный баг**: `pack` **терял
   native `png`** (17 из 184 в `BP2_Data`) — `.png` ошибочно считался результатом конвертации bitmap.
   Исправлено (`ConversionSuffix.IsConvertedPng`, +тесты): теперь 184/184. **`unpack --raw → pack →

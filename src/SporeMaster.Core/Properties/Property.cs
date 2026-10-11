@@ -57,6 +57,49 @@ public abstract class Property
     /// <summary>Reads one XML element's body and appends the parsed value.</summary>
     public abstract void ReadXmlElement(XElement element, NameRegistrySet names);
 
+    /// <summary>
+    /// Writes extra attributes onto the property's XML element (used to preserve the trailing padding
+    /// bytes of standalone composite values so the XML round-trip is byte-accurate). No-op by default.
+    /// </summary>
+    internal virtual void WriteXmlAttributes(XmlWriter writer)
+    {
+    }
+
+    /// <summary>Reads the extra attributes written by <see cref="WriteXmlAttributes"/>. No-op by default.</summary>
+    internal virtual void ReadXmlAttributes(XElement element)
+    {
+    }
+
+    /// <summary>Parses a hex byte string (as written by <see cref="WriteXmlAttributes"/>), or null.</summary>
+    internal static byte[]? ParseHexBytes(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return null;
+        }
+
+        string hex = text.Trim();
+        if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            hex = hex[2..];
+        }
+
+        if (hex.Length == 0 || (hex.Length & 1) != 0)
+        {
+            // Odd length: pad a leading zero (cannot happen for our writer, but be lenient).
+            hex = "0" + hex;
+        }
+
+        try
+        {
+            return Convert.FromHexString(hex);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Reads <paramref name="count"/> elements, appending them.</summary>
     public void Read(Stream stream, int count, bool isArray)
     {
